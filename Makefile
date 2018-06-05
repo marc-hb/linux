@@ -871,6 +871,8 @@ KBUILD_RUSTFLAGS += -Copt-level=2
 else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS += -Os
 KBUILD_RUSTFLAGS += -Copt-level=s
+else ifdef CONFIG_CC_OPTIMIZE_FOR_DEBUGGING
+KBUILD_CFLAGS += $(call cc-option, -Og)
 endif
 
 # Always set `debug-assertions` and `overflow-checks` because their default

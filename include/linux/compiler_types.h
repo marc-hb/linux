@@ -529,12 +529,11 @@ struct ftrace_likely_data {
 	(sizeof(t) == sizeof(char) || sizeof(t) == sizeof(short) || \
 	 sizeof(t) == sizeof(int) || sizeof(t) == sizeof(long))
 
-#ifdef __OPTIMIZE__
+/* __OPTIMIZE__ is not set by gcc -Og */
+#if defined(__OPTIMIZE__) && !defined(CONFIG_CC_OPTIMIZE_FOR_DEBUGGING)
 /*
- * #ifdef __OPTIMIZE__ is only a good approximation; for instance "make
- * CFLAGS_foo.o=-Og" defines __OPTIMIZE__, does not elide the conditional code
- * and can break compilation with wrong error message(s). Combine with
- * -U__OPTIMIZE__ when needed.
+ * This relies on GCC __attribute__((__error__(msg))) and the
+ * condition(al) code to be optimized out.
  */
 # define __compiletime_assert(condition, msg, prefix, suffix)		\
 	do {								\
