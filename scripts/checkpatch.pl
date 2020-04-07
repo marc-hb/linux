@@ -34,6 +34,7 @@ my $file = 0;
 my $git = 0;
 my %git_commits = ();
 my $check = 0;
+my $strict_fails = 1;
 my $check_orig = 0;
 my $summary = 1;
 my $mailback = 0;
@@ -92,6 +93,7 @@ Options:
                              git merges are ignored
   -f, --file                 treat FILE as regular source file
   --subjective, --strict     enable more subjective tests
+  --strict-fails             subjective failures exit like other failures (default)
   --list-types               list the possible message types
   --types TYPE(,TYPE2...)    show only these comma separated message types
   --ignore TYPE(,TYPE2...)   ignore various comma separated message types
@@ -209,6 +211,7 @@ GetOptions(
 	'g|git!'	=> \$git,
 	'subjective!'	=> \$check,
 	'strict!'	=> \$check,
+	'strict-fails!'	=> \$strict_fails,
 	'ignore=s'	=> \@ignore,
 	'types=s'	=> \@use,
 	'show-types!'	=> \$show_types,
@@ -2160,7 +2163,9 @@ sub CHK {
 	my ($type, $msg) = @_;
 
 	if ($check && report("CHECK", $type, $msg)) {
+		if ($strict_fails) {
 		our $clean = 0;
+		}
 		our $cnt_chk++;
 		return 1;
 	}
