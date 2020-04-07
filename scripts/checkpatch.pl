@@ -2160,7 +2160,8 @@ sub CHK {
 	my ($type, $msg) = @_;
 
 	if ($check && report("CHECK", $type, $msg)) {
-		our $clean = 0;
+# In SOF we sometimes want --subjective checks printed without failing
+#		our $clean = 0;
 		our $cnt_chk++;
 		return 1;
 	}
