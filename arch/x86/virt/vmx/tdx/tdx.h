@@ -86,6 +86,14 @@ struct tdmr_info {
 
 /* Bit definitions of TDX_FEATURES0 metadata field */
 #define TDX_FEATURES0_NO_RBP_MOD	BIT(18)
+#define TDX_SYS_ATTR_DEBUG_MODULE	BIT(31)
+
+#define DEBUGCONFIG_TRACE_ALL		0
+#define DEBUGCONFIG_TRACE_WARN		1
+#define DEBUGCONFIG_TRACE_ERROR		2
+#define DEBUGCONFIG_TRACE_CUSTOM	1000
+#define DEBUGCONFIG_TRACE_NONE		-1ULL
+void tdx_trace_seamcalls(u64 level);
 
 /*
  * Do not put any hardware-defined TDX structure representations below

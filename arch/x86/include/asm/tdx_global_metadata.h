@@ -9,6 +9,10 @@ struct tdx_sys_info_features {
 	u64 tdx_features0;
 };
 
+struct tdx_sys_info_attibutes {
+	u64 sys_attributes;
+};
+
 struct tdx_sys_info_tdmr {
 	u16 max_tdmrs;
 	u16 max_reserved_per_tdmr;
@@ -36,6 +40,7 @@ struct tdx_sys_info_td_conf {
 
 struct tdx_sys_info {
 	struct tdx_sys_info_features features;
+	struct tdx_sys_info_attibutes attributes;
 	struct tdx_sys_info_tdmr tdmr;
 	struct tdx_sys_info_td_ctrl td_ctrl;
 	struct tdx_sys_info_td_conf td_conf;

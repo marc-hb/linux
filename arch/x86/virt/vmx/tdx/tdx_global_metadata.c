@@ -18,6 +18,17 @@ static int get_tdx_sys_info_features(struct tdx_sys_info_features *sysinfo_featu
 	return ret;
 }
 
+static int get_tdx_sys_info_attributes(struct tdx_sys_info_attibutes *sysinfo_attributes)
+{
+	int ret = 0;
+	u64 val;
+
+	if (!ret && !(ret = read_sys_metadata_field(0x0A00000200000000, &val)))
+		sysinfo_attributes->sys_attributes = val;
+
+	return ret;
+}
+
 static int get_tdx_sys_info_tdmr(struct tdx_sys_info_tdmr *sysinfo_tdmr)
 {
 	int ret = 0;
@@ -90,6 +101,7 @@ static int get_tdx_sys_info(struct tdx_sys_info *sysinfo)
 	int ret = 0;
 
 	ret = ret ?: get_tdx_sys_info_features(&sysinfo->features);
+	ret = ret ?: get_tdx_sys_info_attributes(&sysinfo->attributes);
 	ret = ret ?: get_tdx_sys_info_tdmr(&sysinfo->tdmr);
 	ret = ret ?: get_tdx_sys_info_td_ctrl(&sysinfo->td_ctrl);
 	ret = ret ?: get_tdx_sys_info_td_conf(&sysinfo->td_conf);
