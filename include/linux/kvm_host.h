@@ -2580,4 +2580,7 @@ static inline int kvm_enable_virtualization(void) { return 0; }
 static inline void kvm_disable_virtualization(void) { }
 #endif
 
+void kvm_hardware_enable_lock(void);
+void kvm_hardware_enable_unlock(void);
+
 #endif

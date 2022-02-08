@@ -1573,6 +1573,17 @@ u32 tdx_get_nr_guest_keyids(void)
 }
 EXPORT_SYMBOL_GPL(tdx_get_nr_guest_keyids);
 
+bool tdx_is_enabled(void)
+{
+	bool r;
+
+	mutex_lock(&tdx_module_lock);
+	r = tdx_module_status == TDX_MODULE_INITIALIZED;
+	mutex_unlock(&tdx_module_lock);
+	return  r;
+}
+EXPORT_SYMBOL(tdx_is_enabled);
+
 int tdx_guest_keyid_alloc(void)
 {
 	return ida_alloc_range(&tdx_guest_keyid_pool, tdx_guest_keyid_start,
@@ -1960,3 +1971,14 @@ u64 tdh_phymem_page_wbinvd_hkid(u64 hkid, struct page *page)
 	return seamcall(TDH_PHYMEM_PAGE_WBINVD, &args);
 }
 EXPORT_SYMBOL_GPL(tdh_phymem_page_wbinvd_hkid);
+
+u64 tdh_debug_config(u64 subleaf, u64 param1, u64 param2)
+{
+	struct tdx_module_args args = {
+		.rcx = subleaf,
+		.rdx = param1,
+		.r8 = param2,
+	};
+	return seamcall(SEAMCALL_TDDEBUGCONFIG, &args);
+}
+EXPORT_SYMBOL_GPL(tdh_debug_config);

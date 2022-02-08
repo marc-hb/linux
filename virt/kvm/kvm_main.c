@@ -6463,3 +6463,15 @@ void kvm_exit(void)
 	kvm_irqfd_exit();
 }
 EXPORT_SYMBOL_GPL(kvm_exit);
+
+void kvm_hardware_enable_lock(void)
+{
+	mutex_lock(&kvm_lock);
+}
+EXPORT_SYMBOL_GPL(kvm_hardware_enable_lock);
+
+void kvm_hardware_enable_unlock(void)
+{
+	mutex_unlock(&kvm_lock);
+}
+EXPORT_SYMBOL_GPL(kvm_hardware_enable_unlock);

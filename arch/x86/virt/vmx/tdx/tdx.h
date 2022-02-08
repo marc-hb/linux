@@ -47,6 +47,9 @@
 #define TDH_VP_WR			43
 #define TDH_SYS_CONFIG			45
 
+/* Non-architectural debug configuration SEAMCALLs. */
+#define SEAMCALL_TDDEBUGCONFIG			0xFE
+
 /*
  * SEAMCALL leaf:
  *
