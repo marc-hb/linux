@@ -383,6 +383,10 @@ void pci_pasid_init(struct pci_dev *pdev)
 	pdev->pasid_cap = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
 }
 
+#define PCI_PASID_CAPS	(PCI_PASID_CAP_EXEC | \
+			 PCI_PASID_CAP_PRIV | \
+			 PCI_PASID_CAP_TRANS)
+
 /**
  * pci_enable_pasid - Enable the PASID capability
  * @pdev: PCI device structure
@@ -420,7 +424,7 @@ int pci_enable_pasid(struct pci_dev *pdev, int features)
 		return -EINVAL;
 
 	pci_read_config_word(pdev, pasid + PCI_PASID_CAP, &supported);
-	supported &= PCI_PASID_CAP_EXEC | PCI_PASID_CAP_PRIV;
+	supported &= PCI_PASID_CAPS;
 
 	/* User wants to enable anything unsupported? */
 	if ((supported & features) != features)
@@ -493,6 +497,7 @@ void pci_restore_pasid_state(struct pci_dev *pdev)
  * features reported are:
  * PCI_PASID_CAP_EXEC - Execute permission supported
  * PCI_PASID_CAP_PRIV - Privileged mode supported
+ * PCI_PASID_CAP_TRANS - Translated Requests with PASID Supported
  */
 int pci_pasid_features(struct pci_dev *pdev)
 {
@@ -508,9 +513,7 @@ int pci_pasid_features(struct pci_dev *pdev)
 
 	pci_read_config_word(pdev, pasid + PCI_PASID_CAP, &supported);
 
-	supported &= PCI_PASID_CAP_EXEC | PCI_PASID_CAP_PRIV;
-
-	return supported;
+	return supported & PCI_PASID_CAPS;
 }
 EXPORT_SYMBOL_GPL(pci_pasid_features);
 
