@@ -125,6 +125,7 @@ enum xfeature {
 	XFEATURE_RSRVD_COMP_16,
 	XFEATURE_XTILE_CFG,
 	XFEATURE_XTILE_DATA,
+	XFEATURE_APX,
 
 	XFEATURE_MAX,
 };
@@ -154,8 +155,10 @@ enum xfeature {
 #ifdef CONFIG_X86_64
 # define XFEATURE_MASK_XTILE		(XFEATURE_MASK_XTILE_DATA \
 					 | XFEATURE_MASK_XTILE_CFG)
+#define XFEATURE_MASK_APX		(1 << XFEATURE_APX)
 #else
 # define XFEATURE_MASK_XTILE		(0)
+#define XFEATURE_MASK_APX		(0)
 #endif
 
 #define FIRST_EXTENDED_XFEATURE	XFEATURE_YMM
@@ -301,6 +304,13 @@ struct xtile_cfg {
  */
 struct xtile_data {
 	struct reg_1024_byte		tmm;
+} __packed;
+
+/*
+ * State component 19: 8B extended general purpose register.
+ */
+struct apx_state {
+	u64				egpr[16];
 } __packed;
 
 /*
