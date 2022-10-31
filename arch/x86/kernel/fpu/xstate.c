@@ -255,7 +255,8 @@ static void __init setup_xstate_cache(void)
 		 * it does.
 		 */
 		WARN_ONCE(last_good_offset > xstate_offsets[i],
-			  "x86/fpu: misordered xstate at %d\n", last_good_offset);
+			  "x86/fpu: misordered xstate at %d: %d: %s\n",
+			  last_good_offset, i, xfeature_names[i]);
 
 		last_good_offset = xstate_offsets[i];
 	}
@@ -607,8 +608,9 @@ static bool __init paranoid_xstate_size_valid(unsigned int kernel_size)
 		}
 	}
 	size = xstate_calculate_size(fpu_kernel_cfg.max_features, compacted);
-	XSTATE_WARN_ON(size != kernel_size,
-		       "size %u != kernel_size %u\n", size, kernel_size);
+	WARN_ONCE(size != kernel_size,
+		  "x86/fpu: cpuid_size=%d vs calculated_size=%d,features=%llx\n",
+		  size, kernel_size, fpu_kernel_cfg.max_features);
 	return size == kernel_size;
 }
 
