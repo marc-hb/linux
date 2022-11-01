@@ -32,10 +32,6 @@
 #include "legacy.h"
 #include "xstate.h"
 
-#define for_each_extended_xfeature(bit, mask)				\
-	(bit) = FIRST_EXTENDED_XFEATURE;				\
-	for_each_set_bit_from(bit, (unsigned long *)&(mask), 8 * sizeof(mask))
-
 /*
  * Although we spell it out in here, the Processor Trace
  * xfeature is completely unused.  We use other mechanisms
@@ -84,6 +80,18 @@ static unsigned short xsave_cpuid_features[] __initdata = {
 	[XFEATURE_APX]				= X86_FEATURE_APX,
 };
 
+static unsigned int misordered_features[] __initdata = {
+	[XFEATURE_APX]				= XFEATURE_BNDREGS,
+};
+
+/*
+ * It is not always true that the highest-numbered xstate feature has the
+ * highest offset in the buffer.
+ *
+ * Indicate which xstate feature is in a given order unless the feature
+ * follows it.
+ */
+static unsigned int xstate_orders[XFEATURE_MAX] __ro_after_init;
 static unsigned int xstate_offsets[XFEATURE_MAX] __ro_after_init =
 	{ [ 0 ... XFEATURE_MAX - 1] = -1};
 static unsigned int xstate_sizes[XFEATURE_MAX] __ro_after_init =
@@ -92,6 +100,42 @@ static unsigned int xstate_flags[XFEATURE_MAX] __ro_after_init;
 
 #define XSTATE_FLAG_SUPERVISOR	BIT(0)
 #define XSTATE_FLAG_ALIGNED64	BIT(1)
+
+static unsigned long inorder_xfeatures(u64 xfeatures)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(xstate_orders); i++) {
+		if (xstate_orders[i]) {
+			u64 mask = BIT_ULL(xstate_orders[i]);
+
+			if (xfeatures & mask) {
+				xfeatures &= ~mask;
+				xfeatures |= BIT_ULL(i);
+			}
+		}
+	}
+	return xfeatures;
+}
+
+static inline unsigned int find_xfeature_num(unsigned int num)
+{
+	return num < XFEATURE_MAX ? (xstate_orders[num] ? : num) : num;
+}
+
+#define for_each_extended_xfeature(bit, mask)					\
+	(bit) = FIRST_EXTENDED_XFEATURE;					\
+	for_each_set_bit_from(bit, (unsigned long *)&(mask), 8 * sizeof(mask))
+
+#define for_each_extended_xfeature_orderly(bit, xnum, mask)			\
+	(mask) = inorder_xfeatures(mask);					\
+	(bit) = FIRST_EXTENDED_XFEATURE;					\
+	(bit) = find_next_bit((unsigned long *)&(mask), 8 * sizeof(mask), (bit));\
+	(xnum) = find_xfeature_num((bit));					\
+	for (; (bit) < 8 * sizeof(mask);					\
+	     (bit) = find_next_bit((unsigned long *)&(mask),			\
+		     8 * sizeof(mask), (bit) + 1),				\
+	     (xnum) = find_xfeature_num((bit)))
 
 /*
  * Return whether the system supports a given xfeature.
@@ -143,7 +187,7 @@ static bool xfeature_is_supervisor(int xfeature_nr)
 
 static unsigned int xfeature_get_offset(u64 xcomp_bv, int xfeature)
 {
-	unsigned int offs, i;
+	unsigned int offs, x, i;
 
 	/*
 	 * Non-compacted format and legacy features use the cached fixed
@@ -159,7 +203,7 @@ static unsigned int xfeature_get_offset(u64 xcomp_bv, int xfeature)
 	 * field.
 	 */
 	offs = FXSAVE_SIZE + XSAVE_HDR_SIZE;
-	for_each_extended_xfeature(i, xcomp_bv) {
+	for_each_extended_xfeature_orderly(x, i, xcomp_bv) {
 		if (xfeature_is_aligned64(i))
 			offs = ALIGN(offs, 64);
 		if (i == xfeature)
@@ -218,9 +262,8 @@ static bool xfeature_enabled(enum xfeature xfeature)
 static void __init setup_xstate_cache(void)
 {
 	u32 eax, ebx, ecx, edx, i;
-	/* start at the beginning of the "extended state" */
-	unsigned int last_good_offset = offsetof(struct xregs_state,
-						 extended_state_area);
+	unsigned int last_offset;
+
 	/*
 	 * The FP xstates and SSE xstates are legacy states. They are always
 	 * in the fixed offsets in the xsave area in either compacted form
@@ -229,6 +272,8 @@ static void __init setup_xstate_cache(void)
 	xstate_offsets[XFEATURE_FP]	= 0;
 	xstate_sizes[XFEATURE_FP]	= offsetof(struct fxregs_state,
 						   xmm_space);
+
+	last_offset = offsetof(struct xregs_state, extended_state_area);
 
 	xstate_offsets[XFEATURE_SSE]	= xstate_sizes[XFEATURE_FP];
 	xstate_sizes[XFEATURE_SSE]	= sizeof_field(struct fxregs_state,
@@ -249,16 +294,10 @@ static void __init setup_xstate_cache(void)
 
 		xstate_offsets[i] = ebx;
 
-		/*
-		 * In our xstate size checks, we assume that the highest-numbered
-		 * xstate feature has the highest offset in the buffer.  Ensure
-		 * it does.
-		 */
-		WARN_ONCE(last_good_offset > xstate_offsets[i],
-			  "x86/fpu: misordered xstate at %d: %d: %s\n",
-			  last_good_offset, i, xfeature_names[i]);
+		if (last_offset > xstate_offsets[i] && misordered_features[i])
+			xstate_orders[misordered_features[i]] = i;
 
-		last_good_offset = xstate_offsets[i];
+		last_offset = xstate_offsets[i];
 	}
 }
 
@@ -568,8 +607,12 @@ static bool __init check_xstate_against_struct(int nr)
 
 static unsigned int xstate_calculate_size(u64 xfeatures, bool compacted)
 {
-	unsigned int topmost = fls64(xfeatures) -  1;
-	unsigned int offset = xstate_offsets[topmost];
+	unsigned int topmost, offset;
+	u64 ordered_xfeatures;
+
+	ordered_xfeatures = inorder_xfeatures(xfeatures);
+	topmost = find_xfeature_num(fls64(ordered_xfeatures) - 1);
+	offset = xstate_offsets[topmost];
 
 	if (topmost <= XFEATURE_SSE)
 		return sizeof(struct xregs_state);
@@ -1092,7 +1135,7 @@ void __copy_xstate_to_uabi_buf(struct membuf to, struct fpstate *fpstate,
 	struct xstate_header header;
 	unsigned int zerofrom;
 	u64 mask;
-	int i;
+	int i, x;
 
 	memset(&header, 0, sizeof(header));
 	header.xfeatures = xsave->header.xfeatures;
@@ -1161,7 +1204,7 @@ void __copy_xstate_to_uabi_buf(struct membuf to, struct fpstate *fpstate,
 	 */
 	mask = header.xfeatures;
 
-	for_each_extended_xfeature(i, mask) {
+	for_each_extended_xfeature_orderly(x, i, mask) {
 		/*
 		 * If there was a feature or alignment gap, zero the space
 		 * in the destination buffer.
