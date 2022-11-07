@@ -387,6 +387,60 @@ static void test_context_switch(void)
 	free(finfo);
 }
 
+/* Signal return test */
+
+static void sethandler(int sig, void (*handler)(int, siginfo_t *, void *),
+		       int flags)
+{
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_sigaction = handler;
+	sa.sa_flags = SA_SIGINFO | flags;
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(sig, &sa, 0))
+		err(1, "sigaction");
+}
+
+static void clearhandler(int sig)
+{
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = SIG_DFL;
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(sig, &sa, 0))
+		err(1, "sigaction");
+}
+
+static void handle_signal(int sig, siginfo_t *info, void *ctx_void)
+{
+	load_rand_apx(stashed_xsave);
+}
+
+static void test_signal(void)
+{
+	struct xsave_buffer *xbuf;
+
+	xbuf = alloc_xbuf();
+	if (!xbuf)
+		fatal_error("unable to allocate XSAVE buffer");
+
+	printf("[RUN]\tCheck APX state restoration with signal.\n");
+
+	sethandler(SIGALRM, handle_signal, 0);
+
+	load_rand_apx(xbuf);
+
+	raise(SIGALRM);
+
+	if (validate_apx_regs(xbuf))
+		fatal_error("APX registers changed from signal");
+
+	printf("[OK]\tThe APX state was retained on the sig return.\n");
+	clearhandler(SIGALRM);
+}
+
 int main(void)
 {
 	/* Check hardware availability at first */
@@ -398,6 +452,8 @@ int main(void)
 	ctxtswtest_config.iterations = 10;
 	ctxtswtest_config.num_threads = 5;
 	test_context_switch();
+
+	test_signal();
 
 	free_stashed_xsave();
 
