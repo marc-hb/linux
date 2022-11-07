@@ -13,9 +13,11 @@
 
 #include <sys/auxv.h>
 #include <sys/mman.h>
+#include <sys/ptrace.h>
 #include <sys/shm.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
+#include <sys/uio.h>
 
 #include "../kselftest.h" /* For __cpuid_count() */
 
@@ -441,6 +443,76 @@ static void test_signal(void)
 	clearhandler(SIGALRM);
 }
 
+/* Ptrace test */
+
+static int inject_apx(pid_t target)
+{
+	struct xsave_buffer *xbuf;
+	struct iovec iov;
+	int ret;
+
+	xbuf = alloc_xbuf();
+	if (!xbuf)
+		fatal_error("unable to allocate XSAVE buffer");
+
+	iov.iov_base = xbuf;
+	iov.iov_len = xbuf_size;
+
+	load_rand_apx(xbuf);
+	memcpy(stashed_xsave, xbuf, xbuf_size);
+
+	if (ptrace(PTRACE_SETREGSET, target, (uint32_t)NT_X86_XSTATE, &iov)) {
+		if (errno != EFAULT)
+			err(1, "PTRACE_SETREGSET");
+		else
+			return errno;
+	}
+
+	if (ptrace(PTRACE_GETREGSET, target, (uint32_t)NT_X86_XSTATE, &iov))
+		err(1, "PTRACE_GETREGSET");
+
+	ret = memcmp(&xbuf->bytes[apx_info.xbuf_offset],
+		     &stashed_xsave->bytes[apx_info.xbuf_offset],
+		     apx_info.size);
+	if (!ret)
+		return 0;
+	else
+		return -1;
+}
+
+static void test_ptrace(void)
+{
+	int status, rc;
+	pid_t child;
+
+	child = fork();
+	if (child < 0) {
+		err(1, "fork");
+	} else if (!child) {
+		if (ptrace(PTRACE_TRACEME, 0, NULL, NULL))
+			err(1, "PTRACE_TRACEME");
+		raise(SIGTRAP);
+		_exit(0);
+	}
+
+	do {
+		wait(&status);
+	} while (WSTOPSIG(status) != SIGTRAP);
+
+	printf("[RUN]\tCheck APX state injection via ptrace.\n");
+
+	rc = inject_apx(child);
+	if (!rc)
+		printf("[OK]\tAPX state was written on ptracee.\n");
+	else
+		printf("[FAIL]\tAPX state was not written on ptracee\n");
+
+	ptrace(PTRACE_DETACH, child, NULL, NULL);
+	wait(&status);
+	if (!WIFEXITED(status) || WEXITSTATUS(status))
+		err(1, "ptrace test");
+}
+
 int main(void)
 {
 	/* Check hardware availability at first */
@@ -454,6 +526,8 @@ int main(void)
 	test_context_switch();
 
 	test_signal();
+
+	test_ptrace();
 
 	free_stashed_xsave();
 
