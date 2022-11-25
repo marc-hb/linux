@@ -692,6 +692,11 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_LBR_NHM_TO ... MSR_LBR_NHM_TO + 31:
 	case MSR_LBR_CORE_FROM ... MSR_LBR_CORE_FROM + 8:
 	case MSR_LBR_CORE_TO ... MSR_LBR_CORE_TO + 8:
+	case MSR_ARCH_LBR_CTL:
+	case MSR_ARCH_LBR_DEPTH:
+	case MSR_ARCH_LBR_FROM_0 ... MSR_ARCH_LBR_FROM_0 + KVM_MAX_NR_ARCH_DEPTH - 1:
+	case MSR_ARCH_LBR_TO_0 ... MSR_ARCH_LBR_TO_0 + KVM_MAX_NR_ARCH_DEPTH - 1:
+	case MSR_ARCH_LBR_INFO_0 ... MSR_ARCH_LBR_INFO_0 + KVM_MAX_NR_ARCH_DEPTH - 1:
 		/* LBR MSRs. These are handled in vmx_update_intercept_for_lbr_msrs() */
 	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
 	case MSR_PEBS_LD_LAT_THRESHOLD:
