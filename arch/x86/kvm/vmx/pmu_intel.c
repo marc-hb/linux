@@ -750,18 +750,6 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 
 	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
 
-	/*
-	 * In legacy (non-mediated) vPMU, setting passthrough of LBR MSRs is
-	 * done only in the VM-Entry loop, while in mediated vPMU, LBR MSRs
-	 * is passthrough after LBR_CTL.LBREn is set by the guest.
-	 *
-	 * PMU refresh is disallowed after the vCPU has run, i.e. this code
-	 * should never be reached while KVM is passing through MSRs.
-	 *
-	 */
-	if (KVM_BUG_ON(lbr_desc->msr_passthrough, vcpu->kvm))
-		return;
-
 	/* CPUID 0xa leaf */
 	entry = kvm_find_cpuid_entry(vcpu, 0xa);
 	if (!entry)
@@ -1070,6 +1058,18 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	bool mediated;
 	bool arch_lbr;
+
+	/*
+	 * In legacy (non-mediated) vPMU, setting passthrough of LBR MSRs is
+	 * done only in the VM-Entry loop, while in mediated vPMU, LBR MSRs
+	 * is passthrough after LBR_CTL.LBREn is set by the guest.
+	 *
+	 * PMU refresh is disallowed after the vCPU has run, i.e. this code
+	 * should never be reached while KVM is passing through MSRs.
+	 *
+	 */
+	if (KVM_BUG_ON(vcpu_to_lbr_desc(vcpu)->msr_passthrough, vcpu->kvm))
+		return;
 
 	__intel_pmu_refresh(vcpu);
 
