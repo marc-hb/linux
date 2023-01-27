@@ -2655,6 +2655,7 @@ static int setup_vmcs_config(struct vmcs_config *vmcs_conf,
 		{ VM_ENTRY_LOAD_IA32_EFER,		VM_EXIT_LOAD_IA32_EFER },
 		{ VM_ENTRY_LOAD_BNDCFGS,		VM_EXIT_CLEAR_BNDCFGS },
 		{ VM_ENTRY_LOAD_IA32_RTIT_CTL,		VM_EXIT_CLEAR_IA32_RTIT_CTL },
+		{ VM_ENTRY_LOAD_IA32_LBR_CTL,		VM_EXIT_CLEAR_IA32_LBR_CTL },
 	};
 
 	memset(vmcs_conf, 0, sizeof(*vmcs_conf));
@@ -4485,11 +4486,13 @@ static u32 vmx_get_initial_vmentry_ctrl(void)
 		vmentry_ctrl &= ~(VM_ENTRY_PT_CONCEAL_PIP |
 				  VM_ENTRY_LOAD_IA32_RTIT_CTL);
 	/*
-	 * IA32e mode, and loading of EFER and PERF_GLOBAL_CTRL are toggled dynamically.
+	 * IA32e mode, and loading of EFER and PERF_GLOBAL_CTRL and LBR_CTR
+	 * are toggled dynamically.
 	 */
 	vmentry_ctrl &= ~(VM_ENTRY_LOAD_IA32_PERF_GLOBAL_CTRL |
 			  VM_ENTRY_LOAD_IA32_EFER |
-			  VM_ENTRY_IA32E_MODE);
+			  VM_ENTRY_IA32E_MODE |
+			  VM_ENTRY_LOAD_IA32_LBR_CTL);
 
 	return vmentry_ctrl;
 }
@@ -4508,10 +4511,10 @@ static u32 vmx_get_initial_vmexit_ctrl(void)
 	if (vmx_pt_mode_is_system())
 		vmexit_ctrl &= ~(VM_EXIT_PT_CONCEAL_PIP |
 				 VM_EXIT_CLEAR_IA32_RTIT_CTL);
-	/* Loading of EFER and PERF_GLOBAL_CTRL are toggled dynamically */
+	/* Loading of EFER and PERF_GLOBAL_CTRL and LBR_CTL are toggled dynamically */
 	return vmexit_ctrl &
 		~(VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL | VM_EXIT_LOAD_IA32_EFER |
-		  VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL);
+		  VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL | VM_EXIT_CLEAR_IA32_LBR_CTL);
 }
 
 void vmx_refresh_apicv_exec_ctrl(struct kvm_vcpu *vcpu)
@@ -4900,6 +4903,9 @@ static void init_vmcs(struct vcpu_vmx *vmx)
 				     __pa(vmx->vcpu.arch.apic->regs));
 		vmcs_write32(TPR_THRESHOLD, 0);
 	}
+
+	if (cpu_has_vmx_arch_lbr())
+		vmcs_write64(GUEST_IA32_LBR_CTL, 0);
 
 	vmx_setup_uret_msrs(vmx);
 }
@@ -6418,6 +6424,9 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
 	    vmentry_ctl & VM_ENTRY_LOAD_IA32_PERF_GLOBAL_CTRL)
 		pr_err("PerfGlobCtl = 0x%016llx\n",
 		       vmcs_read64(GUEST_IA32_PERF_GLOBAL_CTRL));
+	if (cpu_has_vmx_arch_lbr() &&
+	    vmentry_ctl & VM_ENTRY_LOAD_IA32_LBR_CTL)
+		pr_err("LBRCtl = 0x%016llx\n", vmcs_read64(GUEST_IA32_LBR_CTL));
 	if (vmentry_ctl & VM_ENTRY_LOAD_BNDCFGS)
 		pr_err("BndCfgS = 0x%016llx\n", vmcs_read64(GUEST_BNDCFGS));
 	pr_err("Interruptibility = %08x  ActivityState = %08x\n",

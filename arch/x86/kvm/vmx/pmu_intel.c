@@ -950,6 +950,7 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	bool mediated;
+	bool arch_lbr;
 
 	__intel_pmu_refresh(vcpu);
 
@@ -985,6 +986,10 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		vm_exit_controls_changebit(vmx,
 			VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL |
 			VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL, mediated);
+
+	arch_lbr = mediated && kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR);
+	vm_exit_controls_changebit(vmx, VM_EXIT_CLEAR_IA32_LBR_CTL, arch_lbr);
+	vm_entry_controls_changebit(vmx, VM_ENTRY_LOAD_IA32_LBR_CTL, arch_lbr);
 }
 
 static void intel_pmu_init(struct kvm_vcpu *vcpu)
