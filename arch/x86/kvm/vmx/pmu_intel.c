@@ -35,6 +35,9 @@
 
 #define MSR_PMC_FULL_WIDTH_BIT      (MSR_IA32_PMC0 - MSR_IA32_PERFCTR0)
 
+static void vmx_enable_lbr_msrs_passthrough(struct kvm_vcpu *vcpu);
+static void vmx_disable_lbr_msrs_passthrough(struct kvm_vcpu *vcpu);
+
 static void reprogram_fixed_counters(struct kvm_pmu *pmu, u64 data)
 {
 	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
@@ -154,7 +157,8 @@ static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
 	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR)) {
 		if (index == MSR_LBR_SELECT || index == MSR_LBR_TOS)
 			return true;
-	}
+	} else if (index == MSR_ARCH_LBR_CTL)
+		return true;
 
 	ret = (index >= records->from && index < records->from + records->nr) ||
 		(index >= records->to && index < records->to + records->nr);
@@ -373,7 +377,24 @@ static bool mediated_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
 	struct lbr_entry *entry = lbr_desc->state->lbr.entries;
 	u32 index = msr_info->index;
 
-	if (index >= records->from && index < records->from + records->nr) {
+	if (index == MSR_ARCH_LBR_CTL) {
+		if (read) {
+			msr_info->data = vmcs_read64(GUEST_IA32_LBR_CTL);
+		} else {
+			if (msr_info->data & vcpu_to_pmu(vcpu)->arch_lbr_ctrl_rsvd)
+				return false;
+
+			if ((vmcs_read64(GUEST_IA32_LBR_CTL) ^ msr_info->data) &
+			    ARCH_LBR_CTL_LBREN) {
+				if (msr_info->data & ARCH_LBR_CTL_LBREN)
+					vmx_enable_lbr_msrs_passthrough(vcpu);
+				else
+					vmx_disable_lbr_msrs_passthrough(vcpu);
+			}
+
+			vmcs_write64(GUEST_IA32_LBR_CTL, msr_info->data);
+		}
+	} else if (index >= records->from && index < records->from + records->nr) {
 		entry += index - records->from;
 		if (read)
 			msr_info->data = entry->from;
@@ -837,6 +858,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->reserved_bits ^= HSW_IN_TX;
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
+
+	pmu->arch_lbr_ctrl_rsvd = ~(0xfull | 0x7f0000ull);
 
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
 	if (cpuid_model_is_consistent(vcpu) &&
