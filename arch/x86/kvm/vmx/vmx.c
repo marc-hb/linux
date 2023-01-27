@@ -8039,6 +8039,11 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_clear(X86_FEATURE_PDCM);
 	kvm_caps.supported_perf_cap = vmx_get_perf_capabilities();
 
+	if (!guest_can_use_arch_lbr()) {
+		kvm_cpu_cap_clear(X86_FEATURE_ARCH_LBR);
+		kvm_caps.supported_xss &= ~XFEATURE_MASK_LBR;
+	}
+
 	if (!enable_sgx) {
 		kvm_cpu_cap_clear(X86_FEATURE_SGX);
 		kvm_cpu_cap_clear(X86_FEATURE_SGX_LC);
