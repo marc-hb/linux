@@ -187,7 +187,7 @@ static bool xfeature_is_supervisor(int xfeature_nr)
 
 static unsigned int xfeature_get_offset(u64 xcomp_bv, int xfeature)
 {
-	unsigned int offs, x, i;
+	unsigned int offs, i;
 
 	/*
 	 * Non-compacted format and legacy features use the cached fixed
@@ -203,7 +203,7 @@ static unsigned int xfeature_get_offset(u64 xcomp_bv, int xfeature)
 	 * field.
 	 */
 	offs = FXSAVE_SIZE + XSAVE_HDR_SIZE;
-	for_each_extended_xfeature_orderly(x, i, xcomp_bv) {
+	for_each_extended_xfeature(i, xcomp_bv) {
 		if (xfeature_is_aligned64(i))
 			offs = ALIGN(offs, 64);
 		if (i == xfeature)
@@ -608,19 +608,26 @@ static bool __init check_xstate_against_struct(int nr)
 
 static unsigned int xstate_calculate_size(u64 xfeatures, bool compacted)
 {
-	unsigned int topmost, offset;
-	u64 ordered_xfeatures;
 
-	ordered_xfeatures = inorder_xfeatures(xfeatures);
-	topmost = find_xfeature_num(fls64(ordered_xfeatures) - 1);
-	offset = xstate_offsets[topmost];
+	unsigned int ret, offset;
+	int i;
 
-	if (topmost <= XFEATURE_SSE)
+	if ((fls64(xfeatures) - 1) <= XFEATURE_SSE)
 		return sizeof(struct xregs_state);
 
-	if (compacted)
-		offset = xfeature_get_offset(xfeatures, topmost);
-	return offset + xstate_sizes[topmost];
+	ret = FXSAVE_SIZE + XSAVE_HDR_SIZE;
+	for_each_extended_xfeature(i, xfeatures) {
+		offset = compacted ? ret : xstate_offsets[i];
+		if (xfeature_is_aligned64(i))
+			offset = ALIGN(offset, 64);
+		/*
+		 * if higher order has lower offset, the end isn't increased.
+		 */
+		if (ret < offset + xstate_sizes[i])
+			ret = offset + xstate_sizes[i];
+	}
+
+	return ret;
 }
 
 /*
