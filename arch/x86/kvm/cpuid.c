@@ -1005,6 +1005,7 @@ void kvm_set_cpu_caps(void)
 		F(AVX_VNNI_INT16),
 		F(PREFETCHITI),
 		F(AVX10),
+		F(APX),
 	);
 
 	kvm_cpu_cap_init(CPUID_7_2_EDX,
