@@ -5956,9 +5956,22 @@ static int handle_monitor_trap(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+void vmx_get_instr_info(struct kvm_vcpu *vcpu, struct vmx_instr_info *instr_info)
+{
+	if (kvm_apx_supported()) {
+		instr_info->is_extended = true;
+		instr_info->extend_info =
+			vmcs_read64(VMX_EXTENDED_INSTRUCTION_INFO);
+	} else {
+		instr_info->is_extended = false;
+		instr_info->info =
+			vmcs_read32(VMX_INSTRUCTION_INFO);
+	}
+}
+
 static int handle_invpcid(struct kvm_vcpu *vcpu)
 {
-	u32 vmx_instruction_info;
+	struct vmx_instr_info instr_info;
 	unsigned long type;
 	gva_t gva;
 	struct {
@@ -5972,15 +5985,15 @@ static int handle_invpcid(struct kvm_vcpu *vcpu)
 		return 1;
 	}
 
-	vmx_instruction_info = vmcs_read32(VMX_INSTRUCTION_INFO);
-	gpr_index = vmx_get_instr_info_reg2(vmx_instruction_info);
+	vmx_get_instr_info(vcpu, &instr_info);
+	gpr_index = vmx_get_instr_info_reg2(&instr_info);
 	type = kvm_register_read(vcpu, gpr_index);
 
 	/* According to the Intel instruction reference, the memory operand
 	 * is read even if it isn't needed (e.g., for type==all)
 	 */
 	if (get_vmx_mem_address(vcpu, vmx_get_exit_qual(vcpu),
-				vmx_instruction_info, false,
+				&instr_info, false,
 				sizeof(operand), &gva))
 		return 1;
 
