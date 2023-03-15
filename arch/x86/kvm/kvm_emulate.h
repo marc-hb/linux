@@ -353,6 +353,7 @@ struct x86_emulate_ctxt {
 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
 
 	bool rip_relative;
+	bool has_rex2_prefix;
 	u8 rex_prefix;
 	u8 lock_prefix;
 	u8 rep_prefix;
