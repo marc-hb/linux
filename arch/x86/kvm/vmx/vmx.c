@@ -4543,6 +4543,8 @@ static u64 vmx_tertiary_exec_control(struct vcpu_vmx *vmx)
 	if (!enable_ipiv || !kvm_vcpu_apicv_active(&vmx->vcpu))
 		exec_control &= ~TERTIARY_EXEC_IPI_VIRT;
 
+	exec_control &= ~TERTIARY_EXEC_AVX10_256;
+
 	return exec_control;
 }
 
