@@ -176,6 +176,16 @@ static u32 vmx_possible_passthrough_msrs[] = {
 	MSR_FS_BASE,
 	MSR_GS_BASE,
 	MSR_KERNEL_GS_BASE,
+	MSR_IA32_FRED_RSP0,
+	MSR_IA32_FRED_RSP1,
+	MSR_IA32_FRED_RSP2,
+	MSR_IA32_FRED_RSP3,
+	MSR_IA32_FRED_STKLVLS,
+	MSR_IA32_FRED_SSP1,
+	MSR_IA32_FRED_SSP2,
+	MSR_IA32_FRED_SSP3,
+	MSR_IA32_FRED_CONFIG,
+	MSR_IA32_FRED_SSP0,		/* Should be added through CET */
 	MSR_IA32_XFD,
 	MSR_IA32_XFD_ERR,
 #endif
@@ -7903,6 +7913,28 @@ static void update_intel_pt_cfg(struct kvm_vcpu *vcpu)
 		vmx->pt_desc.ctl_bitmask &= ~(0xfULL << (32 + i * 4));
 }
 
+static void vmx_set_intercept_for_fred_msr(struct kvm_vcpu *vcpu)
+{
+	bool flag = !guest_cpu_cap_has(vcpu, X86_FEATURE_FRED);
+
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP0, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP1, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP2, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP3, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_STKLVLS, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP1, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP2, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP3, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_CONFIG, MSR_TYPE_RW, flag);
+
+	/*
+	 * flag = !(CET.SUPERVISOR_SHADOW_STACK || FRED)
+	 *
+	 * A possible optimization is to intercept SSPs when FRED && !CET.SUPERVISOR_SHADOW_STACK.
+	 */
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP0, MSR_TYPE_RW, flag);
+}
+
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
@@ -7975,6 +8007,8 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 
 	/* Refresh #PF interception to account for MAXPHYADDR changes. */
 	vmx_update_exception_bitmap(vcpu);
+
+	vmx_set_intercept_for_fred_msr(vcpu);
 }
 
 static __init u64 vmx_get_perf_capabilities(void)
