@@ -385,9 +385,23 @@ static noinstr void load_secondary(unsigned int cpu)
 	instrumentation_end();
 }
 
+static const struct cpumask *ucode_get_scope_mask(unsigned int cpu)
+{
+	switch (microcode_ops->uniform_scope) {
+	case UNIFORM_DEFAULT:
+	case UNIFORM_CORE:
+	default:
+		return topology_sibling_cpumask(cpu);
+	case UNIFORM_PKG:
+		return topology_core_cpumask(cpu);
+	case UNIFORM_SYS:
+		return cpu_online_mask;
+	}
+}
+
 static void __load_primary(unsigned int cpu)
 {
-	struct cpumask *secondaries = topology_sibling_cpumask(cpu);
+	const struct cpumask *secondaries;
 	enum sibling_ctrl ctrl;
 	enum ucode_state ret;
 	unsigned int sibling;
@@ -413,6 +427,8 @@ static void __load_primary(unsigned int cpu)
 		ctrl = SCTRL_APPLY;
 	else
 		ctrl = SCTRL_DONE;
+
+	secondaries = ucode_get_scope_mask(cpu);
 
 	for_each_cpu(sibling, secondaries) {
 		if (sibling != cpu)
@@ -670,11 +686,8 @@ static bool setup_cpus(void)
 			continue;
 		}
 
-		/*
-		 * Initialize the per CPU state. This is core scope for now,
-		 * but prepared to take package or system scope into account.
-		 */
-		ctrl.ctrl_cpu = cpumask_first(topology_sibling_cpumask(cpu));
+		/* Initialize the per CPU state. */
+		ctrl.ctrl_cpu = cpumask_first(ucode_get_scope_mask(cpu));
 		per_cpu(ucode_ctrl, cpu) = ctrl;
 	}
 	return true;
