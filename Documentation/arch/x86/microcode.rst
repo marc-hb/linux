@@ -119,6 +119,12 @@ between the two logical threads in a SMT system. Therefore, when
 the update is executed on one SMT thread of the core, the sibling
 "automatically" gets the update.
 
+Note that this update scope can be expanded, encompassing cores within a
+package or all cores in a system (refer to uniform_ update for detailed
+information). Consequently, the updated engine will be shared among the
+specified secondary cores, diverging from the default scope of SMT
+siblings.
+
 Since the microcode can "simulate" MSRs too, while the microcode update
 is in progress, those simulated MSRs transiently cease to exist. This
 can result in unpredictable results if the SMT sibling thread happens to
@@ -238,3 +244,15 @@ the final kernel image. The early loader finds them and applies them.
 Needless to say, this method is not the most flexible one because it
 requires rebuilding the kernel each time updated microcode from the CPU
 vendor is available.
+
+.. _uniform:
+
+Uniform update
+==============
+
+In cases where CPUs support the 'uniform' update feature, the microcode
+loading gains the capability to extend the update across all CPUs within
+the scope, either a core, a package, or the entire system.
+
+This expanded scope simplifies the loading process by reducing the number
+of control CPUs which actively engage in updating the microcode engine.
