@@ -120,6 +120,11 @@ static bool __init check_loader_disabled_bsp(void)
 	return dis_ucode_ldr;
 }
 
+void disable_ucode_loader(void)
+{
+	dis_ucode_ldr = true;
+}
+
 void __init load_ucode_bsp(void)
 {
 	unsigned int cpuid_1_eax;

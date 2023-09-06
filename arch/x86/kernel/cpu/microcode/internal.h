@@ -107,6 +107,8 @@ static inline unsigned int x86_cpuid_family(void)
 extern bool dis_ucode_ldr;
 extern bool force_minrev;
 
+void disable_ucode_loader(void);
+
 #ifdef CONFIG_CPU_SUP_AMD
 void load_ucode_amd_bsp(struct early_load_data *ed, unsigned int family);
 void load_ucode_amd_ap(unsigned int family);
