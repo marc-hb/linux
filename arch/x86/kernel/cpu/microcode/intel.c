@@ -54,6 +54,8 @@ struct extended_sigtable {
 	struct extended_signature	sigs[];
 };
 
+#define FEATURE_FLAG_CPUID_EDX_ARCH_CAP		BIT(29)
+
 #define DEFAULT_UCODE_TOTALSIZE (DEFAULT_UCODE_DATASIZE + MC_HEADER_SIZE)
 #define EXT_HEADER_SIZE		(sizeof(struct extended_sigtable))
 #define EXT_SIGNATURE_SIZE	(sizeof(struct extended_signature))
@@ -399,11 +401,19 @@ static int __init save_builtin_microcode(void)
 }
 early_initcall(save_builtin_microcode);
 
+static __init void setup_uniform_update(void);
+
 /* Load microcode on BSP from initrd or builtin blobs */
 enum ucode_state __init load_ucode_intel_bsp(struct early_load_data *ed)
 {
 	struct ucode_cpu_info uci;
 	enum ucode_state result;
+
+	/*
+	 * Setup early as a failure of this needs to disable the
+	 * microcode loader.
+	 */
+	setup_uniform_update();
 
 	uci.mc = get_microcode_blob(&uci, false);
 	ed->old_rev = uci.cpu_sig.rev;
@@ -637,6 +647,57 @@ static struct microcode_ops microcode_intel_ops = {
 	.finalize_late_load	= finalize_late_load,
 	.use_nmi		= IS_ENABLED(CONFIG_X86_64),
 };
+
+static __init void setup_uniform_update(void)
+{
+	unsigned int val[2];
+
+	if (!(cpuid_edx(7) & FEATURE_FLAG_CPUID_EDX_ARCH_CAP))
+		return;
+
+	native_rdmsr(MSR_IA32_ARCH_CAPABILITIES, val[0], val[1]);
+	if (!(val[0] & ARCH_CAP_MCU_ENUM))
+		return;
+
+	native_rdmsr(MSR_IA32_MCU_ENUMERATION, val[0], val[1]);
+	if (!(val[0] & UNIFORM_MCU_AVAIL))
+		return;
+
+	/*
+	 * Ensure that the firmware did all the necessary steps if
+	 * needed. Any improper configuration makes the update
+	 * mechanism unusable.
+	 */
+	if (val[0] & UNIFORM_MCU_CONFIG_REQD && !(val[0] & UNIFORM_MCU_CONFIG_COMPLETE)) {
+		pr_err("Disable microcode update: due to incomplete configuration by firmware.\n");
+		disable_ucode_loader();
+		return;
+	}
+
+	/*
+	 * Indicate the uniform scope accordingly. Also, override the
+	 * primary CPU set for the parallel CPU bring-up if needed.
+	 * load_ucode_bsp() already sets the default mask.
+	 */
+	switch (val[0] & UNIFORM_MCU_SCOPE) {
+	case UNIFORM_MCU_SCOPE_CORE:
+		microcode_intel_ops.uniform_scope = UNIFORM_CORE;
+		break;
+	case UNIFORM_MCU_SCOPE_PACKAGE:
+		microcode_intel_ops.uniform_scope = UNIFORM_PKG;
+		break;
+	case UNIFORM_MCU_SCOPE_PLATFORM:
+		microcode_intel_ops.uniform_scope = UNIFORM_SYS;
+		break;
+	default:
+		pr_err("Disable microcode update: unknown uniform scope.\n");
+		disable_ucode_loader();
+		return;
+	}
+
+	microcode_intel_ops.use_uniform = true;
+	pr_info("Uniform update is enabled.\n");
+}
 
 static __init void calc_llc_size_per_core(struct cpuinfo_x86 *c)
 {
