@@ -301,10 +301,13 @@ static __init struct microcode_intel *scan_microcode(void *data, size_t size,
 	return size ? NULL : patch;
 }
 
+static enum ucode_state verify_update_result(void);
+
 static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 					  struct microcode_intel *mc,
 					  u32 *cur_rev)
 {
+	enum ucode_state result;
 	u32 rev;
 
 	if (!mc)
@@ -323,6 +326,10 @@ static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 
 	/* write microcode via MSR 0x79 */
 	native_wrmsrl(MSR_IA32_UCODE_WRITE, (unsigned long)mc->bits);
+
+	result = verify_update_result();
+	if (result != UCODE_OK)
+		return result;
 
 	rev = intel_get_microcode_revision();
 	if (rev != mc->hdr.rev)
@@ -697,6 +704,32 @@ static __init void setup_uniform_update(void)
 
 	microcode_intel_ops.use_uniform = true;
 	pr_info("Uniform update is enabled.\n");
+}
+
+static enum ucode_state verify_update_result(void)
+{
+	bool partial_err, auth_err;
+	unsigned int val[2];
+
+	/* The status MSR only comes with the feature */
+	if (!microcode_intel_ops.use_uniform)
+		return UCODE_OK;
+
+	native_rdmsr(MSR_IA32_MCU_STATUS, val[0], val[1]);
+	partial_err = val[0] & MCU_PARTIAL_UPDATE;
+	auth_err = val[0] & AUTH_FAIL_ON_MCU_COMPONENT;
+
+	if (!partial_err && !auth_err) {
+		/* No error state. Okay to proceed. */
+		return UCODE_OK;
+	} else if (partial_err) {
+		pr_err_once("Microcode load: fatal as partially updated (%s error).",
+			    auth_err ? "authentication" : "configuration");
+		return UCODE_FATAL;
+	} else {
+		pr_err_once("Microcode load: unknown status (IA32_MCU_STATUS=%x).", val[0]);
+		return UCODE_FATAL;
+	}
 }
 
 static __init void calc_llc_size_per_core(struct cpuinfo_x86 *c)
