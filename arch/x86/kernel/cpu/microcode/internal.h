@@ -19,6 +19,7 @@ enum ucode_state {
 	UCODE_ERROR,
 	UCODE_TIMEOUT,
 	UCODE_OFFLINE,
+	UCODE_FATAL,
 };
 
 struct microcode_ops {

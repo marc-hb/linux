@@ -342,9 +342,8 @@ static noinstr bool load_secondary_wait(unsigned int ctrl_cpu)
 	if (wait_for_ctrl())
 		return true;
 
-	instrumentation_begin();
-	panic("Microcode load: Primary CPU %d timed out\n", ctrl_cpu);
-	instrumentation_end();
+	raw_cpu_write(ucode_ctrl.result, UCODE_FATAL);
+	return false;
 }
 
 /*
@@ -357,9 +356,15 @@ static noinstr void load_secondary(unsigned int cpu)
 	enum ucode_state ret;
 
 	if (!load_secondary_wait(ctrl_cpu)) {
+		enum ucode_state result;
+
+		/* Primary thread complete. Allow to invoke instumentable code */
 		instrumentation_begin();
-		pr_err_once("load: %d CPUs timed out\n",
-			    atomic_read(&late_cpus_in) - 1);
+		result = raw_cpu_read(ucode_ctrl.result);
+		if (result == UCODE_TIMEOUT)
+			pr_err_once("load: %d CPUs timed out\n", atomic_read(&late_cpus_in) - 1);
+		else if (result == UCODE_FATAL)
+			pr_err_once("load: Primary CPU %d timed out\n", ctrl_cpu);
 		instrumentation_end();
 		return;
 	}
@@ -566,6 +571,7 @@ static int load_late_stop_cpus(bool is_safe)
 		case UCODE_TIMEOUT:	timedout++; break;
 		case UCODE_OK:		siblings++; break;
 		case UCODE_OFFLINE:	offline++; break;
+		case UCODE_FATAL:	panic("Microcode update fatal error\n");
 		default:		failed++; break;
 		}
 	}
