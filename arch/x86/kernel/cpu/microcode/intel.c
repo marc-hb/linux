@@ -400,26 +400,34 @@ static int __init save_builtin_microcode(void)
 early_initcall(save_builtin_microcode);
 
 /* Load microcode on BSP from initrd or builtin blobs */
-void __init load_ucode_intel_bsp(struct early_load_data *ed)
+enum ucode_state __init load_ucode_intel_bsp(struct early_load_data *ed)
 {
 	struct ucode_cpu_info uci;
+	enum ucode_state result;
 
 	uci.mc = get_microcode_blob(&uci, false);
 	ed->old_rev = uci.cpu_sig.rev;
 
-	if (uci.mc && apply_microcode_early(&uci) == UCODE_UPDATED) {
+	if (!uci.mc)
+		return UCODE_NFOUND;
+
+	result = apply_microcode_early(&uci);
+	if (result == UCODE_UPDATED) {
 		ucode_patch_va = UCODE_BSP_LOADED;
 		ed->new_rev = uci.cpu_sig.rev;
 	}
+	return result;
 }
 
-void load_ucode_intel_ap(void)
+enum ucode_state load_ucode_intel_ap(void)
 {
 	struct ucode_cpu_info uci;
 
 	uci.mc = ucode_patch_va;
 	if (uci.mc)
-		apply_microcode_early(&uci);
+		return apply_microcode_early(&uci);
+	else
+		return UCODE_NFOUND;
 }
 
 /* Reload microcode on resume */

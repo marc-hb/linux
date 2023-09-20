@@ -126,13 +126,13 @@ static inline void exit_amd_microcode(void) { }
 #endif /* !CONFIG_CPU_SUP_AMD */
 
 #ifdef CONFIG_CPU_SUP_INTEL
-void load_ucode_intel_bsp(struct early_load_data *ed);
-void load_ucode_intel_ap(void);
+enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed);
+enum ucode_state load_ucode_intel_ap(void);
 void reload_ucode_intel(void);
 struct microcode_ops *init_intel_microcode(void);
 #else /* CONFIG_CPU_SUP_INTEL */
-static inline void load_ucode_intel_bsp(struct early_load_data *ed) { }
-static inline void load_ucode_intel_ap(void) { }
+static inline enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed) { return UCODE_OK; }
+static inline enum ucode_state load_ucode_intel_ap(void) { return UCODE_OK; }
 static inline void reload_ucode_intel(void) { }
 static inline struct microcode_ops *init_intel_microcode(void) { return NULL; }
 #endif  /* !CONFIG_CPU_SUP_INTEL */

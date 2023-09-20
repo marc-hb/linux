@@ -44,6 +44,8 @@
 static struct microcode_ops	*microcode_ops;
 bool dis_ucode_ldr = true;
 
+static bool early_load_fatal;
+
 bool force_minrev = IS_ENABLED(CONFIG_MICROCODE_LATE_FORCE_MINREV);
 module_param(force_minrev, bool, S_IRUSR | S_IWUSR);
 
@@ -155,7 +157,7 @@ void __init load_ucode_bsp(void)
 		return;
 
 	if (intel)
-		load_ucode_intel_bsp(&early_data);
+		early_load_fatal |= load_ucode_intel_bsp(&early_data) == UCODE_FATAL;
 	else
 		load_ucode_amd_bsp(&early_data, cpuid_1_eax);
 }
@@ -164,7 +166,7 @@ void load_ucode_ap(void)
 {
 	unsigned int cpuid_1_eax;
 
-	if (dis_ucode_ldr)
+	if (dis_ucode_ldr || early_load_fatal)
 		return;
 
 	cpuid_1_eax = native_cpuid_eax(1);
@@ -172,7 +174,7 @@ void load_ucode_ap(void)
 	switch (x86_cpuid_vendor()) {
 	case X86_VENDOR_INTEL:
 		if (x86_family(cpuid_1_eax) >= 6)
-			load_ucode_intel_ap();
+			early_load_fatal |= load_ucode_intel_ap() == UCODE_FATAL;
 		break;
 	case X86_VENDOR_AMD:
 		if (x86_family(cpuid_1_eax) >= 0x10)
@@ -840,6 +842,9 @@ static int __init microcode_init(void)
 	struct device *dev_root;
 	struct cpuinfo_x86 *c = &boot_cpu_data;
 	int error;
+
+	if (early_load_fatal)
+		panic("Microcode update fatal error.\n");
 
 	if (dis_ucode_ldr)
 		return -EINVAL;
