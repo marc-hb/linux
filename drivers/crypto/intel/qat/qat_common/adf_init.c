@@ -181,6 +181,13 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 	struct service_hndl *service;
 	int ret;
 
+	if (hw_data->set_vc) {
+		dev_info(&GET_DEV(accel_dev),
+			 "Setting virtual channels for device qat_dev%d\n",
+			 accel_dev->accel_id);
+		hw_data->set_vc(accel_dev);
+	}
+
 	set_bit(ADF_STATUS_STARTING, &accel_dev->status);
 
 	if (adf_ae_start(accel_dev)) {

@@ -24,6 +24,7 @@
 #define ADF_C3XXXVF_DEVICE_NAME "c3xxxvf"
 #define ADF_4XXX_DEVICE_NAME "4xxx"
 #define ADF_420XX_DEVICE_NAME "420xx"
+#define ADF_6XXX_DEVICE_NAME "6xxx"
 #define ADF_4XXX_PCI_DEVICE_ID 0x4940
 #define ADF_4XXXIOV_PCI_DEVICE_ID 0x4941
 #define ADF_401XX_PCI_DEVICE_ID 0x4942
@@ -32,6 +33,8 @@
 #define ADF_402XXIOV_PCI_DEVICE_ID 0x4945
 #define ADF_420XX_PCI_DEVICE_ID 0x4946
 #define ADF_420XXIOV_PCI_DEVICE_ID 0x4947
+#define ADF_6XXX_PCI_DEVICE_ID 0x4948
+#define ADF_6XXXIOV_PCI_DEVICE_ID 0x4949
 #define ADF_DEVICE_FUSECTL_OFFSET 0x40
 #define ADF_DEVICE_LEGFUSE_OFFSET 0x4C
 #define ADF_DEVICE_FUSECTL_MASK 0x80000000
@@ -325,6 +328,7 @@ struct adf_hw_device_data {
 			       struct bank_state *state);
 	int (*bank_state_restore)(struct adf_accel_dev *accel_dev,
 				  u32 bank_number, struct bank_state *state);
+	int (*set_vc)(struct adf_accel_dev *accel_dev);
 	void (*reset_device)(struct adf_accel_dev *accel_dev);
 	void (*set_msix_rttable)(struct adf_accel_dev *accel_dev);
 	const char *(*uof_get_name)(struct adf_accel_dev *accel_dev, u32 obj_num);
@@ -350,6 +354,7 @@ struct adf_hw_device_data {
 	const char *fw_name;
 	const char *fw_mmp_name;
 	u32 fuses;
+	u32 fuse0;
 	u32 straps;
 	u32 accel_capabilities_mask;
 	u32 extended_dc_capabilities;
@@ -371,6 +376,7 @@ struct adf_hw_device_data {
 	u8 num_engines;
 	u32 num_hb_ctrs;
 	u8 num_rps;
+	bool no_crypto_instance;
 };
 
 /* CSR write macro */

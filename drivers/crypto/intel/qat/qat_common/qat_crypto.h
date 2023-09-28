@@ -55,6 +55,8 @@ static inline bool adf_hw_dev_has_crypto(struct adf_accel_dev *accel_dev)
 	struct adf_hw_device_data *hw_device = accel_dev->hw_device;
 	u32 mask = ~hw_device->accel_capabilities_mask;
 
+	if (hw_device->no_crypto_instance)
+		return false;
 	if (mask & ADF_ACCEL_CAPABILITIES_CRYPTO_SYMMETRIC)
 		return false;
 	if (mask & ADF_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC)

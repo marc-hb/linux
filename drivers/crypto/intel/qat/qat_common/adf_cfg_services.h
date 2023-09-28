@@ -7,7 +7,7 @@
 
 struct adf_accel_dev;
 
-#define MAX_NUM_CONCURR_SVC 2
+#define MAX_NUM_CONCURR_SVC 3
 
 enum adf_services {
 	SVC_ID_SYM = 0,
