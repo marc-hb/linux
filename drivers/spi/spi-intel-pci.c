@@ -40,6 +40,11 @@ static const struct intel_spi_boardinfo cnl_info = {
 	.set_writeable = intel_spi_pci_set_writeable,
 };
 
+static const struct intel_spi_boardinfo snr_info = {
+	.type = INTEL_SPI_SNR,
+	.set_writeable = intel_spi_pci_set_writeable,
+};
+
 static int intel_spi_pci_probe(struct pci_dev *pdev,
 			       const struct pci_device_id *id)
 {
@@ -62,7 +67,7 @@ static int intel_spi_pci_probe(struct pci_dev *pdev,
 static const struct pci_device_id intel_spi_pci_ids[] = {
 	{ PCI_VDEVICE(INTEL, 0x02a4), (unsigned long)&cnl_info },
 	{ PCI_VDEVICE(INTEL, 0x06a4), (unsigned long)&cnl_info },
-	{ PCI_VDEVICE(INTEL, 0x18e0), (unsigned long)&bxt_info },
+	{ PCI_VDEVICE(INTEL, 0x18e0), (unsigned long)&snr_info },
 	{ PCI_VDEVICE(INTEL, 0x19e0), (unsigned long)&bxt_info },
 	{ PCI_VDEVICE(INTEL, 0x1bca), (unsigned long)&bxt_info },
 	{ PCI_VDEVICE(INTEL, 0x34a4), (unsigned long)&cnl_info },
