@@ -8786,6 +8786,12 @@ __init int vmx_hardware_setup(void)
 
 	setup_default_sgx_lepubkeyhash();
 
+	/*
+	 * VMX CPU capabilities are required to setup the VMX basic MSR for
+	 * nested, so this must be done before nested_vmx_setup_ctls_msrs().
+	 */
+	vmx_set_cpu_caps();
+
 	if (nested) {
 		nested_vmx_setup_ctls_msrs(&vmcs_config, vmx_capability.ept);
 
@@ -8793,8 +8799,6 @@ __init int vmx_hardware_setup(void)
 		if (r)
 			return r;
 	}
-
-	vmx_set_cpu_caps();
 
 	r = alloc_kvm_area();
 	if (r && nested)
