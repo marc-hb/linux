@@ -117,6 +117,31 @@ hpt_set_pte_ppi(struct hpt_pte *pte, int offset, u64 value)
 	}
 }
 
+/* Return the number of pages that a HPT table entry could cover. */
+static inline unsigned long long hpt_level_to_entry_coverage(int level)
+{
+	unsigned long long coverage = 0;
+
+	switch (level) {
+	case HPTL1:
+		coverage = SZ_128K;
+		break;
+	case HPTL2:
+		coverage = SZ_32M;
+		break;
+	case HPTL3:
+		coverage = SZ_8G;
+		break;
+	case HPTL4:
+		coverage = SZ_1T * 2;
+		break;
+	default:
+		break;
+	}
+
+	return coverage >> VTD_PAGE_SHIFT;
+}
+
 struct hpt_table *intel_sats_alloc_hpt_table(struct dmar_domain *domain);
 void intel_sats_free_hpt_table(struct hpt_table *hpt_table);
 int intel_sats_map_hpt(struct hpt_table *hpt_table,
