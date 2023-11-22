@@ -316,6 +316,8 @@ struct x86_pmu_capability {
 	int		bit_width_fixed;
 	unsigned int	events_mask;
 	int		events_mask_len;
+	u64		events_mask_ext;
+	u64		config_mask;
 	unsigned int    extra_msrs[X86_MAX_NR_EXTRA_MSRS];
 	int		num_extra_msrs;
 	unsigned int	pebs_ept	:1;
