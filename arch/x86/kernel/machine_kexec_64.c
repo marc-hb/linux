@@ -349,6 +349,7 @@ void __nocfi machine_kexec(struct kimage *image)
 	unsigned int host_mem_enc_active;
 	int save_ftrace_enabled;
 	void *control_page;
+	unsigned long cr4;
 
 	/*
 	 * This must be done before load_segments() since if call depth tracking
@@ -366,7 +367,15 @@ void __nocfi machine_kexec(struct kimage *image)
 	/* Interrupts aren't acceptable while we reboot */
 	local_irq_disable();
 	hw_breakpoint_disable();
-	cet_disable();
+
+	/*
+	 * Toggle off CET, SMEP, SMAP, LASS any of which could trigger
+	 * a GPF after the jump.  Don't use cr4_clear_bits_irqsoff()
+	 * because these bits are pinned after init.
+	 */
+	cr4 = cr4_read_shadow();
+	cr4 &= ~(X86_CR4_SMEP | X86_CR4_SMAP | X86_CR4_CET | X86_CR4_LASS);
+	asm volatile("mov %0,%%cr4": "+r" (cr4) : : "memory");
 
 	if (image->preserve_context) {
 #ifdef CONFIG_X86_IO_APIC
