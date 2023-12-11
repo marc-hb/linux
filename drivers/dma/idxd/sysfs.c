@@ -1711,6 +1711,33 @@ static ssize_t event_log_size_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(event_log_size);
 
+static ssize_t dsacap0_show(struct device *dev,
+			    struct device_attribute *attr, char *buf)
+{
+	struct idxd_device *idxd = confdev_to_idxd(dev);
+
+	return sysfs_emit(buf, "%#llx\n", idxd->hw.dsacap0.bits);
+}
+static DEVICE_ATTR_RO(dsacap0);
+
+static ssize_t dsacap1_show(struct device *dev,
+			    struct device_attribute *attr, char *buf)
+{
+	struct idxd_device *idxd = confdev_to_idxd(dev);
+
+	return sysfs_emit(buf, "%#llx\n", idxd->hw.dsacap1.bits);
+}
+static DEVICE_ATTR_RO(dsacap1);
+
+static ssize_t dsacap2_show(struct device *dev,
+			    struct device_attribute *attr, char *buf)
+{
+	struct idxd_device *idxd = confdev_to_idxd(dev);
+
+	return sysfs_emit(buf, "%#llx\n", idxd->hw.dsacap2.bits);
+}
+static DEVICE_ATTR_RO(dsacap2);
+
 static bool idxd_device_attr_max_batch_size_invisible(struct attribute *attr,
 						      struct idxd_device *idxd)
 {
@@ -1748,6 +1775,30 @@ static bool idxd_device_attr_event_log_size_invisible(struct attribute *attr,
 		!idxd->hw.gen_cap.evl_support);
 }
 
+static bool idxd_device_attr_dsacap0_invisible(struct attribute *attr,
+					       struct idxd_device *idxd)
+{
+	return attr == &dev_attr_dsacap0.attr &&
+		(idxd->data->type != IDXD_TYPE_DSA ||
+		idxd->hw.version < DEVICE_VERSION_3);
+}
+
+static bool idxd_device_attr_dsacap1_invisible(struct attribute *attr,
+					       struct idxd_device *idxd)
+{
+	return attr == &dev_attr_dsacap1.attr &&
+		(idxd->data->type != IDXD_TYPE_DSA ||
+		idxd->hw.version < DEVICE_VERSION_3);
+}
+
+static bool idxd_device_attr_dsacap2_invisible(struct attribute *attr,
+					       struct idxd_device *idxd)
+{
+	return attr == &dev_attr_dsacap2.attr &&
+		(idxd->data->type != IDXD_TYPE_DSA ||
+		idxd->hw.version < DEVICE_VERSION_3);
+}
+
 static umode_t idxd_device_attr_visible(struct kobject *kobj,
 					struct attribute *attr, int n)
 {
@@ -1764,6 +1815,15 @@ static umode_t idxd_device_attr_visible(struct kobject *kobj,
 		return 0;
 
 	if (idxd_device_attr_event_log_size_invisible(attr, idxd))
+		return 0;
+
+	if (idxd_device_attr_dsacap0_invisible(attr, idxd))
+		return 0;
+
+	if (idxd_device_attr_dsacap1_invisible(attr, idxd))
+		return 0;
+
+	if (idxd_device_attr_dsacap2_invisible(attr, idxd))
 		return 0;
 
 	return attr->mode;
@@ -1793,6 +1853,9 @@ static struct attribute *idxd_device_attributes[] = {
 	&dev_attr_cmd_status.attr,
 	&dev_attr_iaa_cap.attr,
 	&dev_attr_event_log_size.attr,
+	&dev_attr_dsacap0.attr,
+	&dev_attr_dsacap1.attr,
+	&dev_attr_dsacap2.attr,
 	NULL,
 };
 

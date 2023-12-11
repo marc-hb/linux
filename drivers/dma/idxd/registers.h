@@ -13,6 +13,7 @@
 
 #define DEVICE_VERSION_1		0x100
 #define DEVICE_VERSION_2		0x200
+#define DEVICE_VERSION_3		0x300
 
 #define IDXD_MMIO_BAR		0
 #define IDXD_WQ_BAR		2
@@ -578,6 +579,48 @@ union evl_status_reg {
 	struct {
 		u32 bits_lower32;
 		u32 bits_upper32;
+	};
+	u64 bits;
+} __packed;
+
+#define IDXD_DSACAP0_OFFSET		0x180
+union dsacap0_reg {
+	struct {
+		u64 max_sgl_shift:4;
+		u64 max_gr_block_shift:4;
+		u64 ops_inter_domain:7;
+		u64 rsvd1:17;
+		u64 sgl_formats:16;
+		u64 max_sg_process:8;
+		u64 rsvd2:8;
+	};
+	u64 bits;
+} __packed;
+
+#define IDXD_DSACAP1_OFFSET		0x188
+union dsacap1_reg {
+	struct {
+		u64 data_types:16;
+		u64 fp_type_up_conv:16;
+		u64 fp_type_down_conv:16;
+		u64 compute_ops:16;
+	};
+	u64 bits;
+} __packed;
+
+#define IDXD_DSACAP2_OFFSET		0x190
+union dsacap2_reg {
+	struct {
+		u64 src_operand_negation:1;
+		u64 rsvd1:1;
+		u64 flush_to_zero:1;
+		u64 denormal_as_zero:1;
+		u64 rsvd2:3;
+		u64 signed_int:1;
+		u64 saturate_int_ret:1;
+		u64 rsvd3:3;
+		u64 rounding_type:8;
+		u64 rsvd4:44;
 	};
 	u64 bits;
 } __packed;
