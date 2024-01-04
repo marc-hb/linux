@@ -45,6 +45,7 @@ intel_qat-objs := adf_cfg.o \
 intel_qat-$(CONFIG_DEBUG_FS) += adf_transport_debug.o \
 				adf_fw_counters.o \
 				adf_cnv_dbgfs.o \
+				adf_pm_debugfs.o \
 				adf_gen4_pm_debugfs.o \
 				adf_gen4_tl.o \
 				adf_heartbeat.o \
