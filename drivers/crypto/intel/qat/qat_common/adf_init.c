@@ -10,6 +10,7 @@
 #include "adf_dbgfs.h"
 #include "adf_heartbeat.h"
 #include "adf_rl.h"
+#include "adf_sysfs_anti_rb.h"
 #include "adf_sysfs_ras_counters.h"
 #include "adf_telemetry.h"
 
@@ -274,6 +275,7 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 
 	adf_dbgfs_add(accel_dev);
 	adf_sysfs_start_ras(accel_dev);
+	adf_sysfs_anti_rb_add(accel_dev);
 
 	return 0;
 }
@@ -307,6 +309,7 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 		hw_data->stop_ras_timer(accel_dev);
 
 	adf_sysfs_stop_ras(accel_dev);
+	adf_sysfs_anti_rb_rm(accel_dev);
 
 	clear_bit(ADF_STATUS_STARTING, &accel_dev->status);
 	clear_bit(ADF_STATUS_STARTED, &accel_dev->status);

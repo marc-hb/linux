@@ -1,0 +1,109 @@
+What:		/sys/bus/pci/devices/<BDF>/qat_svn/enforced_min
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RO) This attribute provides information about the enforced minimum supported
+		Secure Version Number (SVN) for the Anti-Rollback (ARB) feature.
+		Enforced refers to SVN stored in another hardware component and is ephemeral.
+
+		The Anti-Rollback feature prevents downgrades to older firmware versions
+		on the Acceleration Device. This read-only attribute allows users to
+		query the minimum supported SVN. When reading the file, anticipate a
+		non-zero integer as the result.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_svn/enforced_min
+			2
+
+		This attribute is only available for devices that support the
+		Anti-Rollback (ARB) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_svn/permanent_min
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RO) This attribute provides information about the minimum supported
+		Secure Version Number (SVN) for the Anti-Rollback (ARB) feature.
+		Permanent refers to stored SVN and is persistent across reboots.
+
+		The Anti-Rollback feature prevents downgrades to older firmware versions
+		on the Acceleration Device. This read-only attribute allows users to
+		query the minimum supported SVN. When reading the file, anticipate a
+		non-zero integer as the result.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_svn/permanent_min
+			3
+
+		This attribute is only available for devices that support the
+		Anti-Rollback (ARB) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_svn/active
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RO) This attribute provides information about the currently active
+		Secure Version Number (SVN) for the Anti-Rollback (ARB) feature.
+
+		The Anti-Rollback feature prevents downgrades to older firmware versions
+		on the Acceleration Device. This read-only attribute allows users to
+		query the SVN of the currently active firmware. When reading the file,
+                anticipate a non-zero integer as the result.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_svn/active
+			2
+
+		This attribute is only available for devices that support the
+		Anti-Rollback (ARB) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_svn/commit
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(WO) This attribute allows users to trigger the commit operation for
+		the Anti-Rollback (ARB) feature on the Acceleration Device.
+
+		The Anti-Rollback feature commits the currently active firmware SVN as the
+		authorized version, preventing future downgrades to firmware with a
+		lower SVN. Depending on configuration of ARB the commit action can be
+		ephemeral or persistent.
+
+		Before committing the SVN update, it is crucial to check the current values
+		of Active SVN (`active`) Enforced Min SVN (`enforced_min`) and Permanent
+		MIN SVN (`permanent_min`). This verification helps ensure that the commit
+		operation aligns with the intended outcome.
+
+		While writing to the file, any value other than '1' will result in an error.
+		Therefore, it is advisable to use this attribute with caution, only when it
+		is necessary to commit firmware SVN.
+
+		Example usage::
+
+ 			## Steps
+ 			## 1. Check current values of enforced_min, permanent_min and active SVN.
+ 			# cat /sys/bus/pci/devices/<BDF>/qat_svn/enforced_min
+ 			2
+ 			# cat /sys/bus/pci/devices/<BDF>/qat_svn/permanent_min
+ 			2
+ 			# cat /sys/bus/pci/devices/<BDF>/qat_svn/active
+ 			3
+
+			## 2. Start commit operation
+			# echo 1 > /sys/bus/pci/devices/<BDF>/qat_svn/commit
+	 		## 3. Check updated values of enforced_min and permanent_min
+ 			# cat /sys/bus/pci/devices/<BDF>/qat_svn/enforced_min
+ 			3
+ 			## This will only be updated if ARB is configured as persistent
+ 			# cat /sys/bus/pci/devices/<BDF>/qat_svn/permanent_min
+ 			3
+
+		This attribute is only available for devices that support the
+		Anti-Rollback (ARB) feature.
