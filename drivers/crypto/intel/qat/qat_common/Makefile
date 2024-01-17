@@ -19,6 +19,7 @@ intel_qat-objs := adf_cfg.o \
 	adf_ras.o \
 	adf_timer.o \
 	adf_gen2_hw_csr_data.o \
+	adf_sysfs_anti_rb.o \
 	adf_gen2_hw_data.o \
 	adf_gen2_config.o \
 	adf_gen4_config.o \
@@ -32,6 +33,7 @@ intel_qat-objs := adf_cfg.o \
 	adf_gen6_shared.o \
 	adf_clock.o \
 	adf_mstate_mgr.o \
+	adf_anti_rb.o \
 	qat_crypto.o \
 	qat_compression.o \
 	qat_comp_algs.o \

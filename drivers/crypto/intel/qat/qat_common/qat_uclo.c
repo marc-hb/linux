@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 #include <linux/pci_ids.h>
 #include "adf_accel_devices.h"
+#include "adf_anti_rb.h"
 #include "adf_common_drv.h"
 #include "icp_qat_uclo.h"
 #include "icp_qat_hal.h"
@@ -1266,8 +1267,16 @@ static int qat_uclo_auth_fw(struct icp_qat_fw_loader_handle *handle,
 	do {
 		msleep(FW_AUTH_WAIT_PERIOD);
 		fcu_sts = GET_CAP_CSR(handle, fcu_sts_csr);
-		if ((fcu_sts & FCU_AUTH_STS_MASK) == FCU_STS_VERI_FAIL)
-			goto auth_fail;
+		if ((fcu_sts & FCU_AUTH_STS_MASK) == FCU_STS_VERI_FAIL) {
+			if (adf_anti_rb_check(handle->pci_dev) ==
+			    ADF_SVN_RETRY_STS) {
+				SET_CAP_CSR(handle, fcu_ctl_csr,
+					    FCU_CTRL_CMD_AUTH);
+				continue;
+			} else {
+				goto auth_fail;
+			}
+		}
 		if (((fcu_sts >> FCU_STS_AUTHFWLD_POS) & 0x1))
 			if ((fcu_sts & FCU_AUTH_STS_MASK) == FCU_STS_VERI_DONE)
 				return 0;

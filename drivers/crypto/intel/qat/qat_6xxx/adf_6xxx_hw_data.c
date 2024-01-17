@@ -466,6 +466,23 @@ static int reset_ring_pair(void __iomem *csr, u32 bank_number)
 	return ret;
 }
 
+static inline bool adf_anti_rb_enabled(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	if (hw_data->fuse0 & ADF_GEN6_FUSE_ANTI_RB)
+		return true;
+	return false;
+}
+
+static void adf_gen6_init_anti_rb(struct adf_anti_rb_hw_data *anti_rb_data)
+{
+	anti_rb_data->anti_rb_enabled = adf_anti_rb_enabled;
+	anti_rb_data->svncheck_offset = ADF_GEN6_SVNCHECK_CSR_MSG;
+	anti_rb_data->svncheck_retry = 0;
+	anti_rb_data->sysfs_added = false;
+}
+
 static int adf_gen6_ring_pair_reset(struct adf_accel_dev *accel_dev, u32 bank_number)
 {
 	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
@@ -968,6 +985,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	adf_gen6_set_err_mask(&hw_data->dev_err_mask);
 	adf_gen6_init_tl_data(&hw_data->tl_data);
 	adf_gen6_init_rl_data(&hw_data->rl_data);
+	adf_gen6_init_anti_rb(&hw_data->anti_rb_data);
 }
 
 void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)

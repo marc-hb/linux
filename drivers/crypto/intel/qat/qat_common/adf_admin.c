@@ -6,6 +6,8 @@
 #include <linux/iopoll.h>
 #include <linux/pci.h>
 #include <linux/dma-mapping.h>
+#include <linux/delay.h>
+#include "adf_anti_rb.h"
 #include "adf_accel_devices.h"
 #include "adf_admin.h"
 #include "adf_common_drv.h"
@@ -533,6 +535,72 @@ int adf_send_admin_tl_stop(struct adf_accel_dev *accel_dev)
 	req.cmd_id = ICP_QAT_FW_TL_STOP;
 
 	return adf_send_admin(accel_dev, &req, &resp, ae_mask);
+}
+
+int adf_admin_query_anti_rb(struct adf_accel_dev *accel_dev,
+			    enum anti_rb command, u8 *svn)
+{
+	u32 admin_ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {};
+	struct icp_qat_fw_init_admin_req req = {};
+	int ret, retry = ADF_SVN_RETRY_MAX;
+
+	req.cmd_id = ICP_QAT_FW_SVN_READ;
+
+	do {
+		ret = adf_send_admin(accel_dev, &req, &resp, admin_ae_mask);
+		if (!ret)
+			break;
+		else if (resp.status != ICP_QAT_FW_INIT_RESP_STATUS_RETRY)
+			return ret;
+		msleep(ADF_SVN_RETRY_MS);
+	} while (--retry);
+
+	if (!retry)
+		return -ETIMEDOUT;
+
+	switch (command) {
+	case ENFORCED_MIN_SVN:
+		*svn = resp.enforced_min_svn;
+		break;
+	case PERMANENT_MIN_SVN:
+		*svn = resp.permanent_min_svn;
+		break;
+	case ACTIVE_SVN:
+		*svn = resp.active_svn;
+		break;
+	default:
+		*svn = 0;
+		dev_err(&GET_DEV(accel_dev),
+			"Unknown Secure version number request\n");
+		break;
+	}
+
+	return ret;
+}
+
+int adf_admin_commit_anti_rb(struct adf_accel_dev *accel_dev)
+{
+	u32 admin_ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {};
+	struct icp_qat_fw_init_admin_req req = {};
+	int ret, retry = 0;
+
+	req.cmd_id = ICP_QAT_FW_SVN_COMMIT;
+
+	do {
+		ret = adf_send_admin(accel_dev, &req, &resp, admin_ae_mask);
+		if (!ret)
+			break;
+		else if (resp.status != ICP_QAT_FW_INIT_RESP_STATUS_RETRY)
+			return ret;
+		msleep(ADF_SVN_RETRY_MS);
+	} while (++retry < ADF_SVN_RETRY_MAX);
+
+	if (retry == ADF_SVN_RETRY_MAX)
+		ret = -ETIMEDOUT;
+
+	return ret;
 }
 
 int adf_init_admin_comms(struct adf_accel_dev *accel_dev)
