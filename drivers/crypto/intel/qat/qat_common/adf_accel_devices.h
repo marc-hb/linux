@@ -527,5 +527,6 @@ struct adf_accel_dev {
 	bool is_vf;
 	bool autoreset_on_error;
 	u32 accel_id;
+	struct dentry *hw_version_dbgfile;
 };
 #endif
