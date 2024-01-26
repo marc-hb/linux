@@ -31,6 +31,7 @@ enum icp_qat_fw_init_admin_cmd_id {
 	ICP_QAT_FW_RL_REMOVE = 136,
 	ICP_QAT_FW_TL_START = 137,
 	ICP_QAT_FW_TL_STOP = 138,
+	ICP_QAT_FW_KPT_ENABLE = 144,
 	ICP_QAT_FW_SVN_READ = 146,
 	ICP_QAT_FW_SVN_COMMIT = 147,
 };

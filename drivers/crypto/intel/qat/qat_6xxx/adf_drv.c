@@ -15,6 +15,7 @@
 
 #include "adf_gen6_shared.h"
 #include "adf_6xxx_hw_data.h"
+#include "adf_sysfs_kpt.h"
 
 #define SRAM_BAR_INDEX		0
 #define PMISC_BAR_INDEX		2

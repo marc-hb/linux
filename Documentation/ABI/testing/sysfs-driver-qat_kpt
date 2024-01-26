@@ -1,0 +1,89 @@
+What:		/sys/bus/pci/devices/<BDF>/qat_kpt/enable
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RW) This attribute can enable KPT by writing a 1 to attribute file enable
+		or disable KPT by writing a 0.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_kpt/enable
+			1
+			# echo 1 > /sys/bus/pci/devices/<BDF>/qat_kpt/enable
+
+		This attribute is only available for devices that support the
+		Key Protection Technology (KPT) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_fn
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RW) This attribute can configure the maximum KPT Symmetric Wrapping Key
+		count which ranges from 0 to 128 per Virtual Function (VF)
+		can associate by writing value to attribute file swk_cnt_per_fn, or read
+		the value from the attribute file. If the configuration value is 0,
+		it means no limitation.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_fn
+			128
+			# echo 128 > /sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_fn
+
+		This attribute is only available for devices that support the
+		Key Protection Technology (KPT) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_pasid
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RW) This attribute can configure the maximum KPT SWK count which ranges
+		from 0 to 128 per Process Address Space ID (PASID) can associate by
+		writing value to attribute file swk_cnt_per_pasid, or read the value from
+		the attribute file. If the configuration value is 0, it means no limitation..
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_pasid
+			128
+			# echo 128 > /sys/bus/pci/devices/<BDF>/qat_kpt/swk_cnt_per_pasid
+
+		This attribute is only available for devices that support the
+		Key Protection Technology (KPT) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_kpt/swk_max_ttl
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RW) This attribute can configure the maximum KPT SWK Time To Live (TTL)
+		value which ranges from 0 to 31536000 by writing value to attribute file
+		swk_max_ttl, or read the value from the attribute file.
+		If the configuration value is 0, it means SWK TTL is eternal.
+
+		Example usage::
+			# cat /sys/bus/pci/devices/<BDF>/qat_kpt/swk_max_ttl
+			1000
+			# echo 1000 > /sys/bus/pci/devices/<BDF>/qat_kpt/swk_max_ttl
+
+		This attribute is only available for devices that support the
+		Key Protection Technology (KPT) feature.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_kpt/swk_shared
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RW) This attribute can configure KPT SWK to be in Shared mode by writing
+		a 1 to attribute file swk_shared or None-Shared mode by writing a 0.
+
+		Example usage::
+			# cat /sys/bus/pci/devices/<BDF>/qat_kpt/swk_shared
+			0
+			# echo 1 > /sys/bus/pci/devices/<BDF>/qat_kpt/swk_shared
+
+		This attribute is only available for devices that support the
+		Key Protection Technology (KPT) feature.

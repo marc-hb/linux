@@ -26,12 +26,14 @@ intel_qat-y := adf_accel_engine.o \
 	adf_hw_arbiter.o \
 	adf_init.o \
 	adf_isr.o \
+	adf_kpt.o \
 	adf_mstate_mgr.o \
 	adf_ras.o \
 	adf_rl_admin.o \
 	adf_rl.o \
 	adf_sysfs.o \
 	adf_sysfs_anti_rb.o \
+	adf_sysfs_kpt.o \
 	adf_sysfs_ras_counters.o \
 	adf_sysfs_rl.o \
 	adf_timer.o \
