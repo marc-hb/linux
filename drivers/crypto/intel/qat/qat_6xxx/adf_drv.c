@@ -11,6 +11,7 @@
 
 #include "adf_gen6_shared.h"
 #include "adf_6xxx_hw_data.h"
+#include "adf_sysfs_kpt.h"
 
 static const struct pci_device_id adf_pci_tbl[] = {
 	{ PCI_VDEVICE(INTEL, ADF_6XXX_PCI_DEVICE_ID), },

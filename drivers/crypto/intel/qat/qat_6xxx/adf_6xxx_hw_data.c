@@ -871,6 +871,34 @@ static int adf_init_device(struct adf_accel_dev *accel_dev)
 	return ret;
 }
 
+static bool adf_kpt_capable(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	if (hw_data->fuse0 & ADF_6XXX_FUSE_KPT)
+		return false;
+	else
+		return true;
+}
+
+static void adf_gen6_init_kpt(struct adf_kpt_hw_data *kpt_data)
+{
+	kpt_data->cfg_max_swk_cnt_per_fn_pasid = ADF_6XXX_KPT_MAX_SWK_COUNT_PER_FNPASID;
+	kpt_data->cfg_max_swk_ttl = ADF_6XXX_KPT_MAX_SWK_TTL;
+
+	/*
+	 * In KPT mode, keep KPT related capabilities only
+	 */
+	kpt_data->kpt_mode_dev_cap = ICP_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC |
+				     ICP_ACCEL_CAPABILITIES_KPT;
+	kpt_data->sysfs_added = false;
+	kpt_data->user_input.enable = ADF_6XXX_KPT_DEFAULT_ENABLEMENT;
+	kpt_data->user_input.swk_shared = ADF_6XXX_KPT_DEFAULT_SWK_SHARED_MODE;
+	kpt_data->user_input.swk_max_ttl = ADF_6XXX_KPT_DEFAULT_SWK_TTL;
+	kpt_data->user_input.swk_cnt_per_fn = ADF_6XXX_KPT_DEFAULT_SWK_CNT_PER_FN;
+	kpt_data->user_input.swk_cnt_per_pasid = ADF_6XXX_KPT_DEFAULT_SWK_CNT_PER_PASID;
+}
+
 static void adf_gen6_set_err_mask(struct adf_dev_err_mask *err_mask)
 {
 	err_mask->cppagentcmdpar_mask = ADF_6XXX_HICPPAGENTCMDPARERRLOG_MASK;
@@ -976,6 +1004,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
 	hw_data->set_crypto_cap = adf_gen6_set_crypto_cap;
+	hw_data->kpt_capable = adf_kpt_capable;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);
@@ -986,6 +1015,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	adf_gen6_init_tl_data(&hw_data->tl_data);
 	adf_gen6_init_rl_data(&hw_data->rl_data);
 	adf_gen6_init_anti_rb(&hw_data->anti_rb_data);
+	adf_gen6_init_kpt(&hw_data->kpt_data);
 }
 
 void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)

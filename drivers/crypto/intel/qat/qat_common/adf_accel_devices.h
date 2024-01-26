@@ -12,6 +12,7 @@
 #include <linux/qat/qat_mig_dev.h>
 #include "adf_anti_rb.h"
 #include "adf_cfg_common.h"
+#include "adf_kpt.h"
 #include "adf_rl.h"
 #include "adf_telemetry.h"
 #include "adf_pfvf_msg.h"
@@ -352,6 +353,7 @@ struct adf_hw_device_data {
 	void (*set_cmdq_cnt)(struct adf_accel_dev *accel_dev);
 	int (*get_rl_sla_val)(struct adf_accel_dev *accel_dev, u32 bank_num,
 			      u32 *sla_val, u32 msg_type);
+	bool (*kpt_capable)(struct adf_accel_dev *accel_dev);
 	struct adf_pfvf_ops pfvf_ops;
 	struct adf_hw_csr_ops csr_ops;
 	struct adf_dc_ops dc_ops;
@@ -360,6 +362,7 @@ struct adf_hw_device_data {
 	struct adf_rl_hw_data rl_data;
 	struct adf_tl_hw_data tl_data;
 	struct adf_anti_rb_hw_data anti_rb_data;
+	struct adf_kpt_hw_data kpt_data;
 	struct qat_migdev_ops vfmig_ops;
 	const char *fw_name;
 	const char *fw_mmp_name;

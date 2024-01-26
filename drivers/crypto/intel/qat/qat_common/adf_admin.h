@@ -30,5 +30,6 @@ int adf_send_admin_tl_start(struct adf_accel_dev *accel_dev,
 int adf_send_admin_tl_stop(struct adf_accel_dev *accel_dev);
 int adf_admin_query_anti_rb(struct adf_accel_dev *accel_dev, enum anti_rb, u8 *svn);
 int adf_admin_commit_anti_rb(struct adf_accel_dev *accel_dev);
+int adf_init_admin_kpt(struct adf_accel_dev *accel_dev, dma_addr_t init_ptr, u16 init_sz);
 
 #endif

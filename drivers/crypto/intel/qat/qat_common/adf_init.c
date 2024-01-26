@@ -223,6 +223,12 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 		return -EFAULT;
 	}
 
+	/* Enable Key Protection Technology (KPT) */
+	if (adf_enable_kpt(accel_dev)) {
+		dev_err(&GET_DEV(accel_dev), "Failed to enable KPT\n");
+		return -EFAULT;
+	}
+
 	if (hw_data->start_timer) {
 		ret = hw_data->start_timer(accel_dev);
 		if (ret) {
@@ -348,6 +354,8 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 
 	if (hw_data->stop_ras_timer)
 		hw_data->stop_ras_timer(accel_dev);
+
+	adf_disable_kpt(accel_dev);
 
 	if (wait)
 		msleep(100);

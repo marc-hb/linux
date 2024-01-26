@@ -603,6 +603,31 @@ int adf_admin_commit_anti_rb(struct adf_accel_dev *accel_dev)
 	return ret;
 }
 
+int adf_init_admin_kpt(struct adf_accel_dev *accel_dev, dma_addr_t init_ptr, u16 init_sz)
+{
+	u32 ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {0};
+	struct icp_qat_fw_init_admin_req req = {0};
+	int ret;
+
+	if (!accel_dev->admin) {
+		dev_err(&GET_DEV(accel_dev), "adf_admin is not available\n");
+		return -EFAULT;
+	}
+
+	req.cmd_id = ICP_QAT_FW_KPT_ENABLE;
+	req.init_cfg_ptr = init_ptr;
+	req.init_cfg_sz = init_sz;
+
+	ret = adf_send_admin(accel_dev, &req, &resp, ae_mask);
+	if (ret) {
+		dev_err(&GET_DEV(accel_dev),
+			"Failed to enable KPT status: %d",
+			resp.status);
+	}
+	return ret;
+}
+
 int adf_init_admin_comms(struct adf_accel_dev *accel_dev)
 {
 	struct adf_admin_comms *admin;

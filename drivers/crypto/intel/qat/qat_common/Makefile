@@ -43,6 +43,8 @@ intel_qat-objs := adf_cfg.o \
 	adf_rl.o \
 	adf_rl_admin.o \
 	adf_sysfs_rl.o \
+	adf_kpt.o \
+	adf_sysfs_kpt.o \
 	qat_uclo.o \
 	qat_hal.o \
 	qat_bl.o \
