@@ -7849,6 +7849,14 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 		vmcs_set_secondary_exec_control(vmx,
 						vmx_secondary_exec_control(vmx));
 
+	if (cpu_has_tertiary_exec_ctrls() && cpu_has_vmx_avx10_256()) {
+		if (guest_cpu_cap_has(vcpu, X86_FEATURE_AVX10) &&
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_AVX10_512))
+			tertiary_exec_controls_setbit(vmx, TERTIARY_EXEC_AVX10_256);
+		else
+			tertiary_exec_controls_clearbit(vmx, TERTIARY_EXEC_AVX10_256);
+	}
+
 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
 		vmx->msr_ia32_feature_control_valid_bits |=
 			FEAT_CTL_VMX_ENABLED_INSIDE_SMX |
