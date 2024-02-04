@@ -18,6 +18,8 @@
 
 #define	HPT_ENTRIES		(256)
 
+extern int sats_hpte_dis_read, sats_hpte_dis_write;
+
 enum hpt_level {
 	HPTL1	= 1,
 	HPTL2,
