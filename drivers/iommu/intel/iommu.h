@@ -782,7 +782,7 @@ struct device_domain_info {
 	u8 bus;			/* PCI bus number */
 	u8 devfn;		/* PCI devfn number */
 	u16 pfsid;		/* SRIOV physical function source ID */
-	u8 pasid_supported:3;
+	u8 pasid_supported:4;
 	u8 pasid_enabled:1;
 	u8 pri_supported:1;
 	u8 pri_enabled:1;
@@ -1027,6 +1027,9 @@ static inline void context_set_domain_id(struct context_entry *context,
 static inline void context_set_pasid(struct context_entry *context)
 {
 	context->lo |= CONTEXT_PASIDE;
+
+	/* EPTR (bit 6): Translated requests with PASID are allowed. */
+	context->lo |= BIT_ULL(6);
 }
 
 static inline int context_domain_id(struct context_entry *c)
