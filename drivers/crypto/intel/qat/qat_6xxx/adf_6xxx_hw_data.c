@@ -23,6 +23,7 @@
 #include "adf_6xxx_hw_data.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw_51_comp.h"
+#include "qat_crypto.h"
 
 #define RP_GROUP_0_MASK		(BIT(0) | BIT(2))
 #define RP_GROUP_1_MASK		(BIT(1) | BIT(3))
@@ -636,6 +637,15 @@ static int adf_gen6_set_vc(struct adf_accel_dev *accel_dev)
 	return set_vc_config(accel_dev);
 }
 
+static void adf_gen6_set_crypto_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->crypto_cipher_caps = AES_XTS | AES_CTR;
+	hw_data->crypto_aead_caps = 0;
+	hw_data->aes_192_fallback = true;
+}
+
 static u32 get_ae_mask(struct adf_hw_device_data *self)
 {
 	unsigned long fuses = self->fuses[ADF_FUSECTL4];
@@ -827,6 +837,9 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 		return ret;
 
 	switch (adf_get_service_enabled(accel_dev)) {
+	case SVC_SYM_ASYM:
+		ret = adf_gen6_crypto_dev_config(accel_dev);
+		break;
 	case SVC_DC:
 	case SVC_DCC:
 	case SVC_DC | SVC_DECOMP:
@@ -948,6 +961,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
+	hw_data->set_crypto_cap = adf_gen6_set_crypto_cap;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);

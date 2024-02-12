@@ -14,4 +14,5 @@ int adf_gen6_cfg_dev_init(struct adf_accel_dev *accel_dev);
 int adf_gen6_comp_dev_config(struct adf_accel_dev *accel_dev);
 int adf_gen6_no_dev_config(struct adf_accel_dev *accel_dev);
 void adf_gen6_init_vf_mig_ops(struct qat_migdev_ops *vfmig_ops);
+int adf_gen6_crypto_dev_config(struct adf_accel_dev *accel_dev);
 #endif/* ADF_GEN6_SHARED_H_ */

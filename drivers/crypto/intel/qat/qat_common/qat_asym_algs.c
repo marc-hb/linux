@@ -527,7 +527,7 @@ static int qat_dh_init_tfm(struct crypto_kpp *tfm)
 {
 	struct qat_dh_ctx *ctx = kpp_tfm_ctx(tfm);
 	struct qat_crypto_instance *inst =
-			qat_crypto_get_instance_node(numa_node_id());
+			qat_crypto_get_instance_node(numa_node_id(), 0, ASYM_PKE);
 	const char *alg = kpp_alg_name(tfm);
 	unsigned int reqsize;
 
@@ -1278,7 +1278,7 @@ static int qat_rsa_init_tfm(struct crypto_akcipher *tfm)
 {
 	struct qat_rsa_ctx *ctx = akcipher_tfm_ctx(tfm);
 	struct qat_crypto_instance *inst =
-			qat_crypto_get_instance_node(numa_node_id());
+			qat_crypto_get_instance_node(numa_node_id(), 0, ASYM_PKE);
 
 	if (!inst)
 		return -EINVAL;

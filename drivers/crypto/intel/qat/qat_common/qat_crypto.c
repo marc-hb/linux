@@ -15,6 +15,27 @@
 
 static struct service_hndl qat_crypto;
 
+static bool is_algo_supported(struct adf_accel_dev *accel_dev,
+			      int algo, int type)
+{
+	int result = 0;
+
+	switch (type) {
+	case SYM_CIPHER:
+		result = (GET_HW_DATA(accel_dev)->crypto_cipher_caps & algo);
+		break;
+	case SYM_AEAD:
+		result = (GET_HW_DATA(accel_dev)->crypto_aead_caps & algo);
+		break;
+	case ASYM_PKE:
+		return true;
+	}
+	if (result)
+		return true;
+
+	return false;
+}
+
 void qat_crypto_put_instance(struct qat_crypto_instance *inst)
 {
 	atomic_dec(&inst->refctr);
@@ -48,7 +69,7 @@ static int qat_crypto_free_instances(struct adf_accel_dev *accel_dev)
 	return 0;
 }
 
-struct qat_crypto_instance *qat_crypto_get_instance_node(int node)
+struct qat_crypto_instance *qat_crypto_get_instance_node(int node, int algo, int algo_type)
 {
 	struct adf_accel_dev *accel_dev = NULL, *tmp_dev;
 	struct qat_crypto_instance *inst = NULL, *tmp_inst;
@@ -62,6 +83,8 @@ struct qat_crypto_instance *qat_crypto_get_instance_node(int node)
 		    adf_dev_started(tmp_dev) &&
 		    !list_empty(&tmp_dev->crypto_list)) {
 			ctr = atomic_read(&tmp_dev->ref_count);
+			if (!is_algo_supported(tmp_dev, algo, algo_type))
+				continue;
 			if (best > ctr) {
 				accel_dev = tmp_dev;
 				best = ctr;
@@ -75,6 +98,8 @@ struct qat_crypto_instance *qat_crypto_get_instance_node(int node)
 		list_for_each_entry(tmp_dev, adf_devmgr_get_head(), list) {
 			if (adf_dev_started(tmp_dev) &&
 			    !list_empty(&tmp_dev->crypto_list)) {
+				if (!is_algo_supported(tmp_dev, algo, algo_type))
+					continue;
 				accel_dev = tmp_dev;
 				break;
 			}
