@@ -10,6 +10,7 @@
 #include "adf_gen4_pm.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw_20_comp.h"
+#include "qat_crypto.h"
 
 u32 adf_gen4_get_accel_mask(struct adf_hw_device_data *self)
 {
@@ -590,3 +591,13 @@ u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 	}
 }
 EXPORT_SYMBOL_GPL(adf_gen4_get_rl_svc_slice_cnt);
+
+void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->crypto_cipher_caps = AES_XTS | AES_CTR | AES_CBC;
+	hw_data->crypto_aead_caps = AES_CBC_HMAC_SHA1 | AES_CBC_HMAC_SHA256 |
+				    AES_CBC_HMAC_SHA512;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_set_crypto_cap);

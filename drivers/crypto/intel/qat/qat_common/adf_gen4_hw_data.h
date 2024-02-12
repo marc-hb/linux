@@ -187,5 +187,5 @@ u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
 u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 				  struct rl_slice_cnt *slices);
 int adf_gen4_service_supported(u32 service_mask);
-
+void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev);
 #endif

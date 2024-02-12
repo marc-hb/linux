@@ -50,6 +50,24 @@ struct qat_crypto_request {
 	struct qat_alg_req alg_req;
 };
 
+enum qat_algo_type {
+	SYM_CIPHER = BIT(0),
+	SYM_AEAD = BIT(1),
+	ASYM_PKE = BIT(3)
+};
+
+enum qat_skcipher_algo {
+	AES_CBC = BIT(0),
+	AES_CTR = BIT(1),
+	AES_XTS = BIT(2),
+};
+
+enum qat_aead_algo {
+	AES_CBC_HMAC_SHA1 = BIT(0),
+	AES_CBC_HMAC_SHA256 = BIT(1),
+	AES_CBC_HMAC_SHA512 = BIT(2),
+};
+
 static inline bool adf_hw_dev_has_crypto(struct adf_accel_dev *accel_dev)
 {
 	struct adf_hw_device_data *hw_device = accel_dev->hw_device;

@@ -18,6 +18,7 @@
 #include "adf_6xxx_hw_data.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw_51_comp.h"
+#include "qat_crypto.h"
 
 #define RP_GROUP_0_MASK		(BIT(0) | BIT(2))
 #define RP_GROUP_1_MASK		(BIT(1) | BIT(3))
@@ -643,6 +644,15 @@ static int adf_gen6_set_vc(struct adf_accel_dev *accel_dev)
 	return set_vc_config(accel_dev);
 }
 
+static void adf_gen6_set_crypto_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->crypto_cipher_caps = AES_XTS | AES_CTR;
+	hw_data->crypto_aead_caps = 0;
+	hw_data->aes_192_fallback = true;
+}
+
 static void get_fw_ae_config(const struct adf_fw_config **fw_config,
 			     u32 *num_grp)
 {
@@ -870,7 +880,6 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->num_accel = ADF_GEN6_MAX_ACCELERATORS;
 	hw_data->num_engines = ADF_6XXX_MAX_ACCELENGINES;
 	hw_data->num_logical_accel = 1;
-	hw_data->no_crypto_instance = true;
 	hw_data->tx_rx_gap = ADF_GEN6_RX_RINGS_OFFSET;
 	hw_data->tx_rings_mask = ADF_GEN6_TX_RINGS_MASK;
 	hw_data->ring_to_svc_map = ADF_GEN6_DEFAULT_RING_TO_SRV_MAP;
@@ -927,6 +936,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
+	hw_data->set_crypto_cap = adf_gen6_set_crypto_cap;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);

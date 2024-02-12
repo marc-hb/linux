@@ -5,6 +5,7 @@
 #include "adf_gen2_hw_data.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw.h"
+#include "qat_crypto.h"
 #include <linux/pci.h>
 
 u32 adf_gen2_get_num_accels(struct adf_hw_device_data *self)
@@ -214,3 +215,13 @@ void adf_gen2_init_dc_ops(struct adf_dc_ops *dc_ops)
 	dc_ops->build_decomp_dc_hw_block = adf_gen2_build_decomp_dc_hw_block;
 }
 EXPORT_SYMBOL_GPL(adf_gen2_init_dc_ops);
+
+void adf_gen2_set_crypto_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->crypto_cipher_caps = AES_XTS | AES_CTR | AES_CBC;
+	hw_data->crypto_aead_caps = AES_CBC_HMAC_SHA1 | AES_CBC_HMAC_SHA256 |
+				    AES_CBC_HMAC_SHA512;
+}
+EXPORT_SYMBOL_GPL(adf_gen2_set_crypto_cap);

@@ -453,6 +453,7 @@ void adf_init_hw_data_420xx(struct adf_hw_device_data *hw_data, u32 dev_id)
 	hw_data->get_arb_info = adf_gen4_get_arb_info;
 	hw_data->get_admin_info = adf_gen4_get_admin_info;
 	hw_data->get_accel_cap = get_accel_cap;
+	hw_data->set_crypto_cap = adf_gen4_set_crypto_cap;
 	hw_data->get_sku = adf_gen4_get_sku;
 	hw_data->init_admin_comms = adf_init_admin_comms;
 	hw_data->exit_admin_comms = adf_exit_admin_comms;

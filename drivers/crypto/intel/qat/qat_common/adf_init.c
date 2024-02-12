@@ -147,6 +147,9 @@ static int adf_dev_init(struct adf_accel_dev *accel_dev)
 	if (ret && ret != -EOPNOTSUPP)
 		return ret;
 
+	if (hw_data->set_crypto_cap)
+		hw_data->set_crypto_cap(accel_dev);
+
 	/*
 	 * Subservice initialisation is divided into two stages: init and start.
 	 * This is to facilitate any ordering dependencies between services
@@ -258,7 +261,7 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 	set_bit(ADF_STATUS_STARTED, &accel_dev->status);
 
 	if (!list_empty(&accel_dev->crypto_list) &&
-	    (qat_algs_register() || qat_asym_algs_register())) {
+	    (qat_algs_register(accel_dev) || qat_asym_algs_register())) {
 		dev_err(&GET_DEV(accel_dev),
 			"Failed to register crypto algs\n");
 		set_bit(ADF_STATUS_STARTING, &accel_dev->status);
