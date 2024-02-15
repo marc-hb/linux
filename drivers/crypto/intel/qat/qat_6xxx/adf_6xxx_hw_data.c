@@ -73,6 +73,8 @@ static const unsigned long thrd_mask_dcpr[ADF_6XXX_MAX_ACCELENGINES] = {
 	0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0
 };
 
+static bool enable_hb_sync;
+
 static const char *const adf_6xxx_fw_objs[] = {
 	[ADF_FW_CY_OBJ] = ADF_6XXX_CY_OBJ,
 	[ADF_FW_DC_OBJ] = ADF_6XXX_DC_OBJ,
@@ -1016,8 +1018,10 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->dev_config = adf_gen6_dev_config;
 	hw_data->get_hb_clock = adf_gen6_get_heartbeat_clock;
 	hw_data->num_hb_ctrs = ADF_NUM_HB_CNT_PER_AE;
-	hw_data->start_timer = adf_timer_start;
-	hw_data->stop_timer = adf_timer_stop;
+	if (enable_hb_sync) {
+		hw_data->start_timer = adf_timer_start;
+		hw_data->stop_timer = adf_timer_stop;
+	}
 	hw_data->init_device = adf_init_device;
 	hw_data->enable_pm = adf_gen6_enable_pm;
 	hw_data->service_supported = adf_gen6_service_supported;
@@ -1048,3 +1052,6 @@ void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 {
 	hw_data->dev_class->instances--;
 }
+
+module_param(enable_hb_sync, bool, 0644);
+MODULE_PARM_DESC(enable_hb_sync, "Enable FW heartbeat sync timer");
