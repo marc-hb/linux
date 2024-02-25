@@ -2090,6 +2090,13 @@ int vmx_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		msr_info->data = to_vmx(vcpu)->msr_ia32_sgxlepubkeyhash
 			[msr_info->index - MSR_IA32_SGXLEPUBKEYHASH0];
 		break;
+	case MSR_IA32_SGXLECONFIG:
+		if (!msr_info->host_initiated &&
+		    (!guest_cpu_cap_has(vcpu, X86_FEATURE_SGX_LC) ||
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256)))
+			return 1;
+		msr_info->data = vmx->msr_ia32_sgxleconfig;
+		break;
 	case KVM_FIRST_EMULATED_VMX_MSR ... KVM_LAST_EMULATED_VMX_MSR:
 		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
 			return 1;
@@ -2397,6 +2404,16 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			return 1;
 		vmx->msr_ia32_sgxlepubkeyhash
 			[msr_index - MSR_IA32_SGXLEPUBKEYHASH0] = data;
+		break;
+	case MSR_IA32_SGXLECONFIG:
+		if (!msr_info->host_initiated &&
+		    (!guest_cpu_cap_has(vcpu, X86_FEATURE_SGX_LC) ||
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256) ||
+		    ((vmx->msr_ia32_feature_control & FEAT_CTL_LOCKED) &&
+		    !(vmx->msr_ia32_feature_control & FEAT_CTL_SGX_LC_ENABLED)) ||
+		    (data & ~MSR_IA32_SGXLECONFIG_SHA384_ENABLE)))
+			return 1;
+		vmx->msr_ia32_sgxleconfig = data;
 		break;
 	case KVM_FIRST_EMULATED_VMX_MSR ... KVM_LAST_EMULATED_VMX_MSR:
 		if (!msr_info->host_initiated)
@@ -4875,6 +4892,7 @@ static void __vmx_vcpu_reset(struct kvm_vcpu *vcpu)
 	if (kvm_check_has_quirk(vcpu->kvm, KVM_X86_QUIRK_STUFF_FEATURE_MSRS))
 		vcpu->arch.microcode_version = 0x100000000ULL;
 	vmx->msr_ia32_feature_control_valid_bits = FEAT_CTL_LOCKED;
+	vmx->msr_ia32_sgxleconfig = 0;
 
 	/*
 	 * Enforce invariant: pi_desc.nv is always either POSTED_INTR_VECTOR
