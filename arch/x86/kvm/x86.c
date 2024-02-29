@@ -8563,6 +8563,16 @@ static int emulator_set_xcr(struct x86_emulate_ctxt *ctxt, u32 index, u64 xcr)
 	return __kvm_set_xcr(emul_to_vcpu(ctxt), index, xcr);
 }
 
+static u64 emulator_get_xcr(struct x86_emulate_ctxt *ctxt, u32 index)
+{
+	if (index != XCR_XFEATURE_ENABLED_MASK) {
+		kvm_err("Unsupported xcr%d read\n", index);
+		return 0;
+	}
+
+	return emul_to_vcpu(ctxt)->arch.xcr0;
+}
+
 static void emulator_vm_bugged(struct x86_emulate_ctxt *ctxt)
 {
 	struct kvm *kvm = emul_to_vcpu(ctxt)->kvm;
@@ -8632,6 +8642,7 @@ static const struct x86_emulate_ops emulate_ops = {
 	.leave_smm           = emulator_leave_smm,
 	.triple_fault        = emulator_triple_fault,
 	.set_xcr             = emulator_set_xcr,
+	.get_xcr             = emulator_get_xcr,
 	.get_untagged_addr   = emulator_get_untagged_addr,
 	.is_canonical_addr   = emulator_is_canonical_addr,
 };

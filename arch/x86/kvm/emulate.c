@@ -4837,6 +4837,18 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len, int
 			ctxt->rex_prefix = ctxt->b;
 			continue;
 		case 0xd5: /* REX2 */
+			if (mode != X86EMUL_MODE_PROT64)
+				goto done_prefixes;
+
+			/* REX2 is valid when APX is enabled with
+			 *  CR4.OSXSAVE = 1 and XCR0[19] = 1.
+			 */
+			if (!(ctxt->ops->get_cr(ctxt, 4) & X86_CR4_OSXSAVE))
+				return EMULATION_FAILED;
+
+			if ((ctxt->ops->get_xcr(ctxt, 0) & XFEATURE_MASK_APX) == 0)
+				return EMULATION_FAILED;
+
 			ctxt->has_rex2_prefix = true;
 			ctxt->rex_prefix = insn_fetch(u8, ctxt);
 			continue;
