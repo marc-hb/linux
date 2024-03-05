@@ -1195,6 +1195,16 @@ static void intel_pmu_freeze_lbr_on_pmi(struct kvm_vcpu *vcpu)
 
 static void intel_pmu_deliver_pmi(struct kvm_vcpu *vcpu)
 {
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+
+	if (kvm_mediated_pmu_enabled(vcpu)) {
+		/* PT system mode should still be handled by host */
+		if (vmx_pt_mode_is_system() && test_and_clear_bit(
+				GLOBAL_STATUS_TRACE_TOPAPMI_BIT,
+				(unsigned long *)&pmu->global_status))
+			intel_pt_interrupt();
+	}
+
 	if (!intel_pmu_lbr_is_enabled(vcpu))
 		return;
 

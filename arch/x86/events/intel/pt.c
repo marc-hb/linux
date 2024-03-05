@@ -1554,6 +1554,7 @@ void intel_pt_interrupt(void)
 		pt_config_start(event);
 	}
 }
+EXPORT_SYMBOL_GPL(intel_pt_interrupt);
 
 void intel_pt_handle_vmx(int on)
 {
