@@ -4882,6 +4882,10 @@ static void __vmx_vcpu_reset(struct kvm_vcpu *vcpu)
 	 */
 	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
 	__pi_set_sn(&vmx->pi_desc);
+
+	if (vcpu->arch.guest_fpu.fpstate && kvm_apx_supported())
+		fpstate_clear_xstate_component(vcpu->arch.guest_fpu.fpstate,
+					       XFEATURE_APX);
 }
 
 void vmx_vcpu_reset(struct kvm_vcpu *vcpu, bool init_event)
