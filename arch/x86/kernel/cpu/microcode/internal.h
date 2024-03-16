@@ -127,22 +127,18 @@ static inline struct microcode_ops *init_amd_microcode(void) { return NULL; }
 static inline void exit_amd_microcode(void) { }
 #endif /* !CONFIG_CPU_SUP_AMD */
 
-static inline bool staging_work(u64 mmio_addr, void *payload, unsigned int size)
-{
-	pr_debug_once("Staging is not implemented yet.\n");
-	return false;
-}
-
 #ifdef CONFIG_CPU_SUP_INTEL
 enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed);
 enum ucode_state load_ucode_intel_ap(void);
 void reload_ucode_intel(void);
 struct microcode_ops *init_intel_microcode(void);
+bool staging_work(u64 mmio_addr, void *payload, u32 size);
 #else /* CONFIG_CPU_SUP_INTEL */
 static inline enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed) { return UCODE_OK; }
 static inline enum ucode_state load_ucode_intel_ap(void) { return UCODE_OK; }
 static inline void reload_ucode_intel(void) { }
 static inline struct microcode_ops *init_intel_microcode(void) { return NULL; }
+static inline bool staging_work(u64 mmio_addr, void *payload, u32 size) { return false; }
 #endif  /* !CONFIG_CPU_SUP_INTEL */
 
 #endif /* _X86_MICROCODE_INTERNAL_H */
