@@ -39,12 +39,14 @@ struct microcode_ops {
 	 * See also the "Synchronization" section in microcode_core.c.
 	 */
 	enum ucode_state	(*apply_microcode)(int cpu);
+	void			(*staging_microcode)(void);
 	int			(*collect_cpu_info)(int cpu, struct cpu_signature *csig);
 	void			(*finalize_late_load)(int result);
 	enum uniform_scope	uniform_scope;
 	unsigned int		nmi_safe	: 1,
 				use_nmi		: 1,
-				use_uniform	: 1;
+				use_uniform	: 1,
+				staging_usable	: 1;
 };
 
 struct early_load_data {
