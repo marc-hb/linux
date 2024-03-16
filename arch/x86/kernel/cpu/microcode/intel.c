@@ -301,6 +301,57 @@ static __init struct microcode_intel *scan_microcode(void *data, size_t size,
 	return size ? NULL : patch;
 }
 
+static bool staged_already(u64 *addr_array, u64 addr)
+{
+	int i;
+
+	for (i = 0; addr_array[i] != 0; i++) {
+		if (addr_array[i] == addr)
+			return true;
+	}
+	addr_array[i] = addr;
+	return false;
+}
+
+static void staging_microcode(void)
+{
+	u32 cpu, lo, hi, size;
+	u64 *addr_array, addr;
+
+	size = get_totalsize(&ucode_patch_late->hdr);
+	if (!IS_ALIGNED(size, sizeof(u32))) {
+		pr_err("Error: staging payload is not dword-aligned.\n");
+		return;
+	}
+
+	addr_array = kcalloc(nr_cpu_ids, sizeof(*addr_array), GFP_KERNEL);
+	if (!addr_array) {
+		pr_err("Error: unable to allocate staging address storage.\n");
+		return;
+	}
+
+	for_each_cpu(cpu, cpu_online_mask) {
+		rdmsr_on_cpu(cpu, MSR_IA32_MCU_STAGING_MBOX_ADDR, &lo, &hi);
+		addr = lo | ((u64)hi << 32);
+		if (!addr) {
+			pr_err("Error: invalid staging address from CPU %u.\n", cpu);
+			goto out;
+		}
+
+		if (staged_already(addr_array, addr))
+			continue;
+
+		if (!staging_work(addr, ucode_patch_late, size)) {
+			pr_err("Error: staging was not successful.\n");
+			goto out;
+		}
+	}
+
+	pr_info("Staging was successful.\n");
+out:
+	kfree(addr_array);
+}
+
 static enum ucode_state verify_update_result(void);
 
 static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
@@ -652,6 +703,7 @@ static struct microcode_ops microcode_intel_ops = {
 	.collect_cpu_info	= collect_cpu_info,
 	.apply_microcode	= apply_microcode_late,
 	.finalize_late_load	= finalize_late_load,
+	.staging_microcode	= staging_microcode,
 	.use_nmi		= IS_ENABLED(CONFIG_X86_64),
 };
 
