@@ -27,6 +27,7 @@ intel_qat-objs := adf_cfg.o \
 	adf_gen4_pm.o \
 	adf_gen4_ras.o \
 	adf_gen6_pm.o \
+	adf_gen6_ras.o \
 	adf_gen6_shared.o \
 	adf_clock.o \
 	adf_mstate_mgr.o \

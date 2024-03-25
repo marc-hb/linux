@@ -10,6 +10,7 @@
 #include <adf_common_drv.h>
 #include <adf_fw_config.h>
 #include <adf_gen6_pm.h>
+#include <adf_gen6_ras.h>
 #include <adf_gen6_shared.h>
 #include <adf_timer.h>
 #include "adf_6xxx_hw_data.h"
@@ -776,6 +777,11 @@ static int adf_init_device(struct adf_accel_dev *accel_dev)
 	return ret;
 }
 
+static void adf_gen6_set_err_mask(struct adf_dev_err_mask *err_mask)
+{
+	err_mask->cppagentcmdpar_mask = ADF_6XXX_HICPPAGENTCMDPARERRLOG_MASK;
+}
+
 void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 {
 	hw_data->dev_class = &adf_6xxx_class;
@@ -840,6 +846,8 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);
 	adf_gen6_init_dc_ops(&hw_data->dc_ops);
 	adf_gen6_init_vf_mig_ops(&hw_data->vfmig_ops);
+	adf_gen6_init_ras_ops(&hw_data->ras_ops);
+	adf_gen6_set_err_mask(&hw_data->dev_err_mask);
 }
 
 void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)
