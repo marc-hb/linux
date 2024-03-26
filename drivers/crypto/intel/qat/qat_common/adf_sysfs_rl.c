@@ -29,6 +29,7 @@ enum rl_params {
 	PIR,
 	SRV,
 	CAP_REM_SRV,
+	MAX_TP_SRV,
 };
 
 static const char *const rl_services[] = {
@@ -73,6 +74,9 @@ static int set_param_u(struct device *dev, enum rl_params param, u64 set)
 		break;
 	case CAP_REM_SRV:
 		data->cap_rem_srv = set;
+		break;
+	case MAX_TP_SRV:
+		data->max_tp_srv = set;
 		break;
 	default:
 		ret = -EINVAL;
@@ -411,6 +415,78 @@ err_free_lock:
 }
 static DEVICE_ATTR_WO(sla_op);
 
+static ssize_t max_tp_show(struct device *dev, struct device_attribute *attr,
+			   char *buf)
+{
+	struct adf_rl_interface_data *data;
+	struct adf_accel_dev *accel_dev;
+	int ret;
+	u32 max_tp;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	data = &GET_RL_STRUCT(accel_dev);
+
+	if (data->max_tp_srv >= ADF_SVC_NONE)
+		return -EINVAL;
+
+	down_read(&data->lock);
+	max_tp = adf_rl_get_max_throughput(accel_dev, data->max_tp_srv);
+	up_read(&data->lock);
+
+	ret = sysfs_emit(buf, "%u\n", max_tp);
+
+	return ret;
+}
+
+static ssize_t max_tp_store(struct device *dev, struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	unsigned int val;
+	int ret;
+
+	ret = sysfs_match_string(rl_services, buf);
+	if (ret < 0)
+		return ret;
+
+	val = ret;
+	ret = set_param_u(dev, MAX_TP_SRV, val);
+	if (ret)
+		return ret;
+
+	return count;
+}
+static DEVICE_ATTR_RW(max_tp);
+
+static ssize_t max_sla_show(struct device *dev, struct device_attribute *attr,
+			    char *buf)
+{
+	int ret;
+
+	ret = sysfs_emit(buf, "%u\n", RL_LEAF_MAX);
+	return ret;
+}
+static DEVICE_ATTR_RO(max_sla);
+
+static ssize_t used_sla_show(struct device *dev, struct device_attribute *attr,
+			     char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u32 used_slas;
+	int ret;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	used_slas = adf_rl_get_num_used_slas(accel_dev, RL_LEAF);
+	ret = sysfs_emit(buf, "%u\n", used_slas);
+	return ret;
+}
+static DEVICE_ATTR_RO(used_sla);
+
 static struct attribute *qat_rl_attrs[] = {
 	&dev_attr_rp.attr,
 	&dev_attr_id.attr,
@@ -419,6 +495,9 @@ static struct attribute *qat_rl_attrs[] = {
 	&dev_attr_srv.attr,
 	&dev_attr_cap_rem.attr,
 	&dev_attr_sla_op.attr,
+	&dev_attr_max_tp.attr,
+	&dev_attr_max_sla.attr,
+	&dev_attr_used_sla.attr,
 	NULL,
 };
 
@@ -439,6 +518,7 @@ int adf_sysfs_rl_add(struct adf_accel_dev *accel_dev)
 		dev_err(&GET_DEV(accel_dev),
 			"Failed to create qat_rl attribute group\n");
 
+	data->max_tp_srv = ADF_SVC_NONE;
 	data->cap_rem_srv = ADF_SVC_NONE;
 	data->input.srv = ADF_SVC_NONE;
 	data->sysfs_added = true;

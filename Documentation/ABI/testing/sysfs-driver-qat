@@ -166,3 +166,17 @@ Description:	(RW) Reports the current state of the autoreset feature
 		  unrecoverable error, it will not be reset.
 
 		This attribute is only available for qat_4xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/num_rps_per_vf
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:
+		(RO) Returns the number of ring pairs per VF for the device.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat/num_rps_per_vf
+			4
+
+		This attribute is only available for qat_4xxx and qat_6xxx devices.

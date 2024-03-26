@@ -339,6 +339,19 @@ static ssize_t num_rps_show(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_RO(num_rps);
 
+static ssize_t num_rps_per_vf_show(struct device *dev,
+				   struct device_attribute *attr, char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	return sysfs_emit(buf, "%u\n", GET_NUM_BANKS_PER_VF(accel_dev));
+}
+static DEVICE_ATTR_RO(num_rps_per_vf);
+
 static struct attribute *qat_attrs[] = {
 	&dev_attr_state.attr,
 	&dev_attr_cfg_services.attr,
@@ -346,6 +359,7 @@ static struct attribute *qat_attrs[] = {
 	&dev_attr_rp2srv.attr,
 	&dev_attr_num_rps.attr,
 	&dev_attr_auto_reset.attr,
+	&dev_attr_num_rps_per_vf.attr,
 	NULL,
 };
 

@@ -404,6 +404,7 @@ struct adf_hw_device_data {
 #define GET_BARS(accel_dev) ((accel_dev)->accel_pci_dev.pci_bars)
 #define GET_HW_DATA(accel_dev) (accel_dev->hw_device)
 #define GET_MAX_BANKS(accel_dev) (GET_HW_DATA(accel_dev)->num_banks)
+#define GET_NUM_BANKS_PER_VF(accel_dev) (GET_HW_DATA(accel_dev)->num_banks_per_vf)
 #define GET_NUM_RINGS_PER_BANK(accel_dev) \
 	GET_HW_DATA(accel_dev)->num_rings_per_bank
 #define GET_SRV_TYPE(accel_dev, idx) \

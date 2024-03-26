@@ -1004,6 +1004,28 @@ ret_ok:
 }
 
 /**
+ * adf_rl_get_max_throughput() - Retrieves the maximum throughput for a
+ * specific service.
+ * @accel_dev: The pointer to the accelerator device structure.
+ * @srv: The enum value representing the base service.
+ *
+ * Check if the service is supported by the device and return the maximum
+ * throughput for the service.
+ *
+ * Return: The maximum throughput value for the specified service.
+ */
+u32 adf_rl_get_max_throughput(struct adf_accel_dev *accel_dev,
+			      enum adf_base_services srv)
+{
+	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
+
+	if (srv >= ADF_SVC_NONE)
+		return 0;
+
+	return device_data->max_tp[srv];
+}
+
+/**
  * adf_rl_remove_sla() - removes provided sla_id
  * @accel_dev: pointer to acceleration device structure
  * @sla_id: ID of the cluster or root to which we want assign an new SLA
@@ -1067,6 +1089,37 @@ void adf_rl_remove_sla_all(struct adf_accel_dev *accel_dev, bool incl_default)
 	}
 
 	mutex_unlock(&rl_data->rl_lock);
+}
+
+/**
+ * adf_rl_get_num_used_slas() - Retrieves the number of used Service Level
+ * Agreements (SLAs) for a specific node type.
+ *
+ * @accel_dev: The pointer to the acceleration device structure.
+ * @node_type: The type of the node for which to retrieve the number of
+ *			   used SLAs.
+ *
+ * Iterate through the node list for the specified node type and count the
+ * node ids that are not NULL.
+ *
+ * Return: The number of used SLAs for the specified node type.
+ */
+u32 adf_rl_get_num_used_slas(struct adf_accel_dev *accel_dev,
+			     enum rl_node_type node_type)
+{
+	struct adf_rl *rl_data = accel_dev->rate_limiting;
+	struct rl_sla **sla_type_arr = NULL;
+	u32 max_id = 0, used_sla = 0;
+	int i = 0;
+
+	max_id = adf_rl_get_sla_arr_of_type(rl_data, node_type, &sla_type_arr);
+	for (i = 0; i < max_id; i++) {
+		if (!sla_type_arr[i])
+			continue;
+		used_sla++;
+	}
+
+	return used_sla;
 }
 
 int adf_rl_init(struct adf_accel_dev *accel_dev)

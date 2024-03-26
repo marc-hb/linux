@@ -81,6 +81,7 @@ struct adf_rl_interface_data {
 	enum adf_base_services cap_rem_srv;
 	struct rw_semaphore lock;
 	bool sysfs_added;
+	enum adf_base_services max_tp_srv;
 };
 
 struct adf_rl_hw_data {
@@ -162,6 +163,8 @@ int adf_rl_get_sla(struct adf_accel_dev *accel_dev,
 		   struct adf_rl_sla_input_data *sla_in);
 int adf_rl_get_capability_remaining(struct adf_accel_dev *accel_dev,
 				    enum adf_base_services srv, int sla_id);
+u32 adf_rl_get_max_throughput(struct adf_accel_dev *accel_dev,
+			      enum adf_base_services srv);
 int adf_rl_remove_sla(struct adf_accel_dev *accel_dev, u32 sla_id);
 void adf_rl_remove_sla_all(struct adf_accel_dev *accel_dev, bool incl_default);
 
@@ -176,5 +179,7 @@ u32 adf_rl_calculate_ae_cycles(struct adf_accel_dev *accel_dev, u32 sla_val,
 			       enum adf_base_services svc_type);
 u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 				  enum adf_base_services svc_type);
+u32 adf_rl_get_num_used_slas(struct adf_accel_dev *accel_dev,
+			     enum rl_node_type node_type);
 
 #endif /* ADF_RL_H_ */
