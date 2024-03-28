@@ -759,6 +759,11 @@ struct x86_hybrid_pmu {
 			u64		acr_cause_mask64;
 			unsigned long	acr_cause_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
 	};
+	union {
+			u64		events_mask_ext64;
+			unsigned long	events_mask_ext[BITS_TO_LONGS(ARCH_PERFMON_EVENTS_MAX_COUNT)];
+	};
+
 	struct event_constraint		unconstrained;
 
 	u64				hw_cache_event_ids
@@ -874,6 +879,10 @@ struct x86_pmu {
 			unsigned long events_mask[BITS_TO_LONGS(ARCH_PERFMON_EVENTS_COUNT)];
 	};
 	int		events_mask_len;
+	union {
+			u64		events_mask_ext64;
+			unsigned long	events_mask_ext[BITS_TO_LONGS(ARCH_PERFMON_EVENTS_MAX_COUNT)];
+	};
 	int		apic;
 	u64		max_period;
 	struct event_constraint *

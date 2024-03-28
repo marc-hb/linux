@@ -2155,6 +2155,14 @@ static void _x86_pmu_read(struct perf_event *event)
 
 void x86_pmu_show_pmu_cap(struct pmu *pmu)
 {
+	u64 events_bitmap;
+
+	if (hybrid(pmu, events_mask_ext64))
+		events_bitmap = hybrid(pmu, events_mask_ext64);
+	else
+		events_bitmap = (BIT_ULL(x86_pmu.events_mask_len) - 1) &
+				~x86_pmu.events_maskl;
+
 	pr_info("... version:                   %d\n", x86_pmu.version);
 	pr_info("... bit width:                 %d\n", x86_pmu.cntval_bits);
 	pr_info("... generic counters:          %d\n", x86_pmu_num_counters(pmu));
@@ -2164,6 +2172,7 @@ void x86_pmu_show_pmu_cap(struct pmu *pmu)
 	pr_info("... value mask:                %016Lx\n", x86_pmu.cntval_mask);
 	pr_info("... max period:                %016Lx\n", x86_pmu.max_period);
 	pr_info("... global_ctrl mask:          %016Lx\n", hybrid(pmu, intel_ctrl));
+	pr_info("... events bitmap:             %016Lx\n", events_bitmap);
 }
 
 static int __init init_hw_perf_events(void)

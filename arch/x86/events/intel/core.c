@@ -5503,6 +5503,12 @@ static void update_pmu_cap(struct pmu *pmu)
 		hybrid(pmu, acr_cause_mask64) = ecx | ((u64)edx << INTEL_PMC_IDX_FIXED);
 	}
 
+	if (eax_0.split.events_subleaf) {
+		cpuid_count(ARCH_PERFMON_EXT_LEAF, ARCH_PERFMON_ARCH_EVENTS_LEAF,
+			    &eax, &ebx, &ecx, &edx);
+		hybrid(pmu, events_mask_ext64) = eax;
+	}
+
 	/* Bits[5:4] should be set simultaneously if arch-PEBS is supported */
 	if (eax_0.split.pebs_caps_subleaf && eax_0.split.pebs_cnts_subleaf) {
 		cpuid_count(ARCH_PERFMON_EXT_LEAF, ARCH_PERFMON_PEBS_CAP_LEAF,
