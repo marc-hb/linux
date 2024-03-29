@@ -40,6 +40,9 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
 	[PERF_COUNT_HW_BUS_CYCLES]		= 0x013c,
 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
 	[PERF_COUNT_HW_TOPDOWN_SLOTS]		= 0x0400, /* pseudo-encoding */
+	[PERF_COUNT_HW_TOPDOWN_BAD_SPEC]	= 0x0073,
+	[PERF_COUNT_HW_TOPDOWN_FE_BOUND]	= 0x019c,
+	[PERF_COUNT_HW_TOPDOWN_RETIRING]	= 0x02c2,
 };
 
 static struct event_constraint intel_core_event_constraints[] __read_mostly =
