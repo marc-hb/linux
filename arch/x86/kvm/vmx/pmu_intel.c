@@ -528,6 +528,9 @@ static __always_inline u64 intel_get_fixed_pmc_eventsel(struct kvm_pmu *pmu,
 		[1] = PERF_COUNT_HW_CPU_CYCLES,
 		[2] = PERF_COUNT_HW_REF_CPU_CYCLES,
 		[3] = PERF_COUNT_HW_TOPDOWN_SLOTS,
+		[4] = PERF_COUNT_HW_TOPDOWN_BAD_SPEC,
+		[5] = PERF_COUNT_HW_TOPDOWN_FE_BOUND,
+		[6] = PERF_COUNT_HW_TOPDOWN_RETIRING,
 	};
 	u64 eventsel;
 
