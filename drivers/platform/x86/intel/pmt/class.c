@@ -168,10 +168,11 @@ static struct attribute *intel_pmt_attrs[] = {
 };
 ATTRIBUTE_GROUPS(intel_pmt);
 
-static struct class intel_pmt_class = {
+struct class intel_pmt_class = {
 	.name = "intel_pmt",
 	.dev_groups = intel_pmt_groups,
 };
+EXPORT_SYMBOL_GPL(intel_pmt_class);
 
 static int intel_pmt_populate_entry(struct intel_pmt_entry *entry,
 				    struct intel_vsec_device *ivdev,
