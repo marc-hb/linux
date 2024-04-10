@@ -536,6 +536,13 @@ bool emulator_can_use_gpa(struct x86_emulate_ctxt *ctxt);
 
 static inline ulong reg_read(struct x86_emulate_ctxt *ctxt, unsigned nr)
 {
+	if (nr >= NR_EMULATOR_GPRS && ctxt->has_rex2_prefix) {
+		ulong val;
+
+		if (ctxt->ops->read_egpr(ctxt, nr, &val) == 0)
+			return val;
+	}
+
 	if (KVM_EMULATOR_BUG_ON(nr >= NR_EMULATOR_GPRS, ctxt))
 		nr &= NR_EMULATOR_GPRS - 1;
 
@@ -548,6 +555,14 @@ static inline ulong reg_read(struct x86_emulate_ctxt *ctxt, unsigned nr)
 
 static inline ulong *reg_write(struct x86_emulate_ctxt *ctxt, unsigned nr)
 {
+	if (nr >= NR_EMULATOR_GPRS && ctxt->has_rex2_prefix) {
+		ulong *egpr;
+
+		egpr = ctxt->ops->get_egpr_ptr(ctxt, nr);
+		if (egpr)
+			return egpr;
+	}
+
 	if (KVM_EMULATOR_BUG_ON(nr >= NR_EMULATOR_GPRS, ctxt))
 		nr &= NR_EMULATOR_GPRS - 1;
 
