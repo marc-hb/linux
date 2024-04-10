@@ -850,6 +850,8 @@ struct kvm_vcpu_arch {
 	 * host PRKU bits.
 	 */
 	struct fpu_guest guest_fpu;
+	bool guest_fpu_state_available;
+	bool guest_fpu_state_dirty;
 
 	u64 xcr0;
 	u64 guest_supported_xcr0;

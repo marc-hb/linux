@@ -1167,8 +1167,44 @@ void kvm_lmsw(struct kvm_vcpu *vcpu, unsigned long msw)
 }
 EXPORT_SYMBOL_GPL(kvm_lmsw);
 
+/* Swap (qemu) user FPU context for the guest FPU context. */
+static void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+{
+	/* Exclude PKRU, it's restored separately immediately after VM-Exit. */
+	fpu_swap_kvm_fpstate(&vcpu->arch.guest_fpu, true);
+	vcpu->arch.guest_fpu_state_available = false;
+	trace_kvm_fpu(1);
+}
+
+/* When vcpu_run ends, restore user space FPU context. */
+static void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
+{
+	/* Emulator may swap fpu context during vm-exit handler, no need to
+	 * swap it again at the end of vcpu_run.
+	 */
+	if (vcpu->arch.guest_fpu_state_available)
+		return;
+
+	fpu_swap_kvm_fpstate(&vcpu->arch.guest_fpu, false);
+	++vcpu->stat.fpu_reload;
+	vcpu->arch.guest_fpu_state_available = true;
+	trace_kvm_fpu(0);
+}
+
 void kvm_load_guest_xsave_state(struct kvm_vcpu *vcpu)
 {
+	/* KVM put guest fpu for EGPR read, and userspace VMM isn't involved in this
+	 * VM-exit, load_guest_fpu before vm-enter.
+	 * Or KVM writes EGPR which may happen wihtout, before or after userspace VMM,
+	 * write the modified value onto HW before vm-enter in all cases.
+	 */
+	if (vcpu->arch.guest_fpu_state_dirty ||
+	    vcpu->arch.guest_fpu_state_available) {
+		kvm_load_guest_fpu(vcpu);
+		vcpu->arch.guest_fpu_state_available = false;
+		vcpu->arch.guest_fpu_state_dirty = false;
+	}
+
 	if (vcpu->arch.guest_state_protected)
 		return;
 
@@ -5596,6 +5632,10 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
 	if (fpstate_is_confidential(&vcpu->arch.guest_fpu))
 		return vcpu->kvm->arch.has_protected_state ? -EINVAL : 0;
 
+	/* User set xstate, kvm get xsate component from guest_fpu
+	 * directly and no need to read HW.
+	 */
+	vcpu->arch.guest_fpu_state_available = true;
 	return fpu_copy_uabi_to_guest_fpstate(&vcpu->arch.guest_fpu,
 					      guest_xsave->region,
 					      kvm_caps.supported_xcr0,
@@ -8617,6 +8657,7 @@ static int vcpu_egpr_read(struct kvm_vcpu *vcpu, unsigned int reg, u64 *val)
 	if (!vcpu_apx_enabled(vcpu))
 		return -EPERM;
 
+	kvm_put_guest_fpu(vcpu);
 	egprs = guest_fpstate_get_component_addr(&vcpu->arch.guest_fpu, XFEATURE_APX);
 	if (egprs && reg < EGPR_MAX_INDEX) {
 		*val = egprs->egpr[reg - EGPR_BASE_INDEX];
@@ -8633,9 +8674,12 @@ static u64 *vcpu_get_egpr_ptr(struct kvm_vcpu *vcpu, unsigned int reg)
 	if (!vcpu_apx_enabled(vcpu))
 		return NULL;
 
+	kvm_put_guest_fpu(vcpu);
 	egprs = guest_fpstate_get_component_addr(&vcpu->arch.guest_fpu, XFEATURE_APX);
-	if (egprs && reg < EGPR_MAX_INDEX)
+	if (egprs && reg < EGPR_MAX_INDEX) {
+		vcpu->arch.guest_fpu_state_dirty = true;
 		return &egprs->egpr[reg - EGPR_BASE_INDEX];
+	}
 
 	return NULL;
 }
@@ -11515,22 +11559,6 @@ static int complete_emulated_mmio(struct kvm_vcpu *vcpu)
 	return 0;
 }
 
-/* Swap (qemu) user FPU context for the guest FPU context. */
-static void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
-{
-	/* Exclude PKRU, it's restored separately immediately after VM-Exit. */
-	fpu_swap_kvm_fpstate(&vcpu->arch.guest_fpu, true);
-	trace_kvm_fpu(1);
-}
-
-/* When vcpu_run ends, restore user space FPU context. */
-static void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
-{
-	fpu_swap_kvm_fpstate(&vcpu->arch.guest_fpu, false);
-	++vcpu->stat.fpu_reload;
-	trace_kvm_fpu(0);
-}
-
 int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
 {
 	struct kvm_queued_exception *ex = &vcpu->arch.exception;
@@ -11544,7 +11572,13 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
 	vcpu_load(vcpu);
 	kvm_sigset_activate(vcpu);
 	kvm_run->flags = 0;
-	kvm_load_guest_fpu(vcpu);
+	/* if emulator write egpr in guest fpu for vmx_exit handler.
+	 * delay load guest_fpu to vm_entry, as kvm may handle vm_exit
+	 * and reenter guest directly, then here's guest fpu load isn't
+	 * reachable and guest fpu load should be at vm_entry.
+	 */
+	if (!vcpu->arch.guest_fpu_state_dirty)
+		kvm_load_guest_fpu(vcpu);
 
 	kvm_vcpu_srcu_read_lock(vcpu);
 	if (unlikely(vcpu->arch.mp_state == KVM_MP_STATE_UNINITIALIZED)) {
@@ -12353,6 +12387,9 @@ int kvm_arch_vcpu_create(struct kvm_vcpu *vcpu)
 		pr_err("failed to allocate vcpu's fpu\n");
 		goto free_emulate_ctxt;
 	}
+
+	vcpu->arch.guest_fpu_state_available = false;
+	vcpu->arch.guest_fpu_state_dirty = false;
 
 	kvm_async_pf_hash_reset(vcpu);
 
