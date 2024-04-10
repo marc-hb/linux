@@ -8597,10 +8597,65 @@ static bool emulator_is_canonical_addr(struct x86_emulate_ctxt *ctxt,
 	return !is_noncanonical_address(addr, emul_to_vcpu(ctxt), flags);
 }
 
+static bool vcpu_apx_enabled(struct kvm_vcpu *vcpu)
+{
+	if (is_long_mode(vcpu) &&
+	    guest_cpu_cap_has(vcpu, X86_FEATURE_APX) &&
+	    kvm_is_cr4_bit_set(vcpu, X86_CR4_OSXSAVE) &&
+	    (vcpu->arch.xcr0 & XFEATURE_MASK_APX))
+		return true;
+
+	return false;
+}
+
+#define EGPR_BASE_INDEX 16
+#define EGPR_MAX_INDEX  32
+static int vcpu_egpr_read(struct kvm_vcpu *vcpu, unsigned int reg, u64 *val)
+{
+	struct apx_state *egprs;
+
+	if (!vcpu_apx_enabled(vcpu))
+		return -EPERM;
+
+	egprs = guest_fpstate_get_component_addr(&vcpu->arch.guest_fpu, XFEATURE_APX);
+	if (egprs && reg < EGPR_MAX_INDEX) {
+		*val = egprs->egpr[reg - EGPR_BASE_INDEX];
+		return 0;
+	}
+
+	return -EPERM;
+}
+
+static u64 *vcpu_get_egpr_ptr(struct kvm_vcpu *vcpu, unsigned int reg)
+{
+	struct apx_state *egprs;
+
+	if (!vcpu_apx_enabled(vcpu))
+		return NULL;
+
+	egprs = guest_fpstate_get_component_addr(&vcpu->arch.guest_fpu, XFEATURE_APX);
+	if (egprs && reg < EGPR_MAX_INDEX)
+		return &egprs->egpr[reg - EGPR_BASE_INDEX];
+
+	return NULL;
+}
+
+static int emulator_read_egpr(struct x86_emulate_ctxt *ctxt, unsigned int reg, ulong *val)
+{
+	return vcpu_egpr_read(emul_to_vcpu(ctxt), reg, (u64 *)val);
+}
+
+static ulong *emulator_get_egpr_ptr(struct x86_emulate_ctxt *ctxt, unsigned int reg)
+{
+	return (ulong *)vcpu_get_egpr_ptr(emul_to_vcpu(ctxt), reg);
+}
+
 static const struct x86_emulate_ops emulate_ops = {
 	.vm_bugged           = emulator_vm_bugged,
 	.read_gpr            = emulator_read_gpr,
 	.write_gpr           = emulator_write_gpr,
+	.read_egpr           = emulator_read_egpr,
+	.get_egpr_ptr        = emulator_get_egpr_ptr,
 	.read_std            = emulator_read_std,
 	.write_std           = emulator_write_std,
 	.fetch               = kvm_fetch_guest_virt,

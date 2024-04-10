@@ -243,6 +243,13 @@ struct x86_emulate_ops {
 
 	bool (*is_canonical_addr)(struct x86_emulate_ctxt *ctxt, gva_t addr,
 				  unsigned int flags);
+
+	/* Read EGRP(r16 ~r31), return < 0 on error.*/
+	int (*read_egpr)(struct x86_emulate_ctxt *ctxt, unsigned int reg, ulong *val);
+	/* Get EGRP(r16 ~r31) memory pointer for later EGPR write directly,
+	 * return NULL on error.
+	 */
+	ulong* (*get_egpr_ptr)(struct x86_emulate_ctxt *ctxt, unsigned int reg);
 };
 
 /* Type, address-of, and value of an instruction's operand. */
