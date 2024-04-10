@@ -1475,6 +1475,13 @@ void fpstate_clear_xstate_component(struct fpstate *fps, unsigned int xfeature)
 		memset(addr, 0, xstate_sizes[xfeature]);
 }
 EXPORT_SYMBOL_GPL(fpstate_clear_xstate_component);
+
+void *guest_fpstate_get_component_addr(struct fpu_guest *guest_fpu,
+				       unsigned int xfeature)
+{
+	return get_xsave_addr(&guest_fpu->fpstate->regs.xsave, xfeature);
+}
+EXPORT_SYMBOL_GPL(guest_fpstate_get_component_addr);
 #endif
 
 #ifdef CONFIG_X86_64
