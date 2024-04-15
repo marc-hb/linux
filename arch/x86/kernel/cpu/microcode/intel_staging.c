@@ -111,8 +111,13 @@ static enum ucode_state mbox_wait_xaction(struct ucode_staging *stg)
 	if (status & MASK_MBOX_STATUS_BUSY)
 		return UCODE_TIMEOUT;
 
-	if ((status & MASK_MBOX_STATUS_ERROR) || !(status & MASK_MBOX_STATUS_READY))
+	if ((status & MASK_MBOX_STATUS_ERROR) || !(status & MASK_MBOX_STATUS_READY)) {
+		if (status & MASK_MBOX_STATUS_ERROR)
+			pr_debug("Staging error: MASK_MBOX_STATUS_ERROR.\n");
+		if (!(status & MASK_MBOX_STATUS_READY))
+			pr_debug("Staging error: !MASK_MBOX_STATUS_READY.\n");
 		return UCODE_ERROR;
+	}
 
 	return UCODE_OK;
 }
@@ -128,8 +133,11 @@ static enum ucode_state mbox_read_resp(struct ucode_staging *stg)
 	stg->chunk_addr = stg->img_addr + stg->img_offset;
 
 	flag = read_dword(stg->base);
-	if (flag & MASK_MBOX_RESP_ERROR)
+	if (flag & MASK_MBOX_RESP_ERROR) {
+		pr_debug("Staging error: MASK_MBOX_RESP_ERROR.\n");
 		return UCODE_ERROR;
+	}
+
 	return UCODE_OK;
 }
 
