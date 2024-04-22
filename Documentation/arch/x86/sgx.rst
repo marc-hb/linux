@@ -173,8 +173,11 @@ this the CPU can execute inside the enclave.
 
 EINIT function takes an RSA-3072 signature of the enclave measurement.  The function
 checks that the measurement is correct and signature is signed with the key
-hashed to the four **IA32_SGXLEPUBKEYHASH{0, 1, 2, 3}** MSRs representing the
-SHA256 of a public key.
+hashed to the four, or six **IA32_SGXLEPUBKEYHASH{0, 1, 2, 3, 4, 5}** MSRs
+representing the SHA256, or SHA384 of a public key. MSR used to indicate which
+hashing algorithm is going to be used is **IA32_SGXLECONFIG**. If bit
+IA32_SGXLECONFIG_SHA384_ENABLE is ON that means opt-in to use SHA384, otherwise
+SHA256 will be used.
 
 Those MSRs can be configured by the BIOS to be either readable or writable.
 Linux supports only writable configuration in order to give full control to the
