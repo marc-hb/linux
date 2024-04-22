@@ -202,7 +202,7 @@ static bool mrenclave_commit(EVP_MD_CTX *ctx, uint8_t *mrenclave)
 		return false;
 	}
 
-	if (size != 32) {
+	if (size != SHA256_DIGEST_LENGTH && size != SHA384_DIGEST_LENGTH) {
 		fprintf(stderr, "invalid digest size = %u\n", size);
 		return false;
 	}
@@ -218,8 +218,12 @@ struct mrecreate {
 } __attribute__((__packed__));
 
 
-static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size)
+static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size,
+			      enum sgx_sighashtype hash_type)
 {
+	const EVP_MD *type = hash_type == SGX_SIGHASHTYPE_SHA256 ?
+				     EVP_sha256() :
+				     EVP_sha384();
 	struct mrecreate mrecreate;
 	uint64_t encl_size;
 
@@ -231,7 +235,7 @@ static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size)
 	mrecreate.ssaframesize = 1;
 	mrecreate.size = encl_size;
 
-	if (!EVP_DigestInit_ex(ctx, EVP_sha256(), NULL))
+	if (!EVP_DigestInit_ex(ctx, type, NULL))
 		return false;
 
 	return mrenclave_update(ctx, &mrecreate);
@@ -317,10 +321,12 @@ bool encl_measure(struct encl *encl, struct opt_in *opt_param)
 	uint64_t header2[2] = {0x0000006000000101, 0x0000000100000060};
 	struct sgx_sigstruct *sigstruct = &encl->sigstruct;
 	struct sgx_sigstruct_payload payload;
-	uint8_t digest[SHA256_DIGEST_LENGTH];
-	EVP_MD_CTX *ctx = NULL;
+	uint8_t digest[SHA384_DIGEST_LENGTH];
 	unsigned int siglen;
 	RSA *key = NULL;
+	EVP_MD_CTX *ctx = NULL;
+	int digest_len;
+	int sha_type;
 	int i;
 
 	memset(sigstruct, 0, sizeof(*sigstruct));
@@ -353,7 +359,7 @@ bool encl_measure(struct encl *encl, struct opt_in *opt_param)
 	if (!ctx)
 		goto err;
 
-	if (!mrenclave_ecreate(ctx, encl->src_size))
+	if (!mrenclave_ecreate(ctx, encl->src_size, sigstruct->header.sighashtype))
 		goto err;
 
 	for (i = 0; i < encl->nr_segments; i++) {
@@ -369,9 +375,17 @@ bool encl_measure(struct encl *encl, struct opt_in *opt_param)
 	memcpy(&payload.header, &sigstruct->header, sizeof(sigstruct->header));
 	memcpy(&payload.body, &sigstruct->body, sizeof(sigstruct->body));
 
-	SHA256((unsigned char *)&payload, sizeof(payload), digest);
+	if (sigstruct->header.sighashtype == SGX_SIGHASHTYPE_SHA256) {
+		SHA256((unsigned char *)&payload, sizeof(payload), digest);
+		sha_type = NID_sha256;
+		digest_len = SHA256_DIGEST_LENGTH;
+	} else {
+		SHA384((unsigned char *)&payload, sizeof(payload), digest);
+		sha_type = NID_sha384;
+		digest_len = SHA384_DIGEST_LENGTH;
+	}
 
-	if (!RSA_sign(NID_sha256, digest, SHA256_DIGEST_LENGTH,
+	if (!RSA_sign(sha_type, digest, digest_len,
 		      sigstruct->signature, &siglen, key))
 		goto err;
 
