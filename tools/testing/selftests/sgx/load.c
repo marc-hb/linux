@@ -77,7 +77,7 @@ err:
 	return false;
 }
 
-static bool encl_ioc_create(struct encl *encl)
+static bool encl_ioc_create(struct encl *encl, struct opt_in *opt_param)
 {
 	struct sgx_secs *secs = &encl->secs;
 	struct sgx_enclave_create ioc;
@@ -91,6 +91,8 @@ static bool encl_ioc_create(struct encl *encl)
 	secs->xfrm = 3;
 	secs->base = encl->encl_base;
 	secs->size = encl->encl_size;
+	if (opt_param)
+		secs->attributes |= opt_param->body_attributes;
 
 	ioc.src = (unsigned long)secs;
 	rc = ioctl(encl->fd, SGX_IOC_ENCLAVE_CREATE, &ioc);
@@ -336,7 +338,7 @@ static bool encl_map_area(struct encl *encl)
 	return true;
 }
 
-bool encl_build(struct encl *encl)
+bool encl_build(struct encl *encl, struct opt_in *opt_param)
 {
 	struct sgx_enclave_init ioc;
 	int ret;
@@ -345,7 +347,7 @@ bool encl_build(struct encl *encl)
 	if (!encl_map_area(encl))
 		return false;
 
-	if (!encl_ioc_create(encl))
+	if (!encl_ioc_create(encl, opt_param))
 		return false;
 
 	/*

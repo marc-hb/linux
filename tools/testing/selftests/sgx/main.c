@@ -173,7 +173,8 @@ FIXTURE(enclave) {
 };
 
 static bool setup_test_encl(unsigned long heap_size, struct encl *encl,
-			    struct __test_metadata *_metadata)
+			    struct __test_metadata *_metadata,
+			    struct opt_in *opt_param)
 {
 	Elf64_Sym *sgx_enter_enclave_sym = NULL;
 	struct vdso_symtab symtab;
@@ -189,10 +190,10 @@ static bool setup_test_encl(unsigned long heap_size, struct encl *encl,
 		return false;
 	}
 
-	if (!encl_measure(encl))
+	if (!encl_measure(encl, opt_param))
 		goto err;
 
-	if (!encl_build(encl))
+	if (!encl_build(encl, opt_param))
 		goto err;
 
 	/*
@@ -284,7 +285,7 @@ TEST_F(enclave, unclobbered_vdso)
 	struct encl_op_get_from_buf get_op;
 	struct encl_op_put_to_buf put_op;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -357,7 +358,7 @@ TEST_F(enclave, unclobbered_vdso_oversubscribed)
 
 	total_mem = get_total_epc_mem();
 	ASSERT_NE(total_mem, 0);
-	ASSERT_TRUE(setup_test_encl(total_mem, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(total_mem, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -401,7 +402,7 @@ TEST_F_TIMEOUT(enclave, unclobbered_vdso_oversubscribed_remove, 900)
 	ASSERT_NE(total_mem, 0);
 	TH_LOG("Creating an enclave with %lu bytes heap may take a while ...",
 	       total_mem);
-	ASSERT_TRUE(setup_test_encl(total_mem, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(total_mem, &self->encl, _metadata, NULL));
 
 	/*
 	 * Hardware (SGX2) and kernel support is needed for this test. Start
@@ -506,7 +507,7 @@ TEST_F(enclave, clobbered_vdso)
 	struct encl_op_get_from_buf get_op;
 	struct encl_op_put_to_buf put_op;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -542,7 +543,7 @@ TEST_F(enclave, clobbered_vdso_and_user_function)
 	struct encl_op_get_from_buf get_op;
 	struct encl_op_put_to_buf put_op;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -575,7 +576,7 @@ TEST_F(enclave, tcs_entry)
 {
 	struct encl_op_header op;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -620,7 +621,7 @@ TEST_F(enclave, pte_permissions)
 	unsigned long data_start;
 	int ret;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -722,7 +723,7 @@ TEST_F(enclave, tcs_permissions)
 	struct sgx_enclave_restrict_permissions ioc;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -785,7 +786,7 @@ TEST_F(enclave, epcm_permissions)
 	unsigned long data_start;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -986,7 +987,7 @@ TEST_F(enclave, augment)
 	if (!sgx2_supported())
 		SKIP(return, "SGX2 not supported");
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1116,7 +1117,7 @@ TEST_F(enclave, augment_via_eaccept)
 	if (!sgx2_supported())
 		SKIP(return, "SGX2 not supported");
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1238,7 +1239,7 @@ TEST_F(enclave, tcs_create)
 	int ret, i;
 
 	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl,
-				    _metadata));
+				    _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1568,7 +1569,7 @@ TEST_F(enclave, remove_added_page_no_eaccept)
 	unsigned long data_start;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1679,7 +1680,7 @@ TEST_F(enclave, remove_added_page_invalid_access)
 	unsigned long data_start;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1794,7 +1795,7 @@ TEST_F(enclave, remove_added_page_invalid_access_after_eaccept)
 	unsigned long data_start;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	memset(&self->run, 0, sizeof(self->run));
 	self->run.tcs = self->encl.encl_base;
@@ -1918,7 +1919,7 @@ TEST_F(enclave, remove_untouched_page)
 	unsigned long data_start;
 	int ret, errno_save;
 
-	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata));
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, NULL));
 
 	/*
 	 * Hardware (SGX2) and kernel support is needed for this test. Start

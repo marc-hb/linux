@@ -311,7 +311,7 @@ static bool mrenclave_segment(EVP_MD_CTX *ctx, struct encl *encl,
 	return true;
 }
 
-bool encl_measure(struct encl *encl)
+bool encl_measure(struct encl *encl, struct opt_in *opt_param)
 {
 	uint64_t header1[2] = {0x000000E100000006, 0x0000000000010000};
 	uint64_t header2[2] = {0x0000006000000101, 0x0000000100000060};
@@ -332,6 +332,10 @@ bool encl_measure(struct encl *encl)
 	sigstruct->exponent = 3;
 	sigstruct->body.attributes = SGX_ATTR_MODE64BIT;
 	sigstruct->body.xfrm = 3;
+	if (opt_param) {
+		sigstruct->header.sighashtype = opt_param->sighashtype;
+		sigstruct->body.attributes |= opt_param->body_attributes;
+	}
 
 	/* sanity check */
 	if (check_crypto_errors())
