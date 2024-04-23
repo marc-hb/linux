@@ -639,6 +639,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->all_valid_pmc_idx64 = (BIT_ULL(eax.split.num_counters) - 1) &
 					   kvm_pmu_cap.cntr_mask64;
 	}
+	pmu->nr_arch_gp_counters = hweight64(pmu->all_valid_pmc_idx64);
 
 	if (kvm_pmu_has_perf_global_ctrl(pmu)) {
 		/*

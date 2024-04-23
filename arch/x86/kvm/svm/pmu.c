@@ -216,6 +216,7 @@ static void __amd_pmu_refresh(struct kvm_vcpu *vcpu)
 	}
 
 	gp_bitmap &= kvm_pmu_cap.cntr_mask64;
+	pmu->nr_arch_gp_counters = hweight64(gp_bitmap);
 
 	if (kvm_pmu_has_perf_global_ctrl(pmu)) {
 		/*
