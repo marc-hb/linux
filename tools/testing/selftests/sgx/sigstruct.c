@@ -183,9 +183,9 @@ enum mrtags {
 	MREEXTEND = 0x00444E4554584545,
 };
 
-static bool mrenclave_update(EVP_MD_CTX *ctx, const void *data)
+static bool mrenclave_update(EVP_MD_CTX *ctx, const void *data, size_t size)
 {
-	if (!EVP_DigestUpdate(ctx, data, 64)) {
+	if (!EVP_DigestUpdate(ctx, data, size)) {
 		fprintf(stderr, "digest update failed\n");
 		return false;
 	}
@@ -214,9 +214,15 @@ struct mrecreate {
 	uint64_t tag;
 	uint32_t ssaframesize;
 	uint64_t size;
-	uint8_t reserved[44];
+	uint8_t reserved[44]; /* Padding to 64 */
 } __attribute__((__packed__));
 
+struct mrecreate384 {
+	uint64_t tag;
+	uint32_t ssaframesize;
+	uint64_t size;
+	uint8_t reserved[108]; /* Padding to 128 */
+} __attribute__((__packed__));
 
 static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size,
 			      enum sgx_sighashtype hash_type)
@@ -224,6 +230,7 @@ static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size,
 	const EVP_MD *type = hash_type == SGX_SIGHASHTYPE_SHA256 ?
 				     EVP_sha256() :
 				     EVP_sha384();
+	struct mrecreate384 mrecreate384;
 	struct mrecreate mrecreate;
 	uint64_t encl_size;
 
@@ -238,18 +245,33 @@ static bool mrenclave_ecreate(EVP_MD_CTX *ctx, uint64_t blob_size,
 	if (!EVP_DigestInit_ex(ctx, type, NULL))
 		return false;
 
-	return mrenclave_update(ctx, &mrecreate);
+	if (hash_type == SGX_SIGHASHTYPE_SHA384) {
+		memset(&mrecreate384, 0, sizeof(mrecreate384));
+		memcpy(&mrecreate384, &mrecreate, sizeof(mrecreate));
+		return mrenclave_update(ctx, &mrecreate384, sizeof(mrecreate384));
+	}
+
+	return mrenclave_update(ctx, &mrecreate, sizeof(mrecreate));
 }
 
 struct mreadd {
 	uint64_t tag;
 	uint64_t offset;
 	uint64_t flags; /* SECINFO flags */
-	uint8_t reserved[40];
+	uint8_t reserved[40]; /* Padding to 64 */
 } __attribute__((__packed__));
 
-static bool mrenclave_eadd(EVP_MD_CTX *ctx, uint64_t offset, uint64_t flags)
+struct mreadd384 {
+	uint64_t tag;
+	uint64_t offset;
+	uint64_t flags; /* SECINFO flags */
+	uint8_t reserved[104]; /* Padding to 128 */
+} __attribute__((__packed__));
+
+static bool mrenclave_eadd(EVP_MD_CTX *ctx, uint64_t offset, uint64_t flags,
+			   enum sgx_sighashtype hash_type)
 {
+	struct mreadd384 mreadd384;
 	struct mreadd mreadd;
 
 	memset(&mreadd, 0, sizeof(mreadd));
@@ -257,19 +279,33 @@ static bool mrenclave_eadd(EVP_MD_CTX *ctx, uint64_t offset, uint64_t flags)
 	mreadd.offset = offset;
 	mreadd.flags = flags;
 
-	return mrenclave_update(ctx, &mreadd);
+	if (hash_type == SGX_SIGHASHTYPE_SHA384) {
+		memset(&mreadd384, 0, sizeof(mreadd384));
+		memcpy(&mreadd384, &mreadd, sizeof(mreadd));
+		return mrenclave_update(ctx, &mreadd384, sizeof(mreadd384));
+	}
+
+	return mrenclave_update(ctx, &mreadd, sizeof(mreadd));
 }
 
 struct mreextend {
 	uint64_t tag;
 	uint64_t offset;
-	uint8_t reserved[48];
+	uint8_t reserved[48]; /* Padding to 64 */
+} __attribute__((__packed__));
+
+struct mreextend384 {
+	uint64_t tag;
+	uint64_t offset;
+	uint8_t reserved[112]; /* Padding to 128 */
 } __attribute__((__packed__));
 
 static bool mrenclave_eextend(EVP_MD_CTX *ctx, uint64_t offset,
-			      const uint8_t *data)
+			      const uint8_t *data, enum sgx_sighashtype hash_type)
 {
+	struct mreextend384 mreextend384;
 	struct mreextend mreextend;
+	size_t size = hash_type ? 128 : 64;
 	int i;
 
 	for (i = 0; i < 0x1000; i += 0x100) {
@@ -277,20 +313,31 @@ static bool mrenclave_eextend(EVP_MD_CTX *ctx, uint64_t offset,
 		mreextend.tag = MREEXTEND;
 		mreextend.offset = offset + i;
 
-		if (!mrenclave_update(ctx, &mreextend))
+		if (hash_type == SGX_SIGHASHTYPE_SHA384) {
+			memset(&mreextend384, 0, sizeof(mreextend384));
+			memcpy(&mreextend384, &mreextend, sizeof(mreextend));
+			if (!mrenclave_update(ctx, &mreextend384, sizeof(mreextend384)))
+				return false;
+		} else {
+			if (!mrenclave_update(ctx, &mreextend, sizeof(mreextend)))
+				return false;
+		}
+
+		if (!mrenclave_update(ctx, &data[i + 0x00], size))
 			return false;
 
-		if (!mrenclave_update(ctx, &data[i + 0x00]))
+		if (hash_type == SGX_SIGHASHTYPE_SHA256) {
+			if (!mrenclave_update(ctx, &data[i + 0x40], size))
+				return false;
+		}
+
+		if (!mrenclave_update(ctx, &data[i + 0x80], size))
 			return false;
 
-		if (!mrenclave_update(ctx, &data[i + 0x40]))
-			return false;
-
-		if (!mrenclave_update(ctx, &data[i + 0x80]))
-			return false;
-
-		if (!mrenclave_update(ctx, &data[i + 0xC0]))
-			return false;
+		if (hash_type == SGX_SIGHASHTYPE_SHA256) {
+			if (!mrenclave_update(ctx, &data[i + 0xC0], size))
+				return false;
+		}
 	}
 
 	return true;
@@ -303,11 +350,13 @@ static bool mrenclave_segment(EVP_MD_CTX *ctx, struct encl *encl,
 	uint64_t offset;
 
 	for (offset = 0; offset < end; offset += PAGE_SIZE) {
-		if (!mrenclave_eadd(ctx, seg->offset + offset, seg->flags))
+		if (!mrenclave_eadd(ctx, seg->offset + offset, seg->flags,
+				    encl->sigstruct.header.sighashtype))
 			return false;
 
 		if (seg->measure) {
-			if (!mrenclave_eextend(ctx, seg->offset + offset, seg->src + offset))
+			if (!mrenclave_eextend(ctx, seg->offset + offset, seg->src + offset,
+					       encl->sigstruct.header.sighashtype))
 				return false;
 		}
 	}
