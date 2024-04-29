@@ -1033,6 +1033,23 @@ out_err:
 	return -EFAULT;
 }
 
+static unsigned int qat_uclo_simg_hdr2sign_len(struct icp_qat_fw_loader_handle *handle)
+{
+	return ICP_QAT_AE_IMG_OFFSET(handle);
+}
+
+static unsigned int qat_uclo_simg_hdr2cont_len(struct icp_qat_fw_loader_handle *handle)
+{
+	return ICP_QAT_AE_IMG_OFFSET(handle);
+}
+
+static unsigned int qat_uclo_simg_fw_type(struct icp_qat_fw_loader_handle *handle, void *img_ptr)
+{
+	struct icp_qat_css_hdr *hdr = img_ptr;
+
+	return hdr->fw_type;
+}
+
 static int qat_uclo_map_suof_file_hdr(struct icp_qat_fw_loader_handle *handle,
 				      struct icp_qat_suof_filehdr *suof_ptr,
 				      int suof_size)
@@ -1064,9 +1081,9 @@ static void qat_uclo_map_simg(struct icp_qat_fw_loader_handle *handle,
 			      struct icp_qat_suof_chunk_hdr *suof_chunk_hdr)
 {
 	struct icp_qat_suof_handle *suof_handle = handle->sobj_handle;
-	unsigned int offset = ICP_QAT_AE_IMG_OFFSET(handle);
-	struct icp_qat_simg_ae_mode *ae_mode;
+	unsigned int offset = qat_uclo_simg_hdr2cont_len(handle);
 	struct icp_qat_suof_objhdr *suof_objhdr;
+	struct icp_qat_simg_ae_mode *ae_mode;
 
 	suof_img_hdr->simg_buf  = (suof_handle->suof_buf +
 				   suof_chunk_hdr->offset +
@@ -1367,16 +1384,20 @@ static int qat_uclo_check_image(struct icp_qat_fw_loader_handle *handle,
 {
 	char *fw_type_name = fw_type ? "MMP" : "AE";
 	unsigned int css_dword_size = sizeof(u32);
+	unsigned int header_len, simg_type;
+	struct icp_qat_css_hdr *css_hdr;
 
 	if (handle->chip_info->fw_auth) {
-		struct icp_qat_css_hdr *css_hdr = (struct icp_qat_css_hdr *)image;
-		unsigned int header_len = ICP_QAT_AE_IMG_OFFSET(handle);
+		header_len = qat_uclo_simg_hdr2sign_len(handle);
+		simg_type = qat_uclo_simg_fw_type(handle, image);
+
+		css_hdr = (struct icp_qat_css_hdr *)image;
 
 		if ((css_hdr->header_len * css_dword_size) != header_len)
 			goto err;
 		if ((css_hdr->size * css_dword_size) != size)
 			goto err;
-		if (fw_type != css_hdr->fw_type)
+		if (fw_type != simg_type)
 			goto err;
 		if (size <= header_len)
 			goto err;
@@ -1403,37 +1424,19 @@ err:
 	return -EINVAL;
 }
 
-static int qat_uclo_map_auth_fw(struct icp_qat_fw_loader_handle *handle,
-				char *image, unsigned int size,
-				struct icp_qat_fw_auth_desc **desc)
+static int qat_uclo_build_auth_desc_RSA(struct icp_qat_fw_loader_handle *handle,
+					char *image, unsigned int size,
+					struct icp_firml_dram_desc *dram_desc,
+					unsigned int fw_type, struct icp_qat_fw_auth_desc **desc)
 {
 	struct icp_qat_css_hdr *css_hdr = (struct icp_qat_css_hdr *)image;
-	struct icp_qat_fw_auth_desc *auth_desc;
-	struct icp_qat_auth_chunk *auth_chunk;
-	u64 virt_addr,  bus_addr, virt_base;
-	unsigned int simg_offset = sizeof(*auth_chunk);
 	struct icp_qat_simg_ae_mode *simg_ae_mode;
-	struct icp_firml_dram_desc img_desc;
-	int ret;
+	struct icp_qat_fw_auth_desc *auth_desc;
+	u64 virt_addr, bus_addr, virt_base;
 
-	ret = qat_uclo_simg_alloc(handle, &img_desc, ICP_QAT_CSS_RSA4K_MAX_IMAGE_LEN);
-	if (ret) {
-		pr_err("error, allocate continuous dram fail\n");
-		return ret;
-	}
-
-	if (!IS_ALIGNED(img_desc.dram_size, 8) || !img_desc.dram_bus_addr) {
-		pr_debug("invalid address\n");
-		qat_uclo_simg_free(handle, &img_desc);
-		return -EINVAL;
-	}
-
-	auth_chunk = img_desc.dram_base_addr_v;
-	auth_chunk->chunk_size = img_desc.dram_size;
-	auth_chunk->chunk_bus_addr = img_desc.dram_bus_addr;
-	virt_base = (uintptr_t)img_desc.dram_base_addr_v + simg_offset;
-	bus_addr  = img_desc.dram_bus_addr + simg_offset;
-	auth_desc = img_desc.dram_base_addr_v;
+	virt_base = (uintptr_t)dram_desc->dram_base_addr_v + sizeof(struct icp_qat_auth_chunk);
+	bus_addr  = dram_desc->dram_bus_addr + sizeof(struct icp_qat_auth_chunk);
+	auth_desc = dram_desc->dram_base_addr_v;
 	auth_desc->css_hdr_high = (unsigned int)(bus_addr >> BITS_PER_TYPE(u32));
 	auth_desc->css_hdr_low = (unsigned int)bus_addr;
 	virt_addr = virt_base;
@@ -1482,21 +1485,20 @@ static int qat_uclo_map_auth_fw(struct icp_qat_fw_loader_handle *handle,
 
 	auth_desc->img_high = (unsigned int)(bus_addr >> BITS_PER_TYPE(u32));
 	auth_desc->img_low = (unsigned int)bus_addr;
-	auth_desc->img_len = size - ICP_QAT_AE_IMG_OFFSET(handle);
-	if (bus_addr + auth_desc->img_len > img_desc.dram_bus_addr +
-					    ICP_QAT_CSS_RSA4K_MAX_IMAGE_LEN) {
+	auth_desc->img_len = size - qat_uclo_simg_hdr2sign_len(handle);
+	if (bus_addr + auth_desc->img_len >
+	    dram_desc->dram_bus_addr + ICP_QAT_CSS_RSA4K_MAX_IMAGE_LEN) {
 		pr_err("insufficient memory size for authentication data\n");
-		qat_uclo_simg_free(handle, &img_desc);
+		qat_uclo_simg_free(handle, dram_desc);
 		return -ENOMEM;
 	}
 
 	memcpy((void *)(uintptr_t)virt_addr,
-	       (void *)(image + ICP_QAT_AE_IMG_OFFSET(handle)),
+	       (void *)(image + qat_uclo_simg_hdr2sign_len(handle)),
 	       auth_desc->img_len);
 	virt_addr = virt_base;
 	/* AE firmware */
-	if (((struct icp_qat_css_hdr *)(uintptr_t)virt_addr)->fw_type ==
-	    CSS_AE_FIRMWARE) {
+	if (fw_type == CSS_AE_FIRMWARE) {
 		auth_desc->img_ae_mode_data_high = auth_desc->img_high;
 		auth_desc->img_ae_mode_data_low = auth_desc->img_low;
 		bus_addr = ADD_ADDR(auth_desc->img_ae_mode_data_high,
@@ -1521,6 +1523,28 @@ static int qat_uclo_map_auth_fw(struct icp_qat_fw_loader_handle *handle,
 	}
 	*desc = auth_desc;
 	return 0;
+}
+
+static int qat_uclo_map_auth_fw(struct icp_qat_fw_loader_handle *handle,
+				char *image, unsigned int size,
+				struct icp_qat_fw_auth_desc **desc)
+{
+	struct icp_qat_auth_chunk *auth_chunk;
+	struct icp_firml_dram_desc img_desc;
+	unsigned int simg_fw_type;
+	int ret;
+
+	ret = qat_uclo_simg_alloc(handle, &img_desc, ICP_QAT_CSS_RSA4K_MAX_IMAGE_LEN);
+	if (ret)
+		return ret;
+
+	simg_fw_type = qat_uclo_simg_fw_type(handle, image);
+	auth_chunk = img_desc.dram_base_addr_v;
+	auth_chunk->chunk_size = img_desc.dram_size;
+	auth_chunk->chunk_bus_addr = img_desc.dram_bus_addr;
+
+	return qat_uclo_build_auth_desc_RSA(handle, image, size, &img_desc,
+					    simg_fw_type, desc);
 }
 
 static int qat_uclo_load_fw(struct icp_qat_fw_loader_handle *handle,
