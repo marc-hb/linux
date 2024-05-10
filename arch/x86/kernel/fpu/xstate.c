@@ -1384,6 +1384,7 @@ void xsaves(struct xregs_state *xstate, u64 mask)
 	XSTATE_OP(XSAVES, xstate, (u32)mask, (u32)(mask >> 32), err);
 	WARN_ON_ONCE(err);
 }
+EXPORT_SYMBOL_GPL(xsaves);
 
 /**
  * xrstors - Restore selected components from a kernel xstate buffer
@@ -1408,6 +1409,7 @@ void xrstors(struct xregs_state *xstate, u64 mask)
 	XSTATE_OP(XRSTORS, xstate, (u32)mask, (u32)(mask >> 32), err);
 	WARN_ON_ONCE(err);
 }
+EXPORT_SYMBOL_GPL(xrstors);
 
 #if IS_ENABLED(CONFIG_KVM)
 void fpstate_clear_xstate_component(struct fpstate *fps, unsigned int xfeature)

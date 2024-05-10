@@ -111,6 +111,10 @@ extern void switch_fpu_return(void);
  */
 extern int cpu_has_xfeatures(u64 xfeatures_mask, const char **feature_name);
 
+/* xsaves/xrstors support */
+extern void xsaves(struct xregs_state *xstate, u64 mask);
+extern void xrstors(struct xregs_state *xstate, u64 mask);
+
 /* Trap handling */
 extern int  fpu__exception_code(struct fpu *fpu, int trap_nr);
 extern void fpu_sync_fpstate(struct fpu *fpu);

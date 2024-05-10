@@ -899,6 +899,21 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 				  kzalloc(content_size, GFP_KERNEL);
 		if (!lbr_desc->state)
 			lbr_desc->records.nr = 0;
+		else
+			/*
+			 * For guest LBR context switch, XRSTORS is called
+			 * before first XSAVES is called.  XRSTORS requires
+			 * XCOMP_BV[63] to be set.
+			 *
+			 * We leave XSTATE_BV[15] to zero so that the first
+			 * XRSTORS instruction serves the purpose to set the
+			 * Arch LBR state component to it's initial configuration:
+			 * all MSR to be 0, besides IA32_LBR_DEPTH.
+			 *
+			 * The subsequent XSAVES updates XCOMP_BV and XSTATE_BV
+			 * from RFBM, which set bit 15 to each of them.
+			 **/
+			lbr_desc->state->header.xcomp_bv = XCOMP_BV_COMPACTED_FORMAT;
 	}
 
 	if (lbr_desc->records.nr)
@@ -1264,6 +1279,7 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 
 static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 {
+	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct kvm_pmc *pmc;
 	u64 fixed_bits;
@@ -1339,10 +1355,19 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 				wrmsrl(msr, 0);
 		}
 	}
+
+	if (lbr_desc->msr_passthrough) {
+		xsaves(&vcpu_to_lbr_desc(vcpu)->state->xsave,
+		       XFEATURE_MASK_LBR);
+
+		/* Reset LBR records to avoid guest LBRs leak to host. */
+		wrmsrl(MSR_ARCH_LBR_DEPTH, vcpu_to_lbr_records(vcpu)->nr);
+	}
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 {
+	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 global_status, toggle;
 	struct kvm_pmc *pmc;
@@ -1400,6 +1425,15 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 			       pmc->arch_pebs_cfg_c);
 		}
 	}
+
+	if (lbr_desc->msr_passthrough)
+		/*
+		 * MSR_ARCH_LBR_CTL is restored here, but later on it will load
+		 * again from GUEST_IA32_LBR_CTL through VMCS control
+		 * VM_ENTRY_LOAD_IA32_LBR_CTL in VM Entry.
+		 */
+		xrstors(&vcpu_to_lbr_desc(vcpu)->state->xsave,
+			XFEATURE_MASK_LBR);
 }
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)

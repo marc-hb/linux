@@ -102,7 +102,10 @@ struct lbr_desc {
 	 */
 	struct perf_event *event;
 
-	/* True if LBRs are marked as not intercepted in the MSR bitmap */
+	/*
+	 * True if LBRs are marked as not intercepted in the MSR bitmap.
+	 * and it implies that guest LBR is enabled.
+	 */
 	bool msr_passthrough;
 
 	/*  Do not put anything after the LBR state. */
