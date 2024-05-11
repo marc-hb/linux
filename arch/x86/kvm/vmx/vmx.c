@@ -7985,24 +7985,32 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 static __init u64 vmx_get_perf_capabilities(void)
 {
 	u64 perf_cap = PERF_CAP_FW_WRITES;
+	bool kvm_has_lbr_cap;;
 
 	if (!enable_pmu)
 		return 0;
 
-	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR) &&
-	    !enable_mediated_pmu) {
-		x86_perf_get_lbr(&vmx_lbr_caps);
+	x86_perf_get_lbr(&vmx_lbr_caps);
 
-		/*
-		 * KVM requires LBR callstack support, as the overhead due to
-		 * context switching LBRs without said support is too high.
-		 * See intel_pmu_create_guest_lbr_event() for more info.
-		 */
-		if (!vmx_lbr_caps.has_callstack)
-			memset(&vmx_lbr_caps, 0, sizeof(vmx_lbr_caps));
-		else if (vmx_lbr_caps.nr)
-			perf_cap |= kvm_host.perf_capabilities & PERF_CAP_LBR_FMT;
-	}
+	/*
+	 * KVM requires LBR callstack support for legacy LBR, as the overhead
+	 * due to context switching LBRs without said support is too high.
+	 * See intel_pmu_create_guest_lbr_event() for more info.
+	 *
+	 * Legacy LBR virtualization is supported in non-mediated vPMU only.
+	 */
+	kvm_has_lbr_cap = !cpu_feature_enabled(X86_FEATURE_ARCH_LBR) &&
+			  vmx_lbr_caps.has_callstack && !enable_mediated_pmu;
+
+	/* Arch LBR virtualization is supported in mediated vPMU only. */
+	kvm_has_lbr_cap = kvm_has_lbr_cap ? kvm_has_lbr_cap :
+			  cpu_feature_enabled(X86_FEATURE_ARCH_LBR) &&
+			  enable_mediated_pmu;
+
+	if (kvm_has_lbr_cap && vmx_lbr_caps.nr)
+		perf_cap |= kvm_host.perf_capabilities & PERF_CAP_LBR_FMT;
+	else
+		memset(&vmx_lbr_caps, 0, sizeof(vmx_lbr_caps));
 
 	if (vmx_pebs_supported() || kvm_pmu_cap.arch_pebs) {
 		perf_cap |= kvm_host.perf_capabilities & PERF_CAP_PEBS_MASK;
@@ -8061,10 +8069,12 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_clear(X86_FEATURE_PDCM);
 	kvm_caps.supported_perf_cap = vmx_get_perf_capabilities();
 
-	if (!guest_can_use_arch_lbr()) {
+	if (!enable_mediated_pmu || !guest_can_use_arch_lbr()) {
 		kvm_cpu_cap_clear(X86_FEATURE_ARCH_LBR);
 		kvm_caps.supported_xss &= ~XFEATURE_MASK_LBR;
-	}
+		kvm_caps.supported_perf_cap &= ~PERF_CAP_LBR_FMT;
+	} else
+		kvm_cpu_cap_check_and_set(X86_FEATURE_ARCH_LBR);
 
 	if (!enable_sgx) {
 		kvm_cpu_cap_clear(X86_FEATURE_SGX);
@@ -8078,7 +8088,6 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_set(X86_FEATURE_UMIP);
 
 	/* CPUID 0xD.1 */
-	kvm_caps.supported_xss = 0;
 	if (!cpu_has_vmx_xsaves())
 		kvm_cpu_cap_clear(X86_FEATURE_XSAVES);
 

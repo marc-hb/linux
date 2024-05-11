@@ -165,6 +165,7 @@ EXPORT_SYMBOL_GPL(kvm_find_cpuid_entry);
 static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct kvm_cpuid_entry2 *best;
+	struct x86_pmu_lbr lbr_cap;
 	u64 xfeatures;
 
 	/*
@@ -200,6 +201,23 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 			if ((best->ecx & mask_all) != mask_all)
 				return -EINVAL;
 		}
+	}
+
+	x86_perf_get_lbr(&lbr_cap);
+	best = kvm_find_cpuid_entry(vcpu, 0x1c);
+
+	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR)) {
+		/*
+		 * If KVM has Arch LBR capability, userspace can choose not to
+		 * enable it by without presenting CPUID.1CH leaf, or have it
+		 * with zero LBR depth.
+		 */
+		if (best && best->eax &&
+		    (best->eax & 0xff) != (1 << (lbr_cap.nr / 8 - 1)))
+			return -EINVAL;
+	} else if (best && (best->eax & 0xff)) {
+		/* It's legal to have a CPUID.1CH leaf with zero LBR depth. */
+		return -EINVAL;
 	}
 
 	/*
@@ -990,6 +1008,7 @@ void kvm_set_cpu_caps(void)
 		F(AMX_INT8),
 		F(AMX_BF16),
 		F(FLUSH_L1D),
+		F(ARCH_LBR),
 	);
 
 	if (boot_cpu_has(X86_FEATURE_AMD_IBPB_RET) &&
@@ -1590,6 +1609,27 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 				goto out;
 		}
 		break;
+	/* Architectural LBR */
+	case 0x1c: {
+		struct x86_pmu_lbr lbr_cap;
+
+		x86_perf_get_lbr(&lbr_cap);
+
+		if (!kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR) || !lbr_cap.nr) {
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+			break;
+		}
+
+		/*
+		 * For simplicity, support only the host's chosen LBR depth.
+		 * This allows KVM to reject guest/userspace attempts to use a
+		 * different LBR depth without violating Intel's architecture.
+		 * See also guest_can_use_lbrs().
+		 */
+		entry->eax &= ~0xff;
+		entry->eax |= (u32)1 << (lbr_cap.nr / 8 - 1);
+		break;
+	}
 	/* Intel AMX TILE */
 	case 0x1d:
 		if (!kvm_cpu_cap_has(X86_FEATURE_AMX_TILE)) {

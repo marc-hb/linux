@@ -879,9 +879,14 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 
 	pmu->arch_lbr_ctrl_rsvd = ~(0xfull | 0x7f0000ull);
 
+	/*
+	 * Legacy LBR is only available in legacy vPMU and Arch LBR is only
+	 * available in mediated vPMU
+	 */
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
-	if (cpuid_model_is_consistent(vcpu) &&
-	    (perf_capabilities & PERF_CAP_LBR_FMT))
+	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
+	   ((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
+	   (cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
 		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
 	else
 		lbr_desc->records.nr = 0;
@@ -916,7 +921,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			lbr_desc->state->header.xcomp_bv = XCOMP_BV_COMPACTED_FORMAT;
 	}
 
-	if (lbr_desc->records.nr)
+	/* Legacy LBR is only enabled on legacy perf-based vPMU. */
+	if (lbr_desc->records.nr && !kvm_mediated_pmu_enabled(vcpu))
 		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
 
 	fixed_bits = fixed_ctrs_bitmap(pmu);
@@ -1240,6 +1246,9 @@ void vmx_passthrough_lbr_msrs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+
+	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+		return;
 
 	if (!lbr_desc->event) {
 		vmx_disable_lbr_msrs_passthrough(vcpu);
