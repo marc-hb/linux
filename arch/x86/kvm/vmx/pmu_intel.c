@@ -310,13 +310,13 @@ int intel_pmu_create_guest_lbr_event(struct kvm_vcpu *vcpu)
  * been passthrough since the host would help restore or reset
  * the LBR msrs records when the guest LBR event is scheduled in.
  */
-static bool intel_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
-				     struct msr_data *msr_info, bool read)
+static bool emulated_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
+						struct msr_data *msr_info, bool read)
 {
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 	u32 index = msr_info->index;
 
-	if (!intel_pmu_is_valid_lbr_msr(vcpu, index))
+	if (!intel_pmu_is_valid_lbr_msr(vcpu, msr_info->index))
 		return false;
 
 	if (!lbr_desc->event && intel_pmu_create_guest_lbr_event(vcpu) < 0)
@@ -363,6 +363,48 @@ static bool intel_pmu_handle_extra_msrs_access(struct kvm_vcpu *vcpu,
 		}
 
 	return false;
+}
+
+static bool mediated_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
+						struct msr_data *msr_info, bool read)
+{
+	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+	struct x86_pmu_lbr *records = vcpu_to_lbr_records(vcpu);
+	struct lbr_entry *entry = lbr_desc->state->lbr.entries;
+	u32 index = msr_info->index;
+
+	if (index >= records->from && index < records->from + records->nr) {
+		entry += index - records->from;
+		if (read)
+			msr_info->data = entry->from;
+		else
+			entry->from = msr_info->data;
+	} else if (index >= records->to && index < records->to + records->nr) {
+		entry += index - records->to;
+		if (read)
+			msr_info->data = entry->to;
+		else
+			entry->to = msr_info->data;
+	} else if (records->info && index >= records->info &&
+		   index < records->info + records->nr) {
+		entry += index - records->info;
+		if (read)
+			msr_info->data = entry->info;
+		else
+			entry->info = msr_info->data;
+	} else
+		return false;
+
+	return true;
+}
+
+static bool intel_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
+					     struct msr_data *msr_info, bool read)
+{
+	if (kvm_mediated_pmu_enabled(vcpu))
+		return mediated_pmu_handle_lbr_msrs_access(vcpu, msr_info, read);
+	else
+		return emulated_pmu_handle_lbr_msrs_access(vcpu, msr_info, read);
 }
 
 static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
