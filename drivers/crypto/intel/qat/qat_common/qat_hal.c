@@ -10,7 +10,7 @@
 #include "icp_qat_uclo.h"
 
 #define BAD_REGADDR	       0xffff
-#define MAX_RETRY_TIMES	   10000
+#define MAX_RETRY_TIMES	   1000000
 #define INIT_CTX_ARB_VALUE	0x0
 #define INIT_CTX_ENABLE_VALUE     0x0
 #define INIT_PC_VALUE	     0x0
@@ -125,10 +125,11 @@ static int qat_hal_wait_cycles(struct icp_qat_fw_loader_handle *handle,
 	unsigned int csr = (1 << ACS_ABO_BITPOS);
 	int times = MAX_RETRY_TIMES;
 	int elapsed_cycles = 0;
+	int total_elapsed_cycles = 0;
 
 	base_cnt = qat_hal_rd_ae_csr(handle, ae, PROFILE_COUNT);
 	base_cnt &= 0xffff;
-	while ((int)cycles > elapsed_cycles && times--) {
+	while ((int)cycles > total_elapsed_cycles && times--) {
 		if (chk_inactive)
 			csr = qat_hal_rd_ae_csr(handle, ae, ACTIVE_CTX_STATUS);
 
@@ -138,6 +139,7 @@ static int qat_hal_wait_cycles(struct icp_qat_fw_loader_handle *handle,
 
 		if (elapsed_cycles < 0)
 			elapsed_cycles += 0x10000;
+		total_elapsed_cycles += elapsed_cycles;
 
 		/* ensure at least 8 time cycles elapsed in wait_cycles */
 		if (elapsed_cycles >= 8 && !(csr & (1 << ACS_ABO_BITPOS)))
