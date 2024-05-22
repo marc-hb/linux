@@ -157,7 +157,7 @@ static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
 	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR)) {
 		if (index == MSR_LBR_SELECT || index == MSR_LBR_TOS)
 			return true;
-	} else if (index == MSR_ARCH_LBR_CTL)
+	} else if (index == MSR_ARCH_LBR_CTL || index == MSR_ARCH_LBR_DEPTH)
 		return true;
 
 	ret = (index >= records->from && index < records->from + records->nr) ||
@@ -393,6 +393,24 @@ static bool mediated_pmu_handle_lbr_msrs_access(struct kvm_vcpu *vcpu,
 			}
 
 			vmcs_write64(GUEST_IA32_LBR_CTL, msr_info->data);
+		}
+	} else if (index == MSR_ARCH_LBR_DEPTH) {
+		/*
+		 * KVM advertises only the host's LBR depth as a supported depth, i.e.
+		 * disallows using arch LBRs with a different depth than the host.
+		 * Don't bother checking guest CPUID to see if the requested depth is
+		 * allowed, as the current depth is the only allowed depth as far as
+		 * KVM is concerned.
+		 */
+		if (read) {
+			msr_info->data = records->nr;
+		} else {
+			if (msr_info->data != records->nr)
+				return false;
+
+			/* Write to LBR_DEPTH, reset all LBR entries to 0. */
+			memset(entry, 0, lbr_desc->records.nr *
+			       sizeof(struct lbr_entry));
 		}
 	} else if (index >= records->from && index < records->from + records->nr) {
 		entry += index - records->from;
