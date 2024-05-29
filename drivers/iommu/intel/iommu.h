@@ -194,6 +194,7 @@
  * Extended Capability Register
  */
 
+#define ecap_hpts(e)		(((e) >> 55) & 0x1)
 #define ecap_pms(e)		(((e) >> 51) & 0x1)
 #define ecap_rps(e)		(((e) >> 49) & 0x1)
 #define ecap_smpwc(e)		(((e) >> 48) & 0x1)
@@ -429,6 +430,18 @@ enum {
 #define QI_PC_PASID(pasid)	(((u64)pasid) << 32)
 #define QI_PC_DID(did)		(((u64)did) << 16)
 #define QI_PC_GRAN(gran)	(((u64)gran) << 4)
+
+#define QI_HPT_TYPE		0xa
+#define QI_HPT_GRAN(g)		(((u64)(g)) << 4)
+#define QI_HPT_DID(d)		(((u64)(d)) << 16)
+
+/* HPT cache invalidation granu */
+#define QI_HPT_GLOBAL		1
+#define QI_HPT_DOMAIN		2
+#define QI_HPT_PSI		3
+#define QI_HPT_ADDR(addr)	((u64)(addr) & VTD_PAGE_MASK)
+#define QI_HPT_IH(ih)		(((u64)(ih)) << 6)
+#define QI_HPT_AM(am)		(((u64)(am)) & 0x3f)
 
 /* PASID cache invalidation granu */
 #define QI_PC_ALL_PASIDS	0

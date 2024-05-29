@@ -186,6 +186,76 @@ DEFINE_EVENT(cache_tag_flush, cache_tag_flush_range_np,
 		 unsigned long addr, unsigned long pages, unsigned long mask),
 	TP_ARGS(tag, start, end, addr, pages, mask)
 );
+
+TRACE_EVENT(hpt_update,
+	TP_PROTO(unsigned long phys_pfn, int prot, int level,
+		 u64 pte_low, u64 pte_high),
+
+	TP_ARGS(phys_pfn, prot, level, pte_low, pte_high),
+
+	TP_STRUCT__entry(
+		__field(unsigned long, phys_pfn)
+		__field(int, level)
+		__field(int, prot)
+		__field(u64, pte_low)
+		__field(u64, pte_high)
+	),
+
+	TP_fast_assign(
+		__entry->phys_pfn = phys_pfn;
+		__entry->level = level;
+		__entry->prot = prot;
+		__entry->pte_low = pte_low;
+		__entry->pte_high = pte_high;
+	),
+
+	TP_printk("phys(0x%013lx) permission(%x) @level(%d): %llx %llx",
+		__entry->phys_pfn, __entry->prot, __entry->level,
+		__entry->pte_low, __entry->pte_high
+	)
+);
+
+TRACE_EVENT(hpt_map,
+	TP_PROTO(unsigned long phys_pfn, size_t pgsize, int prot),
+
+	TP_ARGS(phys_pfn, pgsize, prot),
+
+	TP_STRUCT__entry(
+		__field(unsigned long, phys_pfn)
+		__field(size_t, pgsize)
+		__field(int, prot)
+	),
+
+	TP_fast_assign(
+		__entry->phys_pfn = phys_pfn;
+		__entry->pgsize = pgsize;
+		__entry->prot = prot;
+	),
+
+	TP_printk("phys_pfn=0x%013lx pgsize=%zu prot=0x%x",
+		  __entry->phys_pfn, __entry->pgsize, __entry->prot
+	)
+);
+
+TRACE_EVENT(hpt_unmap,
+	TP_PROTO(unsigned long phys_pfn, size_t pgsize),
+
+	TP_ARGS(phys_pfn, pgsize),
+
+	TP_STRUCT__entry(
+		__field(unsigned long, phys_pfn)
+		__field(size_t, pgsize)
+	),
+
+	TP_fast_assign(
+		__entry->phys_pfn = phys_pfn;
+		__entry->pgsize = pgsize;
+	),
+
+	TP_printk("phys_pfn=0x%013lx pgsize=%zu",
+		  __entry->phys_pfn, __entry->pgsize
+	)
+);
 #endif /* _TRACE_INTEL_IOMMU_H */
 
 /* This part must be outside protection */
