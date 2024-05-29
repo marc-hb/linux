@@ -640,6 +640,9 @@ struct dmar_domain {
 	int		iommu_superpage;/* Level of superpages supported:
 					   0 == 4KiB (no superpages), 1 == 2MiB,
 					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
+	/* host permission table */
+	struct hpt_table *hpt;
+
 	union {
 		/* DMA remapping domain */
 		struct {
