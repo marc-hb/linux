@@ -1455,13 +1455,18 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 			break;
 		}
 
-		eax.split.version_id = kvm_pmu_cap.version;
-		eax.split.num_counters = hweight64(kvm_pmu_cap.cntr_mask64);
-		eax.split.bit_width = kvm_pmu_cap.bit_width_gp;
-		eax.split.mask_length = kvm_pmu_cap.events_mask_len;
-		edx.split.num_counters_fixed =
-			find_first_zero_bit(kvm_pmu_cap.fixed_cntr_mask, X86_PMC_IDX_MAX);
-		edx.split.bit_width_fixed = kvm_pmu_cap.bit_width_fixed;
+		eax.full = entry->eax;
+		eax.split.version_id = umin(eax.split.version_id, kvm_pmu_cap.version);
+		eax.split.num_counters = umin(eax.split.num_counters,
+					      hweight64(kvm_pmu_cap.cntr_mask64));
+		eax.split.bit_width = umin(eax.split.bit_width, kvm_pmu_cap.bit_width_gp);
+		eax.split.mask_length = umin(eax.split.mask_length, kvm_pmu_cap.events_mask_len);
+
+		edx.full = entry->edx;
+		edx.split.num_counters_fixed = umin(edx.split.num_counters_fixed,
+			find_first_zero_bit(kvm_pmu_cap.fixed_cntr_mask, X86_PMC_IDX_MAX));
+		edx.split.bit_width_fixed = umin(edx.split.bit_width_fixed,
+						 kvm_pmu_cap.bit_width_fixed);
 
 		if (kvm_pmu_cap.version)
 			edx.split.anythread_deprecated = 1;
@@ -1469,12 +1474,11 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		edx.split.reserved2 = 0;
 
 		entry->eax = eax.full;
-		entry->ebx = kvm_pmu_cap.events_mask;
+		entry->ebx |= kvm_pmu_cap.events_mask;
 		if (kvm_pmu_cap.version < 5)
 			entry->ecx = 0;
 		else
-			entry->ecx = kvm_pmu_cap.fixed_cntr_mask64 &
-				     (BIT(edx.split.num_counters_fixed) - 1);
+			entry->ecx &= kvm_pmu_cap.fixed_cntr_mask64;
 		entry->edx = edx.full;
 		break;
 	}
