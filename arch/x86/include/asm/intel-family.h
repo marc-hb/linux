@@ -181,6 +181,7 @@
 
 /* Family 19 */
 #define INTEL_PANTHERCOVE_X		IFM(19, 0x01) /* Diamond Rapids */
+#define INTEL_PANTHERCOVE_D		IFM(19, 0x03) /* Diamond Rapids-D */
 
 /* CPU core types */
 enum intel_cpu_type {
