@@ -5503,7 +5503,11 @@ static int handle_cr(struct kvm_vcpu *vcpu)
 
 	exit_qualification = vmx_get_exit_qual(vcpu);
 	cr = exit_qualification & 15;
-	reg = (exit_qualification >> 8) & 15;
+	if (!kvm_apx_supported())
+		reg = (exit_qualification >> 8) & 0xf;
+	else
+		reg = (exit_qualification >> 8) & 0x1f;
+
 	switch ((exit_qualification >> 4) & 3) {
 	case 0: /* mov to cr */
 		val = kvm_register_read(vcpu, reg);
@@ -5621,7 +5625,10 @@ static int handle_dr(struct kvm_vcpu *vcpu)
 		return 1;
 	}
 
-	reg = DEBUG_REG_ACCESS_REG(exit_qualification);
+	if (!kvm_apx_supported())
+		reg = DEBUG_REG_ACCESS_REG(exit_qualification);
+	else
+		reg = (exit_qualification >> 8) & 0x1f;
 	if (exit_qualification & TYPE_MOV_FROM_DR) {
 		kvm_register_write(vcpu, reg, kvm_get_dr(vcpu, dr));
 		err = 0;
