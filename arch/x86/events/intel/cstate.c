@@ -139,10 +139,12 @@ struct cstate_model {
 /* Quirk flags */
 #define SLM_PKG_C6_USE_C7_MSR	(1UL << 0)
 #define KNL_CORE_C6_MSR		(1UL << 1)
+#define CLX_AP_PKG_MULTI_DIE    (1UL << 2)
 
 /* cstate_core PMU */
 static struct pmu cstate_core_pmu;
 static bool has_cstate_core;
+static bool package_cstate_per_die;
 
 enum perf_cstate_core_events {
 	PERF_CSTATE_CORE_C1_RES = 0,
@@ -453,6 +455,18 @@ static const struct cstate_model snb_cstates __initconst = {
 				  BIT(PERF_CSTATE_PKG_C7_RES),
 };
 
+static const struct cstate_model skl_cstates __initconst = {
+	.core_events		= BIT(PERF_CSTATE_CORE_C3_RES) |
+				  BIT(PERF_CSTATE_CORE_C6_RES) |
+				  BIT(PERF_CSTATE_CORE_C7_RES),
+
+	.pkg_events		= BIT(PERF_CSTATE_PKG_C2_RES) |
+				  BIT(PERF_CSTATE_PKG_C3_RES) |
+				  BIT(PERF_CSTATE_PKG_C6_RES) |
+				  BIT(PERF_CSTATE_PKG_C7_RES),
+	.quirks                 = CLX_AP_PKG_MULTI_DIE,
+};
+
 static const struct cstate_model hswult_cstates __initconst = {
 	.core_events		= BIT(PERF_CSTATE_CORE_C3_RES) |
 				  BIT(PERF_CSTATE_CORE_C6_RES) |
@@ -604,9 +618,9 @@ static const struct x86_cpu_id intel_cstates_match[] __initconst = {
 	X86_MATCH_VFM(INTEL_BROADWELL_G,	&snb_cstates),
 	X86_MATCH_VFM(INTEL_BROADWELL_X,	&snb_cstates),
 
-	X86_MATCH_VFM(INTEL_SKYLAKE_L,		&snb_cstates),
-	X86_MATCH_VFM(INTEL_SKYLAKE,		&snb_cstates),
-	X86_MATCH_VFM(INTEL_SKYLAKE_X,		&snb_cstates),
+	X86_MATCH_VFM(INTEL_SKYLAKE_L,		&skl_cstates),
+	X86_MATCH_VFM(INTEL_SKYLAKE,		&skl_cstates),
+	X86_MATCH_VFM(INTEL_SKYLAKE_X,		&skl_cstates),
 
 	X86_MATCH_VFM(INTEL_KABYLAKE_L,		&hswult_cstates),
 	X86_MATCH_VFM(INTEL_KABYLAKE,		&hswult_cstates),
@@ -667,6 +681,10 @@ static int __init cstate_probe(const struct cstate_model *cm)
 	if (cm->quirks & KNL_CORE_C6_MSR)
 		pkg_msr[PERF_CSTATE_CORE_C6_RES].msr = MSR_KNL_CORE_C6_RESIDENCY;
 
+	if ((cm->quirks & CLX_AP_PKG_MULTI_DIE) &&
+	    (topology_max_dies_per_package() > 1))
+		/* CLX-AP special case */
+		package_cstate_per_die = true;
 
 	core_msr_mask = perf_msr_probe(core_msr, PERF_CSTATE_CORE_EVENT_MAX,
 				       true, (void *) &cm->core_events);
@@ -711,7 +729,7 @@ static int __init cstate_init(void)
 	}
 
 	if (has_cstate_pkg) {
-		if (topology_max_dies_per_package() > 1) {
+		if (package_cstate_per_die) {
 			/* CLX-AP is multi-die and the cstate is die-scope */
 			cstate_pkg_pmu.scope = PERF_PMU_SCOPE_DIE;
 			err = perf_pmu_register(&cstate_pkg_pmu,
