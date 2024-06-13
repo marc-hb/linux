@@ -803,6 +803,21 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	else
 		lbr_desc->records.nr = 0;
 
+	/*
+	 * The LBR depth is determined by host capability and it won't be
+	 * changed by userspace.
+	 */
+	if (lbr_desc->records.nr && kvm_mediated_pmu_enabled(vcpu) &&
+	    !lbr_desc->state) {
+		size_t content_size = sizeof(union arch_lbr_xsave_state) +
+			lbr_desc->records.nr * sizeof(struct lbr_entry);
+
+		lbr_desc->state = (union arch_lbr_xsave_state *)
+				  kzalloc(content_size, GFP_KERNEL);
+		if (!lbr_desc->state)
+			lbr_desc->records.nr = 0;
+	}
+
 	if (lbr_desc->records.nr)
 		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
 
@@ -1015,12 +1030,21 @@ static void intel_pmu_init(struct kvm_vcpu *vcpu)
 
 	lbr_desc->records.nr = 0;
 	lbr_desc->event = NULL;
+	lbr_desc->state = NULL;
 	lbr_desc->msr_passthrough = false;
 }
 
 static void intel_pmu_reset(struct kvm_vcpu *vcpu)
 {
 	intel_pmu_release_guest_lbr_event(vcpu);
+}
+
+static void intel_pmu_destroy(struct kvm_vcpu *vcpu)
+{
+	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+
+	kfree(lbr_desc->state);
+	lbr_desc->state = NULL;
 }
 
 /*
@@ -1337,6 +1361,7 @@ struct kvm_pmu_ops intel_pmu_ops __initdata = {
 	.set_msr = intel_pmu_set_msr,
 	.refresh = intel_pmu_refresh,
 	.init = intel_pmu_init,
+	.destroy = intel_pmu_destroy,
 	.reset = intel_pmu_reset,
 	.deliver_pmi = intel_pmu_deliver_pmi,
 	.cleanup = intel_pmu_cleanup,

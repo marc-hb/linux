@@ -891,6 +891,9 @@ void kvm_pmu_cleanup(struct kvm_vcpu *vcpu)
 void kvm_pmu_destroy(struct kvm_vcpu *vcpu)
 {
 	kvm_pmu_reset(vcpu);
+
+	if (kvm_pmu_ops.destroy)
+		kvm_pmu_call(destroy)(vcpu);
 }
 
 static bool pmc_pmi_enabled(struct kvm_pmc *pmc)

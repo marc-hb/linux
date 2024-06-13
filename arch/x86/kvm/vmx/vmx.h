@@ -104,6 +104,9 @@ struct lbr_desc {
 
 	/* True if LBRs are marked as not intercepted in the MSR bitmap */
 	bool msr_passthrough;
+
+	/*  Do not put anything after the LBR state. */
+	union arch_lbr_xsave_state *state;
 };
 
 extern struct x86_pmu_lbr vmx_lbr_caps;
