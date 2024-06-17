@@ -1,0 +1,254 @@
+[
+    {
+        "BriefDescription": "Aperture requests occupancy",
+        "Counter": "0",
+        "EventCode": "0x48",
+        "EventName": "UNC_NCU_APERTURE_OCCUPANCY_ARB",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of aperture requests",
+        "Counter": "0,1",
+        "EventCode": "0x47",
+        "EventName": "UNC_NCU_APERTURE_REQ_ARB",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Core Wakeups",
+        "Counter": "0,1",
+        "EventCode": "0x40",
+        "EventName": "UNC_NCU_CORE_WAKEUPS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Counts cycles DPT is waiting for arbitration",
+        "Counter": "0,1",
+        "EventCode": "0x4F",
+        "EventName": "UNC_NCU_DPT_CYCLES.ARB",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of times DPT event lost arbitration (first attempt)",
+        "Counter": "0,1",
+        "EventCode": "0x4C",
+        "EventName": "UNC_NCU_DPT_EVENTS.DPT_ARB_LOST",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of times DPT event lost arbitration (all attempts)",
+        "Counter": "0,1",
+        "EventCode": "0x4C",
+        "EventName": "UNC_NCU_DPT_EVENTS.DPT_ARB_LOSTX",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of times DPT event wins arbitration (first attempt)",
+        "Counter": "0,1",
+        "EventCode": "0x4C",
+        "EventName": "UNC_NCU_DPT_EVENTS.DPT_ARB_WIN",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Cycles in which the Uncore had a Lock or SplitLock in progress for the specified core (and thus All cores are blocked from Uncore). Count is done from Lock flow start (sent to PCU) to end.",
+        "Counter": "0,1",
+        "EventCode": "0x44",
+        "EventName": "UNC_NCU_LOCK_CYCLES.LOCKS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "This event uses the UMask as a Message Channel (MsgCh) PortID, and matches the RACU Target port against the Mask field, counting the number of times a request is going to be sent to a specific MsgCh destination from the RACU. It accounts for all types of requests.",
+        "Counter": "0,1",
+        "EventCode": "0x49",
+        "EventName": "UNC_NCU_MSGCH_TXN_TO_DESTINATION.PORTID",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Count number of times that thread issued a Doorbell transaction",
+        "Counter": "0,1",
+        "EventCode": "0x42",
+        "EventName": "UNC_NCU_MSG_RECEIVED.DOORBELL",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of Special cycle requests",
+        "Counter": "0,1",
+        "EventCode": "0x42",
+        "EventName": "UNC_NCU_MSG_RECEIVED.INT_PRIO_UPDATE",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Count IPI received in NCU from the specified thread",
+        "Counter": "0,1",
+        "EventCode": "0x42",
+        "EventName": "UNC_NCU_MSG_RECEIVED.IPI",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "MSI received from Uncore (iMPH)",
+        "Counter": "0,1",
+        "EventCode": "0x42",
+        "EventName": "UNC_NCU_MSG_RECEIVED.MSI",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Virtual Logical Wire (legacy) message were received from Uncore (iMPH)",
+        "Counter": "0,1",
+        "EventCode": "0x42",
+        "EventName": "UNC_NCU_MSG_RECEIVED.VLW",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of requests (read or writes) sent to the RACU (Register Access Control Unit).",
+        "Counter": "0,1",
+        "EventCode": "0x46",
+        "EventName": "UNC_NCU_RACU_REQUESTS.REQUEST",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupts",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupt sent to core in C00",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.C00",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupt sent to core in C0x",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.C0X",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupt sent to core in C1",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.C1",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupt sent to core in C3",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.C3",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Number of re-routable interrupt sent to core in C6",
+        "Counter": "0,1",
+        "EventCode": "0x4B",
+        "EventName": "UNC_NCU_REROUTABLE_INTS.C6",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Correctable Machine Check",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.CMC",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Count number of LiveLock messages received from Any Core",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.LIVELOCK",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "LT Error",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.LTERROR",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "All other U2C events excluding PICGO and PICEND",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.OTHER",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Thermal Event",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.THERMAL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Uncore Trap",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.TRAP",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "NCU"
+    },
+    {
+        "BriefDescription": "Uncorrectable Machine Check",
+        "Counter": "0,1",
+        "EventCode": "0x43",
+        "EventName": "UNC_NCU_U2C_EVENTS.UMC",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "NCU"
+    }
+]

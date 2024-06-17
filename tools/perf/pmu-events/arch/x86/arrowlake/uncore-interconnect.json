@@ -1,0 +1,1263 @@
+[
+    {
+        "BriefDescription": "Count all cycles where GRETA has no C2U Req credits to GIFT or GIFT asserts C2U RSP/DATA  stall signal",
+        "Counter": "0,1",
+        "EventCode": "0x95",
+        "EventName": "UNC_ARB_C2U_STALL_CYCLES.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on C2U Data",
+        "Counter": "0,1",
+        "EventCode": "0x95",
+        "EventName": "UNC_ARB_C2U_STALL_CYCLES.C2UDATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on C2U Req",
+        "Counter": "0,1",
+        "EventCode": "0x95",
+        "EventName": "UNC_ARB_C2U_STALL_CYCLES.C2UREQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on C2U Response",
+        "Counter": "0,1",
+        "EventCode": "0x95",
+        "EventName": "UNC_ARB_C2U_STALL_CYCLES.C2URSP",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of all CmpTrk valid entries",
+        "Counter": "0",
+        "EventCode": "0x86",
+        "EventName": "UNC_ARB_CMPTRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Occupancy of cNCReqTrk",
+        "Counter": "0",
+        "EventCode": "0x97",
+        "EventName": "UNC_ARB_CNCREQ_TRK_OCCUPANCY",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts number of any coherent request at memory controller that were issued by any core.",
+        "Counter": "0",
+        "EventCode": "0x85",
+        "EventName": "UNC_ARB_DAT_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts number of coherent reads pending on data return from memory controller that were issued by any core.",
+        "Counter": "0",
+        "EventCode": "0x85",
+        "EventName": "UNC_ARB_DAT_OCCUPANCY.RD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Asserted when one or more of the selected snoop response type is sent back to Homge Agent (iMPH) as a response to CohTrk initiated snoop, filtered by snoop type. RspI was returned and socket state of line was I Umask semantics: (RspI | RspS | RspCnflt | RspIWb | RspSWb) & (SnpInv | SnpCode | Aperture)",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.RSPI",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and invalidate my copy",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.RSPIFWDM",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "RspS was returned",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.RSPS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and keep my copy in S-state. Added in GSR with M2S policy.",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.RSPSFWDM",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter for SnpCode type",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.SNPCODE",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter for either SnpInv or BackInv",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_ARB_EXT_SNP_RESPONSE.SNPINV",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Occupancy of GRETAFIFO",
+        "Counter": "0",
+        "EventCode": "0x92",
+        "EventName": "UNC_ARB_FIFO_OCCUPANCY",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_OCCUPANCY.ALL",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_ARB_GTNCTRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_OCCUPANCY.RD",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_ARB_GTNCTRK_OCCUPANCY.RD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_OCCUPANCY.WR",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_ARB_GTNCTRK_OCCUPANCY.WR",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_REQUEST.ALL",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_ARB_GTNCTRK_REQUEST.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_REQUEST.CRABABORT",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_ARB_GTNCTRK_REQUEST.CRABABORT",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_REQUEST.RD",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_ARB_GTNCTRK_REQUEST.RD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "UNC_ARB_GTNCTRK_REQUEST.WR",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_ARB_GTNCTRK_REQUEST.WR",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Occupancy of hNCReqTrk",
+        "Counter": "0",
+        "EventCode": "0x98",
+        "EventName": "UNC_ARB_HNCREQ_TRK_OCCUPANCY",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Cycles IFA is full",
+        "Counter": "0,1",
+        "EventCode": "0x93",
+        "EventName": "UNC_ARB_IFA.FULL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Allocations into the IFA",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Asserted on coherent DRD + DRdPref  allocations into the queue. Cacheable only",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.DRD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "LLC Prefetch Opcodes",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.LLCPREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on SetMonitor/ClrMonitor",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.MONITOR",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on NC requests",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.NC",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on H-IDI SelfSnoop bit being set",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.SELFSNOOP",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Cacheable Core WB allocated",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.WB",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Write Invalidate allocated",
+        "Counter": "0,1",
+        "EventCode": "0x94",
+        "EventName": "UNC_ARB_IFA_ALLOCATIONS.WCIL",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "This event is deprecated.",
+        "Counter": "0",
+        "Deprecated": "1",
+        "EventCode": "0x85",
+        "EventName": "UNC_ARB_IFA_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Increment when IFA entry data timeout indication is set when U2C data arrives",
+        "Counter": "0,1",
+        "EventCode": "0x9A",
+        "EventName": "UNC_ARB_IFA_READ_DATA_TIMEOUT",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Increment when IFA entry data timeout indication is set when RspExtCmp arrives",
+        "Counter": "0,1",
+        "EventCode": "0x9C",
+        "EventName": "UNC_ARB_IFA_U2C_RSPEXTCMP_TIMEOUT",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Increment when IFA entry data timeout indication is set when RspGO arrives",
+        "Counter": "0,1",
+        "EventCode": "0x9B",
+        "EventName": "UNC_ARB_IFA_U2C_RSPGO_TIMEOUT",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Occupancy of LockQ",
+        "Counter": "0",
+        "EventCode": "0x99",
+        "EventName": "UNC_ARB_LOCKQ_OCCUPANCY",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "When this event is programmed to counter#1, it indicates that the input of the event programmed on counter#0 will be used by this (light) counter to calculate a cycles value, based on the counter Threshold-ing config.",
+        "Counter": "0",
+        "EventCode": "0x70",
+        "EventName": "UNC_ARB_OCCUPANCY_AUX.CYCLES",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_ARB_REQTRK_FULL.FULL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -1",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_ARB_REQTRK_FULL.FULL_1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -2",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_ARB_REQTRK_FULL.FULL_2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -3",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_ARB_REQTRK_FULL.FULL_3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of outgoing valid prefetch entries. Such entry is defined as valid from it's allocation in ReqTrk till deallocation. MLC_Pref = DRD_pref/CRD_pref/RFO_pref",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.PREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid entries in ReqTrk queue that have conflicts with ReqTrk",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.REQTRKCONFLICT",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts the number of entries which sent WRPUll (all WrPull types) and waiting for Data.",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.WAIT_FORWRPULL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts all entries, which sent GO and waiting for GO-Ack. From the moment GO sent till GO-Ack received",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.WAIT_FOR_GO_ACK",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts all entries, which sent SelfSnoop and waiting for Rsp. From the moment SelfSnp sent till C2URsp was received",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.WAIT_FOR_SELFSNOOP",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid coherent Write entries. Such entry is defined as valid from it's allocated till deallocation. Writes here denote any write transactions: full/partials writes and evictions.",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_ARB_REQ_TRK_OCCUPANCY.WRITES",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Counts allocations to ScrubQ",
+        "Counter": "0,1",
+        "EventCode": "0x73",
+        "EventName": "UNC_ARB_SCRUBQ_ALLOCATION.TOTAL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Counts the number of available U2C credits (IPQ credits) every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x71",
+        "EventName": "UNC_ARB_U2C_CREDITS.AVAILABLE_CREDITS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Count all cycles where GIFT has 0 U2C Data credits to GRETA or GRETA asserts U2C REQ/RSP  stall signal",
+        "Counter": "0,1",
+        "EventCode": "0x96",
+        "EventName": "UNC_ARB_U2C_STALL_CYCLES.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on U2C Data",
+        "Counter": "0,1",
+        "EventCode": "0x96",
+        "EventName": "UNC_ARB_U2C_STALL_CYCLES.U2CDATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on U2C Req",
+        "Counter": "0,1",
+        "EventCode": "0x96",
+        "EventName": "UNC_ARB_U2C_STALL_CYCLES.U2CREQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Filter on U2C Response",
+        "Counter": "0,1",
+        "EventCode": "0x96",
+        "EventName": "UNC_ARB_U2C_STALL_CYCLES.U2CRSP",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "ARB"
+    },
+    {
+        "BriefDescription": "Counts available CMI Rd credits every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x89",
+        "EventName": "UNC_HAC_ARB_CMI_CREDITS.RDCREDITS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts available VC3 CMI Rd credits every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x89",
+        "EventName": "UNC_HAC_ARB_CMI_CREDITS.VC3RD",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts available VC3 CMI Wr credits every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x89",
+        "EventName": "UNC_HAC_ARB_CMI_CREDITS.VC3WR",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts available CMI Wr credits every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x89",
+        "EventName": "UNC_HAC_ARB_CMI_CREDITS.WRCREDITS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of all CmpTrk valid entries",
+        "Counter": "0",
+        "EventCode": "0x86",
+        "EventName": "UNC_HAC_ARB_CMPTRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid entries in Coherency Tracker queue from allocation till deallocation. Aperture requests (snoops) appear as NC decoded internally and become coherent (snoop LLC, access memory)",
+        "Counter": "0",
+        "EventCode": "0x83",
+        "EventName": "UNC_HAC_ARB_COH_TRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Address conflict when consecutive IO request originated from save device reach COH tracker (that 2nd is allocated but in sleep mode)",
+        "Counter": "0,1",
+        "EventCode": "0x84",
+        "EventName": "UNC_HAC_ARB_COH_TRK_REQUEST.IO_IO_CONFLICT",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of conflicts with ReqTrk",
+        "Counter": "0,1",
+        "EventCode": "0x84",
+        "EventName": "UNC_HAC_ARB_COH_TRK_REQUEST.REQTRK_CONFLICT",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of entries allocated. Account for Any type: e.g. Snoop,  etc.",
+        "Counter": "0,1",
+        "EventCode": "0x84",
+        "EventName": "UNC_HAC_ARB_COH_TRK_REQUESTS.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Asserted when one or more of the selected snoop response type is sent back to Homge Agent (iMPH) as a response to CohTrk initiated snoop, filtered by snoop type. RspI was returned and socket state of line was I Umask semantics: (RspI | RspS | RspCnflt | RspIWb | RspSWb) & (SnpInv | SnpCode | Aperture)",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.RSPI",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and invalidate my copy",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.RSPIFWDM",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "RspS was returned",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.RSPS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and change the state to S",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.RSPSFWDM",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Filter for SnpCode type",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.SNPCODE",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Filter for either SnpInv or BackInv",
+        "Counter": "0,1",
+        "EventCode": "0x87",
+        "EventName": "UNC_HAC_ARB_EXT_SNP_RESPONSE.SNPINV",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.ALL",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.RD",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.RD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.WR",
+        "Counter": "0",
+        "EventCode": "0x90",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_OCCUPANCY.WR",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_REQUEST.ALL",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_REQUEST.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_REQUEST.CRABABORT",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_REQUEST.CRABABORT",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_REQUEST.RD",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_REQUEST.RD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_GTNCTRK_REQUEST.WR",
+        "Counter": "0,1",
+        "EventCode": "0x91",
+        "EventName": "UNC_HAC_ARB_GTNCTRK_REQUEST.WR",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of all IFA valid entries",
+        "Counter": "0",
+        "EventCode": "0x85",
+        "EventName": "UNC_HAC_ARB_IFA_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Total Non-Coherent Read requests received by iMPH (DRd/CRd/PRd.CRd_UC/UCRdF/RdCUrr)",
+        "Counter": "0,1",
+        "EventCode": "0x82",
+        "EventName": "UNC_HAC_ARB_NC_REQUESTS.READS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Total Non-Coherent Write requests received by iMPH",
+        "Counter": "0,1",
+        "EventCode": "0x82",
+        "EventName": "UNC_HAC_ARB_NC_REQUESTS.WRITES",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "When this event is programmed to counter#1, it indicates that the input of the event programmed on counter#0 will be used by this (light) counter to calculate a cycles value, based on the counter Threshold-ing config.",
+        "Counter": "0",
+        "EventCode": "0x70",
+        "EventName": "UNC_HAC_ARB_OCCUPANCY_AUX.CYCLES",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_HAC_ARB_REQTRK_FULL.FULL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -1",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_HAC_ARB_REQTRK_FULL.FULL_1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -2",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_HAC_ARB_REQTRK_FULL.FULL_2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in which ReqTrk is full -3",
+        "Counter": "0,1",
+        "EventCode": "0x8B",
+        "EventName": "UNC_HAC_ARB_REQTRK_FULL.FULL_3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Asserted when one or more of the selected snoop response type is sent back to Homge Agent (iMPH) as a response to ReqTrk initiated snoop, filtered by snoop type. RspI was returned and socket state of line was I Umask semantics: (RspI | RspS | RspCnflt | RspIWb | RspSWb) & (SnpInv | SnpCode | Aperture)",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.RSPI",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and invalidate my copy",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.RSPIFWDM",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "RspS was returned",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.RSPS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Write M to memory and change the state to S",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.RSPSFWDM",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Filter for SnpCode and SnpData type",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.SNPCODESNPDATA",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Filter for either SnpInv or BackInv",
+        "Counter": "0,1",
+        "EventCode": "0x88",
+        "EventName": "UNC_HAC_ARB_REQTRK_SNP_RESPONSE.SNPINV",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of DPT Steady-State Failures",
+        "Counter": "0,1",
+        "EventCode": "0x8C",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_SS.FAIL",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of DPT Steady-State Successes",
+        "Counter": "0,1",
+        "EventCode": "0x8C",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_SS.SUCCESS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in prefetch state 0 (per thread)",
+        "Counter": "0,1",
+        "EventCode": "0x8D",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_STATE.DPT_S0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in prefetch state 1 (per thread)",
+        "Counter": "0,1",
+        "EventCode": "0x8D",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_STATE.DPT_S1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in prefetch state 2 (per thread)",
+        "Counter": "0,1",
+        "EventCode": "0x8D",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_STATE.DPT_S2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of cycles in prefetch state 3 (per thread)",
+        "Counter": "0,1",
+        "EventCode": "0x8D",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_DPT_STATE.DPT_S3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid coherent Data Read entries . Such entry is defined as valid when it is allocated till deallocation. Doesn't include prefetches",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.DRD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of outgoing valid prefetch entries. Such entry is defined as valid from it's allocation in ReqTrk till deallocation. MLC_Pref = DRD_pref/CRD_pref/RFO_pref",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.PREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid entries in ReqTrk queue that have conflicts with ReqTrk",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.REQTRKCONFLICT",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "irtual Logical Wire (legacy) message were received from Uncore (iMPH)",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.WAIT_FORWRPULL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts all entries, which sent GO and waiting for GO-Ack. From the moment GO sent till GO-Ack received",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.WAIT_FOR_GO_ACK",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle counts all entries, which sent SelfSnoop and waiting for Rsp. From the moment SelfSnp sent till C2URsp was received",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.WAIT_FOR_SELFSNOOP",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of valid coherent Write entries. Such entry is defined as valid from it's allocated till deallocation. Writes here denote any write transactions: full/partials writes and evictions.",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY.WRITES",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.COHTRKCONFLICT",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.COHTRKCONFLICT",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of LLC_Prefetch. LLC_Pref = LLCPrefData/LLCPrefRFO/LLCPrefCode",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.LLC_PREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number MemPushWr valid transactions",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.MEMPUSHWR",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WAIT_FOR_CMI_RD_GO_PRD",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WAIT_FOR_CMI_RD_GO_PRD",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WAIT_FOR_CMI_RD_GO_RFO",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WAIT_FOR_CMI_RD_GO_RFO",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of MEE valid entries in ReqTrk which wait to be sent on CMI.Includes arbitration time",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WAIT_FOR_MEE_CMI_SEND",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number WCiL valid transactions",
+        "Counter": "0",
+        "EventCode": "0x8E",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_OCCUPANCY2.WCIL",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all coherent Data Read entries. Doesn't include prefetches",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.DRD",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of Evictions allocated (WbMtoI with ExtCmp =0)",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.EVICTIONS",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of U2CRsp  (GO,ExtCmp,etc)  which need GO-Ack",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.GO_ACK_NEEDED",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of Prefetch entries allocated. MLC_Pref = DRD_pref/CRD_pref/RFO_pref",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.PREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of SelfSnoops.",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.SELFSNOOP",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of Writes allocated - any write transactions: full/partials writes and evictions.",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.WRITES",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of WrPulls sent (all type of WrPull)",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST.WRPULL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of LLC_Prefetches. LLC_Pref = LLCPrefData/LLCPrefRFO/LLCPrefCode",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.LLC_PREFETCH",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of MEE requests counted on BL ring",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.MEE",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of MemPushWr requests",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.MEMPUSHWR",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of PerMem requests",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.PERMEM",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of PRd",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.PRD",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of RFOs",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.RFO",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of WCiL/WCilf requests",
+        "Counter": "0,1",
+        "EventCode": "0x8F",
+        "EventName": "UNC_HAC_ARB_REQ_TRK_REQUEST2.WCIL",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts allocations to ScrubQ",
+        "Counter": "0,1",
+        "EventCode": "0x73",
+        "EventName": "UNC_HAC_ARB_SCRUBQ_ALLOCATION.TOTAL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts valid entries which sent all the snoops or for which send snoops timeout expired",
+        "Counter": "0",
+        "EventCode": "0x72",
+        "EventName": "UNC_HAC_ARB_SCRUBQ_OCCUPANCY.CAMING_PHASE",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts entries which are sending snoops or in line to send snoops",
+        "Counter": "0",
+        "EventCode": "0x72",
+        "EventName": "UNC_HAC_ARB_SCRUBQ_OCCUPANCY.SENDING_SNP_PHASE",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts all valid entries",
+        "Counter": "0",
+        "EventCode": "0x72",
+        "EventName": "UNC_HAC_ARB_SCRUBQ_OCCUPANCY.TOTAL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts the amount of CAM hit of new transactions vs ScrubQ",
+        "Counter": "0,1",
+        "EventCode": "0x74",
+        "EventName": "UNC_HAC_ARB_SCRUB_SNOOPS.CAM_HIT",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts the amount of entries dropped before CAM timeout expired",
+        "Counter": "0,1",
+        "EventCode": "0x74",
+        "EventName": "UNC_HAC_ARB_SCRUB_SNOOPS.DROPPED_ON_TIMEOUT",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts the amount of entries which didn't sent all the transactions",
+        "Counter": "0,1",
+        "EventCode": "0x74",
+        "EventName": "UNC_HAC_ARB_SCRUB_SNOOPS.NOT_ALL_SENT",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts the amount of snoops scrub sent",
+        "Counter": "0,1",
+        "EventCode": "0x74",
+        "EventName": "UNC_HAC_ARB_SCRUB_SNOOPS.SNPSCRUB_SENT",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all CMI transactions",
+        "Counter": "0,1",
+        "EventCode": "0x8A",
+        "EventName": "UNC_HAC_ARB_TRANSACTIONS.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all CMI Mflushes",
+        "Counter": "0,1",
+        "EventCode": "0x8A",
+        "EventName": "UNC_HAC_ARB_TRANSACTIONS.MFLUSH",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all CMI Pcommit",
+        "Counter": "0,1",
+        "EventCode": "0x8A",
+        "EventName": "UNC_HAC_ARB_TRANSACTIONS.MPCMT",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all CMI reads",
+        "Counter": "0,1",
+        "EventCode": "0x8A",
+        "EventName": "UNC_HAC_ARB_TRANSACTIONS.READS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Number of all CMI writes not including Mflush",
+        "Counter": "0,1",
+        "EventCode": "0x8A",
+        "EventName": "UNC_HAC_ARB_TRANSACTIONS.WRITES",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Each cycle count number of all outgoing valid entries in ReqTrk. Such entry is defined as valid from it's allocation in ReqTrk till deallocation. Accounts for Coherent and non-coherent traffic.",
+        "Counter": "0",
+        "EventCode": "0x80",
+        "EventName": "UNC_HAC_ARB_TRK_OCCUPANCY.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Total number of all outgoing entries allocated. Accounts for Coherent and non-coherent traffic.",
+        "Counter": "0,1",
+        "EventCode": "0x81",
+        "EventName": "UNC_HAC_ARB_TRK_REQUESTS.ALL",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    },
+    {
+        "BriefDescription": "Counts the number of available U2C credits (IPQ credits) every cycle",
+        "Counter": "0,1",
+        "EventCode": "0x71",
+        "EventName": "UNC_HAC_ARB_U2C_CREDITS.AVAILABLE_CREDITS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "HAC_ARB"
+    }
+]

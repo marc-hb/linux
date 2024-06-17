@@ -1,0 +1,622 @@
+[
+    {
+        "BriefDescription": "A2F Data VC0 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x0D",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_DEQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Data_Empty VC0",
+        "Counter": "0",
+        "EventCode": "0x13",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_EMPTY_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Data VC0 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x0C",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_ENQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Data_Full VC0",
+        "Counter": "0",
+        "EventCode": "0x10",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_FULL_VC0",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Data NoC Credit Not Available VC0",
+        "Counter": "0",
+        "EventCode": "0x18",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_NOC_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Data VC0 Occupancy Count; Umask value will vary",
+        "Counter": "0",
+        "EventCode": "0x0B",
+        "EventName": "UNC_UFIBRIDGE_A2F_DATA_OCCUPANCY_COUNT_VC0",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC0 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x07",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_DEQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC1 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x07",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_DEQUEUE_VC1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC2 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x07",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_DEQUEUE_VC2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC3 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x07",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_DEQUEUE_VC3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC All Dequeue",
+        "Counter": "0",
+        "EventCode": "0x07",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_DEQUEUE_VC_ALL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Empty VC0",
+        "Counter": "0",
+        "EventCode": "0x11",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_EMPTY_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Empty VC1",
+        "Counter": "0",
+        "EventCode": "0x11",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_EMPTY_VC1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Empty VC2",
+        "Counter": "0",
+        "EventCode": "0x11",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_EMPTY_VC2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Empty VC3",
+        "Counter": "0",
+        "EventCode": "0x11",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_EMPTY_VC3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Empty VC All",
+        "Counter": "0",
+        "EventCode": "0x11",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_EMPTY_VC_ALL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC0 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x06",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_ENQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC1 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x06",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_ENQUEUE_VC1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC2 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x06",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_ENQUEUE_VC2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC3 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x06",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_ENQUEUE_VC3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC All Enqueue",
+        "Counter": "0",
+        "EventCode": "0x06",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_ENQUEUE_VC_ALL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Full VC0",
+        "Counter": "0",
+        "EventCode": "0x0E",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_FULL_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Full VC1",
+        "Counter": "0",
+        "EventCode": "0x0E",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_FULL_VC1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Full VC2",
+        "Counter": "0",
+        "EventCode": "0x0E",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_FULL_VC2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Full VC3",
+        "Counter": "0",
+        "EventCode": "0x0E",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_FULL_VC3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Req_Full VC All",
+        "Counter": "0",
+        "EventCode": "0x0E",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_FULL_VC_ALL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F request latency",
+        "Counter": "0",
+        "EventCode": "0x24",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_LATENCY",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F request latency compare hit",
+        "Counter": "0",
+        "EventCode": "0x25",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_LATENCY_COMPARE_HIT",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req NoC Credit Not Available VC0",
+        "Counter": "0",
+        "EventCode": "0x16",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_NOC_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req NoC Credit Not Available VC1",
+        "Counter": "0",
+        "EventCode": "0x16",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_NOC_CREDIT_NOT_AVAILABLE_VC1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req NoC Credit Not Available VC2",
+        "Counter": "0",
+        "EventCode": "0x16",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_NOC_CREDIT_NOT_AVAILABLE_VC2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req NoC Credit Not Available VC3",
+        "Counter": "0",
+        "EventCode": "0x16",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_NOC_CREDIT_NOT_AVAILABLE_VC3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req NoC Credit Not Available VC All",
+        "Counter": "0",
+        "EventCode": "0x16",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_NOC_CREDIT_NOT_AVAILABLE_VC_ALL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC1 Occupancy Count; Umask value will vary",
+        "Counter": "0",
+        "EventCode": "0x03",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OCCUPANCY_COUNT_VC1",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC2 Occupancy Count; Umask value will vary",
+        "Counter": "0",
+        "EventCode": "0x04",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OCCUPANCY_COUNT_VC2",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req VC3 Occupancy Count; Umask value will vary",
+        "Counter": "0",
+        "EventCode": "0x05",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OCCUPANCY_COUNT_VC3",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Req Opcode Monitoring; Umask decides the opcode to monitor; Compare event",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_CLFLUSH",
+        "PerPkg": "1",
+        "UMask": "0x18",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "FSRDCURR opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_FSRDCURR",
+        "PerPkg": "1",
+        "UMask": "0x1d",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "FSRDCURRPTL opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_FSRDCURRPTL",
+        "PerPkg": "1",
+        "UMask": "0x3d",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Cache flush opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_I2MWR",
+        "PerPkg": "1",
+        "UMask": "0x9",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "ItoMWr opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_RFO",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "RFO opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_SPECI2M",
+        "PerPkg": "1",
+        "UMask": "0xa",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "WCiL opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_WCIL",
+        "PerPkg": "1",
+        "UMask": "0xd",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "WcilF opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_WCILF",
+        "PerPkg": "1",
+        "UMask": "0xc",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "WiL opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_WIL",
+        "PerPkg": "1",
+        "UMask": "0xf",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "WiLPTL opcode",
+        "Counter": "0",
+        "EventCode": "0x1C",
+        "EventName": "UNC_UFIBRIDGE_A2F_REQ_OPCODE_MONITORING_WILPTL",
+        "PerPkg": "1",
+        "UMask": "0x3f",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Rsp VC0 Dequeue",
+        "Counter": "0",
+        "EventCode": "0x0A",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_DEQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Rsp_Empty VC0",
+        "Counter": "0",
+        "EventCode": "0x12",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_EMPTY_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Rsp VC0 Enqueue",
+        "Counter": "0",
+        "EventCode": "0x09",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_ENQUEUE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F_Rsp_Full VC0",
+        "Counter": "0",
+        "EventCode": "0x0F",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_FULL_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Rsp NoC Credit Not Available VC0",
+        "Counter": "0",
+        "EventCode": "0x17",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_NOC_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Rsp VC0 Occupancy Count; Umask value will vary",
+        "Counter": "0",
+        "EventCode": "0x08",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_OCCUPANCY_COUNT_VC0",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "A2F Rsp Opcode Monitoring; Umask decides the opcode to monitor; Compare event",
+        "Counter": "0",
+        "EventCode": "0x1D",
+        "EventName": "UNC_UFIBRIDGE_A2F_RSP_OPCODE_MONITORING",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Count Local Clockticks",
+        "Counter": "0",
+        "EventCode": "0x01",
+        "EventName": "UNC_UFIBRIDGE_COUNT_LOCAL_CLOCKTICKS",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "F2A Data Host credit not available VC0",
+        "Counter": "0",
+        "EventCode": "0x1B",
+        "EventName": "UNC_UFIBRIDGE_F2A_DATA_HOST_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "F2A Req Host credit not available VC0",
+        "Counter": "0",
+        "EventCode": "0x19",
+        "EventName": "UNC_UFIBRIDGE_F2A_REQ_HOST_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "F2A Req Opcode Monitoring; Umask decides the opcode to monitor; Compare Event",
+        "Counter": "0",
+        "EventCode": "0x1E",
+        "EventName": "UNC_UFIBRIDGE_F2A_REQ_OPCODE_MONITORING",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "F2A Rsp Host credit not available VC0",
+        "Counter": "0",
+        "EventCode": "0x1A",
+        "EventName": "UNC_UFIBRIDGE_F2A_RSP_HOST_CREDIT_NOT_AVAILABLE_VC0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "F2A Rsp Opcode Monitoring; Umask decides the opcode to monitor; Compare Event",
+        "Counter": "0",
+        "EventCode": "0x1F",
+        "EventName": "UNC_UFIBRIDGE_F2A_RSP_OPCODE_MONITORING",
+        "PerPkg": "1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "fatal errors",
+        "Counter": "0",
+        "EventCode": "0x20",
+        "EventName": "UNC_UFIBRIDGE_FATAL_ERRORS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "No od Go-ack insertions",
+        "Counter": "0",
+        "EventCode": "0x23",
+        "EventName": "UNC_UFIBRIDGE_IDI_A2F_RSP_GO_ACK_INSERTIONS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Rsp Hit messages",
+        "Counter": "0",
+        "EventCode": "0x22",
+        "EventName": "UNC_UFIBRIDGE_IDI_A2F_RSP_HIT_MSGS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "GO messages",
+        "Counter": "0",
+        "EventCode": "0x21",
+        "EventName": "UNC_UFIBRIDGE_IDI_F2A_RSP_GO_MSGS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Non fatal errors",
+        "Counter": "0",
+        "EventCode": "0x20",
+        "EventName": "UNC_UFIBRIDGE_NON_FATAL_ERRORS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Number of A2F 32B requests",
+        "Counter": "0",
+        "EventCode": "0x14",
+        "EventName": "UNC_UFIBRIDGE_NUMBER_OF_A2F_32B_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Number of A2F coherent requests",
+        "Counter": "0",
+        "EventCode": "0x14",
+        "EventName": "UNC_UFIBRIDGE_NUMBER_OF_A2F_COHERENT_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Number of A2F mbox(opgroup = 11) requests",
+        "Counter": "0",
+        "EventCode": "0x14",
+        "EventName": "UNC_UFIBRIDGE_NUMBER_OF_A2F_MBOX_REQ",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Number of A2F non-coherent requests",
+        "Counter": "0",
+        "EventCode": "0x14",
+        "EventName": "UNC_UFIBRIDGE_NUMBER_OF_A2F_NONCOHERENT_REQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "Number of F2A snoops received",
+        "Counter": "0",
+        "EventCode": "0x15",
+        "EventName": "UNC_UFIBRIDGE_NUMBER_OF_F2A_SNOOPS_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "UFIBRIDGE"
+    },
+    {
+        "BriefDescription": "secure errors",
+        "Counter": "0",
+        "EventCode": "0x20",
+        "EventName": "UNC_UFIBRIDGE_SECURE_ERRORS",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "UFIBRIDGE"
+    }
+]
