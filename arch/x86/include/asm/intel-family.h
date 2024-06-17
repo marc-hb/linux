@@ -137,6 +137,8 @@
 
 #define INTEL_PANTHERLAKE_L		IFM(6, 0xCC)
 
+#define INTEL_WILDCATLAKE_L		IFM(6, 0xD5)
+
 /* "Small Core" Processors (Atom/E-Core) */
 
 #define INTEL_ATOM_BONNELL		IFM(6, 0x1C) /* Diamondville, Pineview */
