@@ -829,7 +829,7 @@ EXPORT_SYMBOL_GPL(skx_remove);
 /*
  * Debug feature.
  * Exercise the address decode logic by writing an address to
- * /sys/kernel/debug/edac/{skx,i10nm}_test/addr.
+ * /sys/kernel/debug/edac/{skx,i10nm,imh}_test/addr.
  */
 static struct dentry *skx_test;
 

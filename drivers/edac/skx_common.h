@@ -45,9 +45,13 @@
 #define I10NM_NUM_CHANNELS	MAX(I10NM_NUM_DDR_CHANNELS, I10NM_NUM_HBM_CHANNELS)
 #define I10NM_NUM_DIMMS		MAX(I10NM_NUM_DDR_DIMMS, I10NM_NUM_HBM_DIMMS)
 
-#define NUM_IMC		MAX(SKX_NUM_IMC, I10NM_NUM_IMC)
-#define NUM_CHANNELS	MAX(SKX_NUM_CHANNELS, I10NM_NUM_CHANNELS)
-#define NUM_DIMMS	MAX(SKX_NUM_DIMMS, I10NM_NUM_DIMMS)
+#define IMH_NUM_IMC		16
+#define IMH_NUM_CHANNELS	1
+#define IMH_NUM_DIMMS		2
+
+#define NUM_IMC		MAX(MAX(SKX_NUM_IMC, I10NM_NUM_IMC), IMH_NUM_IMC)
+#define NUM_CHANNELS	MAX(MAX(SKX_NUM_CHANNELS, I10NM_NUM_CHANNELS), IMH_NUM_CHANNELS)
+#define NUM_DIMMS	MAX(MAX(SKX_NUM_DIMMS, I10NM_NUM_DIMMS), IMH_NUM_DIMMS)
 
 #define IS_DIMM_PRESENT(r)		GET_BITFIELD(r, 15, 15)
 #define IS_NVDIMM_PRESENT(r, i)		GET_BITFIELD(r, i, i)
@@ -85,14 +89,21 @@
  * memory controllers on the die.
  */
 struct skx_dev {
-	struct list_head list;
+	/* {skx,i10nm}_edac */
 	u8 bus[4];
 	int seg;
 	struct pci_dev *sad_all;
 	struct pci_dev *util_all;
-	struct pci_dev *uracu; /* for i10nm CPU */
-	struct pci_dev *pcu_cr3; /* for HBM memory detection */
+	struct pci_dev *uracu;
+	struct pci_dev *pcu_cr3;
 	u32 mcroute;
+
+	/* imh_edac */
+	/* system view MMIO base physical addresses */
+	u64 mmio_base_h_north;
+	u64 mmio_base_h_south;
+	int pkg;
+
 	/*
 	 * Some server BIOS may hide certain memory controllers, and the
 	 * EDAC driver skips those hidden memory controllers. However, the
@@ -103,11 +114,17 @@ struct skx_dev {
 	 * error handling process.
 	 */
 	u8 mc_mapping[NUM_IMC];
+	struct list_head list;
 	struct skx_imc {
+		/* i10nm_edac */
+		struct pci_dev *mdev;
+
+		/* imh_edac */
+		struct device dev;
+
 		struct mem_ctl_info *mci;
-		struct pci_dev *mdev; /* for i10nm CPU */
-		void __iomem *mbase;  /* for i10nm CPU */
-		int chan_mmio_sz;     /* for i10nm CPU */
+		void __iomem *mbase;
+		int chan_mmio_sz;
 		int num_channels; /* channels per memory controller */
 		int num_dimms; /* dimms per channel */
 		bool hbm_mc;
@@ -139,7 +156,8 @@ enum type {
 	SKX,
 	I10NM,
 	SPR,
-	GNR
+	GNR,
+	DMR,
 };
 
 enum {
@@ -198,10 +216,6 @@ struct pci_bdf {
 
 struct res_config {
 	enum type type;
-	/* Configuration agent device ID */
-	unsigned int decs_did;
-	/* Default bus number configuration register offset */
-	int busno_cfg_offset;
 	/* DDR memory controllers per socket */
 	int ddr_imc_num;
 	/* DDR channels per DDR memory controller */
@@ -218,21 +232,8 @@ struct res_config {
 	int hbm_dimm_num;
 	/* Per HBM channel memory-mapped I/O size */
 	int hbm_chan_mmio_sz;
-	bool support_ddr5;
-	/* SAD device BDF */
-	struct pci_bdf sad_all_bdf;
-	/* PCU device BDF */
-	struct pci_bdf pcu_cr3_bdf;
-	/* UTIL device BDF */
-	struct pci_bdf util_all_bdf;
-	/* URACU device BDF */
-	struct pci_bdf uracu_bdf;
-	/* DDR mdev device BDF */
-	struct pci_bdf ddr_mdev_bdf;
-	/* HBM mdev device BDF */
-	struct pci_bdf hbm_mdev_bdf;
-	int sad_all_offset;
 	/* Offsets of retry_rd_err_log registers */
+	bool support_ddr5;
 	u32 *offsets_scrub;
 	u32 *offsets_scrub_hbm0;
 	u32 *offsets_scrub_hbm1;
@@ -240,6 +241,49 @@ struct res_config {
 	u32 *offsets_demand2;
 	u32 *offsets_demand_hbm0;
 	u32 *offsets_demand_hbm1;
+	union {
+		/* {skx,i10nm}_edac */
+		struct {
+			/* Configuration agent device ID */
+			unsigned int decs_did;
+			/* Default bus number configuration register offset */
+			int busno_cfg_offset;
+			struct pci_bdf sad_all_bdf;
+			struct pci_bdf pcu_cr3_bdf;
+			struct pci_bdf util_all_bdf;
+			struct pci_bdf uracu_bdf;
+			struct pci_bdf ddr_mdev_bdf;
+			struct pci_bdf hbm_mdev_bdf;
+			int sad_all_offset;
+		};
+		/* imh_edac */
+		struct {
+			/* MMIO base physical address in local package view */
+			u64 mmio_base_l_north;
+			u64 mmio_base_l_south;
+			u64 ddr_imc_base;
+			u64 ddr_reg_mcmtr_offset;
+			u8  ddr_reg_mcmtr_width;
+			u64 ddr_reg_dimmmtr_offset;
+			u8  ddr_reg_dimmmtr_width;
+			u64 ubox_base;
+			u32 ubox_size;
+			u32 ubox_reg_mmio_base_offset;
+			u8  ubox_reg_mmio_base_width;
+			u32 ubox_reg_socket_id_offset;
+			u8  ubox_reg_socket_id_width;
+			u64 pcu_base;
+			u32 pcu_size;
+			u32 pcu_reg_capid3_offset;
+			u8  pcu_reg_capid3_width;
+			u64 sca_base;
+			u32 sca_size;
+			u32 sca_reg_tolm_offset;
+			u8  sca_reg_tolm_width;
+			u32 sca_reg_tohm_offset;
+			u8  sca_reg_tohm_width;
+		};
+	};
 };
 
 typedef int (*get_dimm_config_f)(struct mem_ctl_info *mci,
