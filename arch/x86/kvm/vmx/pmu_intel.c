@@ -206,6 +206,7 @@ static struct kvm_pmc *intel_msr_idx_to_pmc(struct kvm_vcpu *vcpu, u32 msr)
 		pmc = get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0);
 		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0);
 		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0);
+		pmc = pmc ? pmc : get_fw_gp_pmc(pmu, msr);
 	} else {
 		pmc = pmc ? pmc : get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR);
 		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A);
