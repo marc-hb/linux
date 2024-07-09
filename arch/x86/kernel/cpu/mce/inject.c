@@ -775,7 +775,8 @@ static int __init inject_init(void)
 
 	debugfs_init();
 
-	register_nmi_handler(NMI_LOCAL, mce_raise_notify, NMI_FLAG_NONE, "mce_notify");
+	register_nmi_handler(NMI_LOCAL, mce_raise_notify, NMI_FLAG_NONE,
+			     "mce_notify", NMI_SOURCE_VEC_IPI_MCE);
 	mce_register_injector_chain(&inject_nb);
 
 	setup_inj_struct(&i_mce);

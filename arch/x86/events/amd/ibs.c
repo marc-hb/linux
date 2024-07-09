@@ -1269,7 +1269,7 @@ static __init int perf_event_ibs_init(void)
 		goto err_op;
 
 	ret = register_nmi_handler(NMI_LOCAL, perf_ibs_nmi_handler, NMI_FLAG_NONE,
-				   "perf_ibs");
+				   "perf_ibs", 0);
 	if (ret)
 		goto err_nmi;
 

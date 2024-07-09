@@ -79,6 +79,9 @@ static DEFINE_PER_CPU(struct nmi_stats, nmi_stats);
 
 static int ignore_nmis __read_mostly;
 
+/* NMI actions registered by originators with source vector. */
+static struct nmiaction *nmiaction_src_table[NR_NMI_SOURCE_VECTORS];
+
 int unknown_nmi_panic;
 /*
  * Prevent NMI reason port (0x61) being accessed simultaneously, can
@@ -158,6 +161,12 @@ static int nmi_handle(unsigned int type, struct pt_regs *regs)
 }
 NOKPROBE_SYMBOL(nmi_handle);
 
+static inline bool use_nmi_source(unsigned int type, struct nmiaction *a)
+{
+	return (cpu_feature_enabled(X86_FEATURE_NMI_SOURCE) &&
+		type == NMI_LOCAL && a->source_vec);
+}
+
 int __register_nmi_handler(unsigned int type, struct nmiaction *action)
 {
 	struct nmi_desc *desc = nmi_to_desc(type);
@@ -167,6 +176,11 @@ int __register_nmi_handler(unsigned int type, struct nmiaction *action)
 		return -EINVAL;
 
 	raw_spin_lock_irqsave(&desc->lock, flags);
+
+	if (use_nmi_source(type, action)) {
+		rcu_assign_pointer(nmiaction_src_table[action->source_vec], action);
+		pr_info("NMI source %d registered for %s\n", action->source_vec, action->name);
+	}
 
 	/*
 	 * Indicate if there are multiple registrations on the
@@ -205,6 +219,11 @@ void unregister_nmi_handler(unsigned int type, const char *name)
 		if (!strcmp(n->name, name)) {
 			WARN(in_nmi(),
 				"Trying to free NMI (%s) from NMI context!\n", n->name);
+			if (use_nmi_source(type, n)) {
+				rcu_assign_pointer(nmiaction_src_table[n->source_vec], NULL);
+				pr_info("NMI source %d unregistered for %s\n", n->source_vec, n->name);
+			}
+
 			list_del_rcu(&n->list);
 			found = n;
 			break;

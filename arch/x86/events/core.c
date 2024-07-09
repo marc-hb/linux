@@ -2104,7 +2104,8 @@ static int __init init_hw_perf_events(void)
 		x86_pmu.config_mask = X86_RAW_EVENT_MASK;
 
 	perf_events_lapic_init();
-	register_nmi_handler(NMI_LOCAL, perf_event_nmi_handler, NMI_FLAG_NONE, "PMI");
+	register_nmi_handler(NMI_LOCAL, perf_event_nmi_handler, NMI_FLAG_NONE,
+			     "PMI", NMI_SOURCE_VEC_PMI);
 
 	unconstrained = (struct event_constraint)
 		__EVENT_CONSTRAINT(0, x86_pmu.cntr_mask64,
