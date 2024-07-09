@@ -137,11 +137,78 @@ static inline int do_handle_nmi(struct nmiaction *a, struct pt_regs *regs, unsig
 	return thishandled;
 }
 
+static int nmi_handle_src(unsigned int type, struct pt_regs *regs, unsigned long *partial_handled_mask)
+{
+	static bool nmi_source_disabled;
+	bool has_unknown_src = false;
+	unsigned long source_bitmap;
+	struct nmiaction *a;
+	int handled = 0;
+	int vec;
+
+	if (!cpu_feature_enabled(X86_FEATURE_NMI_SOURCE) || type != NMI_LOCAL || nmi_source_disabled)
+		return 0;
+
+	source_bitmap = fred_event_data(regs);
+	if (unlikely(!source_bitmap)) {
+		pr_warn("Buggy hardware! Disable NMI-source handling.\n");
+		nmi_source_disabled = true;
+		return 0;
+	}
+
+	if (unlikely(source_bitmap & BIT(NMI_SOURCE_VEC_UNKNOWN))) {
+		pr_warn_ratelimited("NMI received with unknown sources\n");
+		has_unknown_src = true;
+	}
+
+	rcu_read_lock();
+
+	/* Bit 0 is for unknown NMI sources, skip it. */
+	vec = 1;
+	for_each_set_bit_from(vec, &source_bitmap, NR_NMI_SOURCE_VECTORS) {
+		a = rcu_dereference(nmiaction_src_table[vec]);
+		if (!a) {
+			pr_warn_ratelimited("NMI-source vector %d has no handler!", vec);
+			continue;
+		}
+
+		handled += do_handle_nmi(a, regs, type);
+
+		/*
+		 * Need polling if bit 0, i.e., the unknown source bit, is set.
+		 *
+		 * partial_handled_mask is used to tell the polling code which
+		 * NMIs have already been handled based thus can be skipped.
+		 */
+		if (has_unknown_src)
+			*partial_handled_mask |= BIT(vec);
+	}
+
+	rcu_read_unlock();
+
+	return handled;
+}
+
+/*
+ * There is no guarantee that a valid NMI-source vector is always delivered,
+ * thus run all NMI handlers but skip those have been handled with source
+ * information when bit 0 of the NMI-source bitmap is set.
+ */
 static int nmi_handle(unsigned int type, struct pt_regs *regs)
 {
 	struct nmi_desc *desc = nmi_to_desc(type);
+	unsigned long partial_handled_mask = 0;
 	struct nmiaction *a;
 	int handled=0;
+
+	/*
+	 * Check if the NMI source handling is complete, otherwise polling is
+	 * required.  partial_handled_mask is non-zero if NMI source handling
+	 * is partial due to unknown NMI sources.
+	 */
+	handled = nmi_handle_src(type, regs, &partial_handled_mask);
+	if (handled && !partial_handled_mask)
+		return handled;
 
 	rcu_read_lock();
 
@@ -151,8 +218,12 @@ static int nmi_handle(unsigned int type, struct pt_regs *regs)
 	 * can be latched at any given time.  Walk the whole list
 	 * to handle those situations.
 	 */
-	list_for_each_entry_rcu(a, &desc->head, list)
+	list_for_each_entry_rcu(a, &desc->head, list) {
+		/* Skip NMIs handled earlier with source info */
+		if (BIT(a->source_vec) & partial_handled_mask)
+			continue;
 		handled += do_handle_nmi(a, regs, type);
+	}
 
 	rcu_read_unlock();
 
