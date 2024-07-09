@@ -467,9 +467,16 @@ static int chk_ucode_version(unsigned int cpu)
 	return 0;
 }
 
+static bool msr_is_die_scoped;
+
 static struct platform_device *coretemp_get_pdev(unsigned int cpu)
 {
-	int id = topology_logical_die_id(cpu);
+	int id;
+
+	if (msr_is_die_scoped)
+		id = topology_logical_die_id(cpu);
+	else
+		id = topology_logical_package_id(cpu);
 
 	if (id >= 0 && id < max_zones)
 		return zone_devices[id];
@@ -786,6 +793,17 @@ MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
 
 static enum cpuhp_state coretemp_hp_online;
 
+static void check_msr_scope(void)
+{
+	/*
+	 * Thermal MSRs on some multi-die INTEL_SKYLAKE_X platforms
+	 * (Cascade Lake-AP) are die-scoped.
+	 */
+	if ((boot_cpu_data.x86_vfm == INTEL_SKYLAKE_X) &&
+	    (topology_max_dies_per_package() > 1))
+		msr_is_die_scoped = true;
+}
+
 static int __init coretemp_init(void)
 {
 	int i, err;
@@ -798,7 +816,13 @@ static int __init coretemp_init(void)
 	if (!x86_match_cpu(coretemp_ids))
 		return -ENODEV;
 
-	max_zones = topology_max_packages() * topology_max_dies_per_package();
+	check_msr_scope();
+
+	if (msr_is_die_scoped)
+		max_zones = topology_max_packages() * topology_max_dies_per_package();
+	else
+		max_zones = topology_max_packages();
+
 	zone_devices = kcalloc(max_zones, sizeof(struct platform_device *),
 			      GFP_KERNEL);
 	if (!zone_devices)
