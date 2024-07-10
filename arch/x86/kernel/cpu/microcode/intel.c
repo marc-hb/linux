@@ -28,6 +28,7 @@
 #include <asm/msr.h>
 
 #include "internal.h"
+#include "uconfig.h"
 
 static const char ucode_path[] = "kernel/x86/microcode/GenuineIntel.bin";
 
@@ -370,7 +371,7 @@ static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 	 * already.
 	 */
 	*cur_rev = intel_get_microcode_revision();
-	if (*cur_rev >= mc->hdr.rev) {
+	if (!uconfig_validate_rev(*cur_rev, mc->hdr.rev)) {
 		uci->cpu_sig.rev = *cur_rev;
 		return UCODE_OK;
 	}
@@ -604,7 +605,7 @@ static enum ucode_state parse_microcode_blobs(int cpu, struct iov_iter *iter)
 		    intel_microcode_sanity_check(mc, true, MC_HEADER_TYPE_MICROCODE) < 0)
 			goto fail;
 
-		if (cur_rev >= mc_header.rev)
+		if (!uconfig_validate_rev(cur_rev, mc_header.rev))
 			continue;
 
 		if (!intel_find_matching_signature(mc, &uci->cpu_sig))
@@ -702,6 +703,7 @@ static struct microcode_ops microcode_intel_ops = {
 	.request_microcode_fw	= request_microcode_fw,
 	.collect_cpu_info	= collect_cpu_info,
 	.apply_microcode	= apply_microcode_late,
+	.update_cpudata_only	= uconfig_update_cpudata_only,
 	.finalize_late_load	= finalize_late_load,
 	.staging_microcode	= staging_microcode,
 	.use_nmi		= IS_ENABLED(CONFIG_X86_64),

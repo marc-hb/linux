@@ -40,6 +40,7 @@
 #include <asm/setup.h>
 
 #include "internal.h"
+#include "uconfig.h"
 
 static struct microcode_ops	*microcode_ops;
 bool dis_ucode_ldr = true;
@@ -264,6 +265,8 @@ enum sibling_ctrl {
 	SCTRL_WAIT,
 	/* Invoke the microcode_apply() callback */
 	SCTRL_APPLY,
+	/* Invoke the microcode_update() callback */
+	SCTRL_RECORD_UPDATE,
 	/* Proceed without invoking the microcode_apply() callback */
 	SCTRL_DONE,
 };
@@ -384,6 +387,8 @@ static noinstr void load_secondary(unsigned int cpu)
 	 */
 	if (this_cpu_read(ucode_ctrl.ctrl) == SCTRL_APPLY)
 		ret = microcode_ops->apply_microcode(cpu);
+	else if (this_cpu_read(ucode_ctrl.ctrl) == SCTRL_RECORD_UPDATE)
+		ret = microcode_ops->update_cpudata_only(cpu);
 	else
 		ret = per_cpu(ucode_ctrl.result, ctrl_cpu);
 
@@ -430,10 +435,23 @@ static void __load_primary(unsigned int cpu)
 	 * case where the CPU has uniform loading at package or system
 	 * scope implemented but does not advertise it.
 	 */
-	if (ret == UCODE_UPDATED || ret == UCODE_OK)
-		ctrl = SCTRL_APPLY;
-	else
+	if (ret == UCODE_UPDATED || ret == UCODE_OK) {
+		/*
+		 * With the "apply_anyrev" knob, for Intel-internal
+		 * validation process, apply() actually triggers
+		 * the hardware mechanism to update the microcode again.
+		 *
+		 * Thus, specify to invoke update() which is a variant
+		 * following the exact apply() code path but not
+		 * triggering the load.
+		 */
+		if (uconfig_anyrev())
+			ctrl = SCTRL_RECORD_UPDATE;
+		else
+			ctrl = SCTRL_APPLY;
+	} else {
 		ctrl = SCTRL_DONE;
+	}
 
 	secondaries = ucode_get_scope_mask(cpu);
 
@@ -728,10 +746,16 @@ static int load_late_locked(void)
 		return -EBADFD;
 	}
 
-	if (microcode_ops->staging_usable)
-		microcode_ops->staging_microcode();
+	if (uconfig_staging()) {
+		if (microcode_ops->staging_usable)
+			microcode_ops->staging_microcode();
+		ret = microcode_ops->staging_usable ? 0 : -ENODEV;
+	}
 
-	return load_late_stop_cpus(is_safe);
+	if (uconfig_loading())
+		ret = load_late_stop_cpus(is_safe);
+
+	return ret;
 }
 
 static ssize_t reload_store(struct device *dev,
