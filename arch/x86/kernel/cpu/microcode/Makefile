@@ -2,4 +2,5 @@
 microcode-y				:= core.o
 obj-$(CONFIG_MICROCODE)			+= microcode.o
 microcode-$(CONFIG_CPU_SUP_INTEL)	+= intel.o intel_staging.o
+microcode-$(CONFIG_MICROCODE_LATE_LOADING_DEBUG) += uconfig.o
 microcode-$(CONFIG_CPU_SUP_AMD)		+= amd.o
