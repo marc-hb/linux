@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #define pr_fmt(fmt) "microcode: " fmt
+#include <linux/debugfs.h>
 #include "internal.h"
 #include "uconfig.h"
+
+static u8 version = 2;
 
 struct uconfig ucfg;
 
@@ -33,8 +36,23 @@ enum ucode_state uconfig_update_cpudata_only(int cpu)
 	return UCODE_OK;
 }
 
+static struct dentry *ucfg_dentry;
+
+#define EXPORT_KNOB(b, c)	debugfs_create_bool((c), 0644, ucfg_dentry, &(b));
+
 static int __init uconfig_init(void)
 {
+
+	/*
+	 * The following debugfs facilitates to stress late loading for
+	 * Intel-internal validation use:
+	 */
+	ucfg_dentry = debugfs_create_dir("microcode", NULL);
+	if (!ucfg_dentry)
+		return -EBADFD;
+
+	debugfs_create_u8("abi_version", 0444, ucfg_dentry, &version);
+
 	/*
 	 * Define the default behaiovr which aligns with the mainline.
 	 */
@@ -42,6 +60,10 @@ static int __init uconfig_init(void)
 	ucfg.staging	= true;
 	ucfg.anyrev	= false;
 	pr_info("default configs: (loading, staging, anyrev) = (Y, Y, N)\n");
+
+	EXPORT_KNOB(ucfg.staging,  "staging");
+	EXPORT_KNOB(ucfg.loading,  "loading");
+	EXPORT_KNOB(ucfg.anyrev,   "anyrev");
 	return 0;
 }
 late_initcall(uconfig_init);
