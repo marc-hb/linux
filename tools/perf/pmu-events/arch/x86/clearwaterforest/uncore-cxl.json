@@ -1,0 +1,2628 @@
+[
+    {
+        "BriefDescription": "This event will count anytime a AD A2F req from CM is allocated into AD0 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AD A2F req from CM is allocated into AD0 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AD0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AD A2F req from CM is allocated into AD1 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AD1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AD A2F req from CM is allocated into AD1 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AD1_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x8",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AK A2F resp from CM is allocated into AK0 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AK A2F resp from CM is allocated into AK0 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AK0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AK A2F resp from CM is allocated into AD1 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a BL A2F transaction from IO is allocated into BL0 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0A",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.BL0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a BL A2F transaction from CM is allocated into BL1 egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0A",
+        "EventName": "UNC_B2CXL_A2F_UFI_ALLOC.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AD0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD1 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AD1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD1 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AD1_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x8",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AK0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK1 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL0 IO egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0B",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.BL0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL1 CM egress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0B",
+        "EventName": "UNC_B2CXL_A2F_UFI_EMPTY.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AD0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD1 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AD1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD1 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AD1_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x8",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AK0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK1 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL0 IO egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0C",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.BL0_IO",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL1 CM egress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0C",
+        "EventName": "UNC_B2CXL_A2F_UFI_FULL.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AD txns in AD0 CM egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AD txns in AD0 IO egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AD0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AD txns in AD1 CM egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AD1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AD txns in AD1 IO egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AD1_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x8",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AK txns in AK0 CM egress buffer (cache response)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AK txns in AK0 IO egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AK0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AK txns in AK1 CM egress buffer (S2M NDR and RBT NDR)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of BL txns in BL0 IO egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0D",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.BL0_IO",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of BL txns in BL0 CM egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0D",
+        "EventName": "UNC_B2CXL_A2F_UFI_OCCUP.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "B2CXL Clockticks",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x01",
+        "EventName": "UNC_B2CXL_CLOCKTICKS",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AD F2A req from NIP to CM is allocated into AD0 Ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x20",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AK F2A resp from CM is allocated into AK0 Ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x24",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a AK F2A resp from CM is allocated into AD1 ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x24",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x80",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a BL F2A data  is allocated into BL0 Ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x28",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.BL0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a BL F2A Data is allocated into BL1 ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x28",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a IV F2A req  is allocated into IV0 Ingress buffer (IV reqs to IO)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2C",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.IV0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count anytime a IV F2A Req is allocated into IV1 ingress buffer (IV reqs to CXL.$)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2C",
+        "EventName": "UNC_B2CXL_F2A_NIP_ALLOC.IV1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM Ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x21",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x25",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK1 CM ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x25",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x10",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL0 ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x29",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.BL0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL1 ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x29",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles IV0 ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2D",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.IV0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles IV1 ingress buffer is empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2D",
+        "EventName": "UNC_B2CXL_F2A_NIP_EMPTY.IV1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AD0 CM Ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x22",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK0 CM ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x26",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles AK1 CM ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x26",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x20",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL0 ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2A",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.BL0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles BL1  ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2A",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles IV0 ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2E",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.IV0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "This event will count number of cycles IV1  ingress buffer is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2E",
+        "EventName": "UNC_B2CXL_F2A_NIP_FULL.IV1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AD txns in AD0 CM egress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x23",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.AD0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AK txns in AK0 CM ingress buffer (U2C response to CXL.$)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x27",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.AK0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of AK txns in AK1 CM ingress buffer ((U2C response to CXL.$)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x27",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.AK1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x40",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of BL txns in BL0 ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2B",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.BL0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of BL txns in BL1  ingress buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2B",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.BL1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of IV txns in IV0 ingress buffer (IV reqs to IO)",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2F",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.IV0_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of IV txns in IV1  ingress buffer(IV reqs to CXL.$",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2F",
+        "EventName": "UNC_B2CXL_F2A_NIP_OCCUP.IV1_CM",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of cycles 3DXP distress was asserted",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x10",
+        "EventName": "UNC_B2CXL_QOS_DISTRESS.3DXP",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of cycles CXL distress was asserted",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x10",
+        "EventName": "UNC_B2CXL_QOS_DISTRESS.CXL",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of cycles DDR distress was asserted",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x10",
+        "EventName": "UNC_B2CXL_QOS_DISTRESS.DDR",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of D2C hits on the M2S Data response path",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x11",
+        "EventName": "UNC_B2CXL_RBT_PREFETCH.D2C_HIT",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x1",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of D2U hits on the M2S Data response path",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x11",
+        "EventName": "UNC_B2CXL_RBT_PREFETCH.D2K_HIT",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x2",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of times M2S read request which can take D2C path could not get allocated into RBT due to RBT being full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x11",
+        "EventName": "UNC_B2CXL_RBT_PREFETCH.FULL_NO_D2C_ALLOC",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x4",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of times M2S read request which can take D2U path could not get allocated into RBT due to RBT being full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x11",
+        "EventName": "UNC_B2CXL_RBT_PREFETCH.FULL_NO_D2K_ALLOC",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x8",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "PMON event to count number of times M2S prefetch request (memSpecread) was dropped due to prefetch credit being not available",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x11",
+        "EventName": "UNC_B2CXL_RBT_PREFETCH.XPT_DROPPED",
+        "PerPkg": "1",
+        "PortMask": "0x000",
+        "UMask": "0x10",
+        "Unit": "B2CXL"
+    },
+    {
+        "BriefDescription": "Counts the number of lsclk ticks",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x01",
+        "EventName": "UNC_CXLCM_CLOCKTICKS",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Counts the number of lfclk ticks",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x01",
+        "EventName": "UNC_CXLCM_CLOCKTICKS.LF",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Counts the number of lsclk ticks",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x01",
+        "EventName": "UNC_CXLCM_CLOCKTICKS.LS",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the AGF is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x51",
+        "EventName": "UNC_CXLCM_RxC_AGF_FULL.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the AGF is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x51",
+        "EventName": "UNC_CXLCM_RxC_AGF_FULL.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the AGF is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x51",
+        "EventName": "UNC_CXLCM_RxC_AGF_FULL.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the AGF is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x51",
+        "EventName": "UNC_CXLCM_RxC_AGF_FULL.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the AGF is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x51",
+        "EventName": "UNC_CXLCM_RxC_AGF_FULL.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Mem Rxx AGF 0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Req AGF0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.CACHE_REQ0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Data AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.CACHE_RSP0",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Rsp AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.CACHE_RSP1",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Req AGF 1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Mem Data AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x43",
+        "EventName": "UNC_CXLCM_RxC_AGF_INSERTS.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Data AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x44",
+        "EventName": "UNC_CXLCM_RxC_AGF_NE.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Req AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x44",
+        "EventName": "UNC_CXLCM_RxC_AGF_NE.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Rsp AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x44",
+        "EventName": "UNC_CXLCM_RxC_AGF_NE.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Data AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x44",
+        "EventName": "UNC_CXLCM_RxC_AGF_NE.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Rxx AGF",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x44",
+        "EventName": "UNC_CXLCM_RxC_AGF_NE.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.ADDR0",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.ADDR1",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.ADDR2",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.ADDR3",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.HDR0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.HDR1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.HDR2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x46",
+        "EventName": "UNC_CXLCM_RxC_BASIC_MATCH.HDR3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Data credit return",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4c",
+        "EventName": "UNC_CXLCM_RxC_CRD_RET.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Req credit return",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4c",
+        "EventName": "UNC_CXLCM_RxC_CRD_RET.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Rsp credit return",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4c",
+        "EventName": "UNC_CXLCM_RxC_CRD_RET.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Mem Data credit return",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4c",
+        "EventName": "UNC_CXLCM_RxC_CRD_RET.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Mem Rxx credit return",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4c",
+        "EventName": "UNC_CXLCM_RxC_CRD_RET.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with AK set",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.AK_HDR",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with BE set",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.BE_HDR",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of control flits received",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.CTRL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Headerless flits received",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.NO_HDR",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of protocol flits received",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.PROT",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with SZ set",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.SZ_HDR",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of flits received",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.VALID",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in the flit",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4b",
+        "EventName": "UNC_CXLCM_RxC_FLITS.VALID_MSG",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of CRC errors detected",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x40",
+        "EventName": "UNC_CXLCM_RxC_MISC.CRC_ERRORS",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Init flits sent",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x40",
+        "EventName": "UNC_CXLCM_RxC_MISC.INIT",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of LLCRD flits sent",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x40",
+        "EventName": "UNC_CXLCM_RxC_MISC.LLCRD",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Retry flits sent",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x40",
+        "EventName": "UNC_CXLCM_RxC_MISC.RETRY",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.CACHE_RSP0",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.CACHE_RSP1",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles valid message to send but credits not available",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x45",
+        "EventName": "UNC_CXLCM_RxC_NO_CRD.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the Packing Buffer is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x52",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_FULL.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the Packing Buffer is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x52",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_FULL.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the Packing Buffer is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x52",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_FULL.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the Packing Buffer is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x52",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_FULL.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles the Packing Buffer is Full",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x52",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_FULL.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Data Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x41",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_INSERTS.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Req Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x41",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_INSERTS.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Rsp Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x41",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_INSERTS.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Mem Data Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x41",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_INSERTS.MEM_DATA",
+        "Experimental": "1",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Mem Rxx Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x41",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_INSERTS.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Data Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x42",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_NE.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Req Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x42",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_NE.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Rsp Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x42",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_NE.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Data Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x42",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_NE.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Rxx Packing buffer",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x42",
+        "EventName": "UNC_CXLCM_RxC_PACK_BUF_NE.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H4",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H5",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x47",
+        "EventName": "UNC_CXLCM_RxC_SLOT0_FMT.H5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G4",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G5",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x48",
+        "EventName": "UNC_CXLCM_RxC_SLOT1_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G4",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G5",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G6",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.G6",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x49",
+        "EventName": "UNC_CXLCM_RxC_SLOT2_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G0",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G1",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G2",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G4",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G5",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 3",
+        "Counter": "4,5,6,7",
+        "EventCode": "0x4a",
+        "EventName": "UNC_CXLCM_RxC_SLOT3_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles flit is ready but LLRB is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.LLRB_FULL",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles of no credits with valid message for Cache Data",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_CRD_CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles of no credits with valid message for Cache Req",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_CRD_CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles of no credits with valid message for Cache Rsp",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_CRD_CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles of no credits with valid message for Mem Data",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_CRD_MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles of no credits with valid message for Mem Req",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_CRD_MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles flit is ready but there's no grant on LPIF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0d",
+        "EventName": "UNC_CXLCM_TxC_BACK_PRESSURE.NO_GNT_LPIF",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.ADDR0",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.ADDR1",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.ADDR2",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic Addr Match CR 3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.ADDR3",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.HDR0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.HDR1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.HDR2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of matches in Basic HDR Match CR 3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0c",
+        "EventName": "UNC_CXLCM_TxC_BASIC_MATCH.HDR3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Data credit return",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_CXLCM_TxC_CRD_RET.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Req credit return",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_CXLCM_TxC_CRD_RET.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Cache Rsp credit return",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_CXLCM_TxC_CRD_RET.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Mem Data credit return",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_CXLCM_TxC_CRD_RET.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits which have Mem Rsp credit return",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x06",
+        "EventName": "UNC_CXLCM_TxC_CRD_RET.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with AK set",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.AK_HDR",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with BE set",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.BE_HDR",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of control flits packed",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.CTRL",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Headerless flits packed",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.NO_HDR",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of protocol flits packed",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.PROT",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with SZ set",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.SZ_HDR",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of flits packed",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.VALID",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in the flit",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x05",
+        "EventName": "UNC_CXLCM_TxC_FLITS.VALID_MSG",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times flit packing biases towards cache req",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x10",
+        "EventName": "UNC_CXLCM_TxC_FP_BIAS.REQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times flit packing biases towards cache rsp",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x10",
+        "EventName": "UNC_CXLCM_TxC_FP_BIAS.RSP",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times a forced ack was required",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.FORCED_ACK",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Init flits sent",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.INIT",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times LL initiates L1 entry",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.L1_ENTRY_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of cycles the flit is ready but link is not in Active state",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.LINK_NOT_ACTIVE",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of LLCRD flits sent",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.LLCRD",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Retry flits sent",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0e",
+        "EventName": "UNC_CXLCM_TxC_MISC.RETRY",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_FULL.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_FULL.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_FULL.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_FULL.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_FULL.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.CACHE_DATA",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Cache Data Packing buffer",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.CACHE_REQ0",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Cache Req Packing buffer",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.CACHE_REQ1",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Cache Rsp1 Packing buffer",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.CACHE_RSP0",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Cache Rsp0 Packing buffer",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.MEM_DATA",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Mem Data Packing buffer",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_INSERTS.MEM_REQ",
+        "PerPkg": "1",
+        "PublicDescription": "Number of Allocation to Mem Rxx Packing buffer",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Data Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_NE.CACHE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Req Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_NE.CACHE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Cache Rsp Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_NE.CACHE_RSP",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Data Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_NE.MEM_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for Mem Rxx Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLCM_TxC_PACK_BUF_NE.MEM_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times flit packing biases towards cache",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.CACHE_BIAS",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of times flit packing biases towards mem",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.MEM_BIAS",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 4",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of rollover = 5",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0b",
+        "EventName": "UNC_CXLCM_TxC_ROLLOVER.R5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles RWD Data Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.FULL_DATA",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles RWD Req Packing Buffer is Full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.FULL_REQ",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache RWD Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.INSERTS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for RWD Data Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.NE_DATA",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for RWD Req Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.NE_REQ",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of D2H_RWD_DH packed by FP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.NUM_D2H_DH",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of D2H_RWD_Req packed by FP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.NUM_D2H_REQ",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Number of Allocation to Cache Rsp (RWD related - Cqid[11] set) into Packing buffer",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0f",
+        "EventName": "UNC_CXLCM_TxC_RWD_PACK_BUF.RxC_RSP_INSERTS",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H4",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 0 with format H5",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x07",
+        "EventName": "UNC_CXLCM_TxC_SLOT0_FMT.H5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G4",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G5",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 1 with format G6",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.G6",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x08",
+        "EventName": "UNC_CXLCM_TxC_SLOT1_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G4",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G5",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 2 with format G6",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.G6",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x09",
+        "EventName": "UNC_CXLCM_TxC_SLOT2_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G0",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G1",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G2",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G3",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G4",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G4",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G5",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G5",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of Flits with Slot 3 with format G6",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.G6",
+        "PerPkg": "1",
+        "UMask": "0x40",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Count the number of valid messages in Slot 3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x0a",
+        "EventName": "UNC_CXLCM_TxC_SLOT3_FMT.VAL",
+        "PerPkg": "1",
+        "UMask": "0x80",
+        "Unit": "CXLCM"
+    },
+    {
+        "BriefDescription": "Counts the number of uclk ticks",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x01",
+        "EventName": "UNC_CXLDP_CLOCKTICKS",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.M2S_DATA",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.M2S_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.U2C_DATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.U2C_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.U2C_RSP0",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles AGF is full",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x04",
+        "EventName": "UNC_CXLDP_TxC_AGF_FULL.U2C_RSP1",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to M2S Data AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.M2S_DATA",
+        "Experimental": "1",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to M2S Req AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.M2S_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to U2C Data AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.U2C_DATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to U2C Req AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.U2C_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to U2C Rsp AGF 0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.U2C_RSP0",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of Allocation to U2C Rsp AGF 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_CXLDP_TxC_AGF_INSERTS.U2C_RSP1",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for M2S Data AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.M2S_DATA",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for M2S Req AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.M2S_REQ",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for U2C Data AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.U2C_DATA",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for U2C Req AGF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.U2C_REQ",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for U2C Rsp AGF 0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.U2C_RSP0",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "CXLDP"
+    },
+    {
+        "BriefDescription": "Number of cycles of Not Empty for U2C Rsp AGF 1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x03",
+        "EventName": "UNC_CXLDP_TxC_AGF_NE.U2C_RSP1",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "CXLDP"
+    }
+]
