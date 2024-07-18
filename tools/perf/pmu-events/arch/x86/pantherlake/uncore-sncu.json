@@ -1,0 +1,109 @@
+[
+    {
+        "BriefDescription": "Counting the number of Lock cycles",
+        "Counter": "0,1",
+        "EventCode": "0x04",
+        "EventName": "UNC_SNCU_LOCK_CYCLES.LOCKS",
+        "PerPkg": "1",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Incoming LT Doorbell requests",
+        "Counter": "0,1",
+        "EventCode": "0x02",
+        "EventName": "UNC_SNCU_MSG_RECEIVED.DOORBELL",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Incoming IntPrioUpd requests",
+        "Counter": "0,1",
+        "EventCode": "0x02",
+        "EventName": "UNC_SNCU_MSG_RECEIVED.INT_PRIO_UPDATE",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Incoming IPI requests",
+        "Counter": "0,1",
+        "EventCode": "0x02",
+        "EventName": "UNC_SNCU_MSG_RECEIVED.IPI",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Incoming MSI requests",
+        "Counter": "0,1",
+        "EventCode": "0x02",
+        "EventName": "UNC_SNCU_MSG_RECEIVED.MSI",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Incoming VLW requests",
+        "Counter": "0,1",
+        "EventCode": "0x02",
+        "EventName": "UNC_SNCU_MSG_RECEIVED.VLW",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing Correctable-Machine-Check events",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.CMC",
+        "PerPkg": "1",
+        "UMask": "0x4",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing LLB events",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.LIVELOCK",
+        "PerPkg": "1",
+        "UMask": "0x1",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing LTError events",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.LTERROR",
+        "PerPkg": "1",
+        "UMask": "0x2",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing events not listed above",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.OTHERS",
+        "PerPkg": "1",
+        "UMask": "0x20",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing Uncore-Trap events",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.TRAP",
+        "PerPkg": "1",
+        "UMask": "0x10",
+        "Unit": "sNCU"
+    },
+    {
+        "BriefDescription": "Outgoing Uncorrectable-Machine-Check events",
+        "Counter": "0,1",
+        "EventCode": "0x03",
+        "EventName": "UNC_SNCU_U2C_EVENTS.UMC",
+        "PerPkg": "1",
+        "UMask": "0x8",
+        "Unit": "sNCU"
+    }
+]
