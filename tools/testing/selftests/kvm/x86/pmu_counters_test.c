@@ -3,6 +3,7 @@
  * Copyright (C) 2023, Tencent, Inc.
  */
 #include <x86intrin.h>
+#include <linux/bitmap.h>
 
 #include "pmu.h"
 #include "processor.h"
@@ -35,7 +36,6 @@ static bool kvm_has_perf_caps;
 
 static struct kvm_vm *pmu_vm_create_with_one_vcpu(struct kvm_vcpu **vcpu,
 						  void *guest_code,
-						  uint8_t pmu_version,
 						  uint64_t perf_capabilities)
 {
 	struct kvm_vm *vm;
@@ -52,7 +52,6 @@ static struct kvm_vm *pmu_vm_create_with_one_vcpu(struct kvm_vcpu **vcpu,
 	if (kvm_has_perf_caps)
 		vcpu_set_msr(*vcpu, MSR_IA32_PERF_CAPABILITIES, perf_capabilities);
 
-	vcpu_set_cpuid_property(*vcpu, X86_PROPERTY_PMU_VERSION, pmu_version);
 	return vm;
 }
 
@@ -295,6 +294,35 @@ static void guest_test_arch_events(void)
 	GUEST_DONE();
 }
 
+static void setup_fixed_counters_cpuid(struct kvm_vcpu *vcpu, uint8_t pmu_version,
+				       uint8_t nr_fixed, uint32_t bitmap_fixed)
+{
+	struct kvm_cpuid_entry2 *entry = NULL;
+	const unsigned long ecx = bitmap_fixed;
+	int contiguous_fixed = nr_fixed;
+
+	entry = __vcpu_get_cpuid_entry(vcpu, X86_PROPERTY_PMU_VERSION.function,
+				       X86_PROPERTY_PMU_VERSION.index);
+	TEST_ASSERT(entry, "Failed to find CPUID entry 0xa");
+
+	/*
+	 * KVM checks if fixed counters number and bitmap is set correctly.
+	 * - fixed counters bitmap ecx[0:31] should be 0 if PMU version is
+	 *   larger than 1 and less than 5.
+	 * - fixed counters number edx[0:4] should represent contiguous
+	 *   fixed counters starting from 0.
+	 */
+	if (pmu_version > 1 && pmu_version < 5) {
+		entry->ecx = 0;
+	} else {
+		entry->ecx = bitmap_fixed;
+		contiguous_fixed = find_first_zero_bit(&ecx, sizeof(ecx));
+		TEST_ASSERT(contiguous_fixed < 32, "Invalid fixed counter bitmap");
+	}
+	entry->edx &= ~GENMASK(4, 0);
+	entry->edx |= contiguous_fixed;
+}
+
 static void test_arch_events(uint8_t pmu_version, uint64_t perf_capabilities,
 			     uint8_t length, uint8_t unavailable_mask)
 {
@@ -306,8 +334,12 @@ static void test_arch_events(uint8_t pmu_version, uint64_t perf_capabilities,
 		return;
 
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_arch_events,
-					 pmu_version, perf_capabilities);
+					 perf_capabilities);
 
+	setup_fixed_counters_cpuid(vcpu, pmu_version,
+		kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS),
+		kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK));
+	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_VERSION, pmu_version);
 	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH,
 				length);
 	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_EVENTS_MASK,
@@ -466,8 +498,12 @@ static void test_gp_counters(uint8_t pmu_version, uint64_t perf_capabilities,
 	struct kvm_vm *vm;
 
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_gp_counters,
-					 pmu_version, perf_capabilities);
+					 perf_capabilities);
 
+	setup_fixed_counters_cpuid(vcpu, pmu_version,
+		kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS),
+		kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK));
+	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_VERSION, pmu_version);
 	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_NR_GP_COUNTERS,
 				nr_gp_counters);
 
@@ -533,12 +569,11 @@ static void test_fixed_counters(uint8_t pmu_version, uint64_t perf_capabilities,
 	struct kvm_vm *vm;
 
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_fixed_counters,
-					 pmu_version, perf_capabilities);
+					 perf_capabilities);
 
-	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK,
-				supported_bitmask);
-	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_NR_FIXED_COUNTERS,
-				nr_fixed_counters);
+	setup_fixed_counters_cpuid(vcpu, pmu_version, nr_fixed_counters,
+				   supported_bitmask);
+	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_VERSION, pmu_version);
 
 	run_vcpu(vcpu);
 
