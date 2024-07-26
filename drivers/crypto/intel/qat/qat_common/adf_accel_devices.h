@@ -256,7 +256,8 @@ struct adf_pfvf_ops {
 };
 
 struct adf_dc_ops {
-	void (*build_deflate_ctx)(void *ctx);
+	void (*build_comp_dc_hw_block)(void **ctx);
+	void (*build_decomp_dc_hw_block)(void **ctx);
 };
 
 struct qat_migdev_ops {
