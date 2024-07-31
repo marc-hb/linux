@@ -10,6 +10,7 @@
 #define VSEC_CAP_CRASHLOG	BIT(2)
 #define VSEC_CAP_SDSI		BIT(3)
 #define VSEC_CAP_TPMI		BIT(4)
+#define VSEC_CAP_DISCOVERY	BIT(5)
 
 /* Intel DVSEC offsets */
 #define INTEL_DVSEC_ENTRIES		0xA
@@ -26,6 +27,7 @@ enum intel_vsec_id {
 	VSEC_ID_TELEMETRY	= 2,
 	VSEC_ID_WATCHER		= 3,
 	VSEC_ID_CRASHLOG	= 4,
+	VSEC_ID_DISCOVERY	= 12,
 	VSEC_ID_SDSI		= 65,
 	VSEC_ID_TPMI		= 66,
 };

@@ -50,6 +50,9 @@ static const char *intel_vsec_name(enum intel_vsec_id id)
 	case VSEC_ID_TPMI:
 		return "tpmi";
 
+	case VSEC_ID_DISCOVERY:
+		return "discovery";
+
 	default:
 		return NULL;
 	}
@@ -68,6 +71,8 @@ static bool intel_vsec_supported(u16 id, unsigned long caps)
 		return !!(caps & VSEC_CAP_SDSI);
 	case VSEC_ID_TPMI:
 		return !!(caps & VSEC_CAP_TPMI);
+	case VSEC_ID_DISCOVERY:
+		return !!(caps & VSEC_CAP_DISCOVERY);
 	default:
 		return false;
 	}
@@ -396,7 +401,7 @@ static const struct intel_vsec_platform_info dg1_info = {
 
 /* DMR OOBMSM info */
 static const struct intel_vsec_platform_info dmr_oobmsm_info = {
-	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI,
+	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI | VSEC_CAP_DISCOVERY,
 };
 
 /* MTL info */
@@ -406,7 +411,8 @@ static const struct intel_vsec_platform_info mtl_info = {
 
 /* OOBMSM info */
 static const struct intel_vsec_platform_info oobmsm_info = {
-	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_SDSI | VSEC_CAP_TPMI,
+	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_SDSI | VSEC_CAP_TPMI |
+		VSEC_CAP_DISCOVERY,
 };
 
 /* TGL info */
