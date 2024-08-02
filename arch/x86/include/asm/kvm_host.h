@@ -536,7 +536,7 @@ struct kvm_pmc {
 
 /* More counters may conflict with other existing Architectural MSRs */
 #define KVM_MAX(a, b)	((a) >= (b) ? (a) : (b))
-#define KVM_MAX_NR_INTEL_GP_COUNTERS	8
+#define KVM_MAX_NR_INTEL_GP_COUNTERS	10
 #define KVM_MAX_NR_AMD_GP_COUNTERS	6
 #define KVM_MAX_NR_GP_COUNTERS		KVM_MAX(KVM_MAX_NR_INTEL_GP_COUNTERS, \
 						KVM_MAX_NR_AMD_GP_COUNTERS)
