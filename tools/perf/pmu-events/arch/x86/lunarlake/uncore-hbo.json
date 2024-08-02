@@ -1,0 +1,1818 @@
+[
+    {
+        "BriefDescription": "HBO Allocation",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x20",
+        "EventName": "UNC_HBO_ALLOCATION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts clockcycles CCLK",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x01",
+        "EventName": "UNC_HBO_CLOCKTICKS",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts cycles in flushing state",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x47",
+        "EventName": "UNC_HBO_CYCLES_IN_FLUSHING_STATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts cycles in configured FSM state",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x45",
+        "EventName": "UNC_HBO_CYCLES_IN_FSM_STATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "HBO De-allocation",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x21",
+        "EventName": "UNC_HBO_DEALLOCATION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts how many times a specific entry is in a specific FSM state",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x46",
+        "EventName": "UNC_HBO_ENTRIES_IN_FSM_STATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_CONNECTION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x199",
+        "EventName": "UNC_HBO_IO_RX_CONNECTION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x193",
+        "EventName": "UNC_HBO_IO_RX_DATA_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x196",
+        "EventName": "UNC_HBO_IO_RX_DATA_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_SHARED_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x188",
+        "EventName": "UNC_HBO_IO_RX_DATA_SHARED_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_UPI_WB_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18B",
+        "EventName": "UNC_HBO_IO_RX_DATA_UPI_WB_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_UPI_WB_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17F",
+        "EventName": "UNC_HBO_IO_RX_DATA_UPI_WB_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC0_DRS_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18C",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC0_DRS_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC0_DRS_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x181",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC0_DRS_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC0_DRS_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x180",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC0_DRS_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC0_WUO_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18A",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC0_WUO_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC0_WUO_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17E",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC0_WUO_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC1_RWDC_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x189",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC1_RWDC_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_DATA_VC1_RWD_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17D",
+        "EventName": "UNC_HBO_IO_RX_DATA_VC1_RWD_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_CXM_RD_VC0_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x190",
+        "EventName": "UNC_HBO_IO_RX_REQ_CXM_RD_VC0_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_CXM_RD_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x185",
+        "EventName": "UNC_HBO_IO_RX_REQ_CXM_RD_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_CXM_RD_VC1_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18F",
+        "EventName": "UNC_HBO_IO_RX_REQ_CXM_RD_VC1_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_CXM_RD_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x184",
+        "EventName": "UNC_HBO_IO_RX_REQ_CXM_RD_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_IDI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x192",
+        "EventName": "UNC_HBO_IO_RX_REQ_IDI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x187",
+        "EventName": "UNC_HBO_IO_RX_REQ_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x195",
+        "EventName": "UNC_HBO_IO_RX_REQ_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x198",
+        "EventName": "UNC_HBO_IO_RX_REQ_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_SHARED_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18E",
+        "EventName": "UNC_HBO_IO_RX_REQ_SHARED_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_UPI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x191",
+        "EventName": "UNC_HBO_IO_RX_REQ_UPI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_REQ_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x186",
+        "EventName": "UNC_HBO_IO_RX_REQ_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_RSP_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x18D",
+        "EventName": "UNC_HBO_IO_RX_RSP_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_RSP_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x183",
+        "EventName": "UNC_HBO_IO_RX_RSP_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_RSP_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x194",
+        "EventName": "UNC_HBO_IO_RX_RSP_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_RSP_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x197",
+        "EventName": "UNC_HBO_IO_RX_RSP_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_RX_RSP_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x182",
+        "EventName": "UNC_HBO_IO_RX_RSP_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_CONNECTION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9F",
+        "EventName": "UNC_HBO_IO_TX_CONNECTION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_CXM_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC81",
+        "EventName": "UNC_HBO_IO_TX_DATA_CXM_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_CXM_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC80",
+        "EventName": "UNC_HBO_IO_TX_DATA_CXM_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC83",
+        "EventName": "UNC_HBO_IO_TX_DATA_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC99",
+        "EventName": "UNC_HBO_IO_TX_DATA_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9C",
+        "EventName": "UNC_HBO_IO_TX_DATA_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_SHARED_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC90",
+        "EventName": "UNC_HBO_IO_TX_DATA_SHARED_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC82",
+        "EventName": "UNC_HBO_IO_TX_DATA_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_VC0_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC92",
+        "EventName": "UNC_HBO_IO_TX_DATA_VC0_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_VC0_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8C",
+        "EventName": "UNC_HBO_IO_TX_DATA_VC0_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_VC1_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC91",
+        "EventName": "UNC_HBO_IO_TX_DATA_VC1_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_DATA_VC1_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8A",
+        "EventName": "UNC_HBO_IO_TX_DATA_VC1_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_IDI_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8F",
+        "EventName": "UNC_HBO_IO_TX_REQ_IDI_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9B",
+        "EventName": "UNC_HBO_IO_TX_REQ_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9E",
+        "EventName": "UNC_HBO_IO_TX_REQ_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_SNP_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC89",
+        "EventName": "UNC_HBO_IO_TX_REQ_SNP_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_SNP_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC88",
+        "EventName": "UNC_HBO_IO_TX_REQ_SNP_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_REQ_UPI_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8E",
+        "EventName": "UNC_HBO_IO_TX_REQ_UPI_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_CXM_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC85",
+        "EventName": "UNC_HBO_IO_TX_RSP_CXM_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_CXM_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC84",
+        "EventName": "UNC_HBO_IO_TX_RSP_CXM_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC87",
+        "EventName": "UNC_HBO_IO_TX_RSP_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9A",
+        "EventName": "UNC_HBO_IO_TX_RSP_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC9D",
+        "EventName": "UNC_HBO_IO_TX_RSP_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_SHARED_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC93",
+        "EventName": "UNC_HBO_IO_TX_RSP_SHARED_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC86",
+        "EventName": "UNC_HBO_IO_TX_RSP_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_VC0_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC95",
+        "EventName": "UNC_HBO_IO_TX_RSP_VC0_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_VC0_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8D",
+        "EventName": "UNC_HBO_IO_TX_RSP_VC0_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_VC1_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC94",
+        "EventName": "UNC_HBO_IO_TX_RSP_VC1_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_RSP_VC1_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC8B",
+        "EventName": "UNC_HBO_IO_TX_RSP_VC1_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_SNP_REQ_IDI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC97",
+        "EventName": "UNC_HBO_IO_TX_SNP_REQ_IDI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_SNP_REQ_SHARED_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC98",
+        "EventName": "UNC_HBO_IO_TX_SNP_REQ_SHARED_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_IO_TX_SNP_REQ_UPI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xC96",
+        "EventName": "UNC_HBO_IO_TX_SNP_REQ_UPI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Late kill in Pipe",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x23",
+        "EventName": "UNC_HBO_LATEKILL_IN_PIPE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Late kill in Pipe arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x25",
+        "EventName": "UNC_HBO_LATEKILL_IN_PIPE_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_LATEKILL_IN_TRACTOR",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x24",
+        "EventName": "UNC_HBO_LATEKILL_IN_TRACTOR",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_CONNECTION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCAC",
+        "EventName": "UNC_HBO_MC_RX_CONNECTION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_DATA_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA8",
+        "EventName": "UNC_HBO_MC_RX_DATA_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_DATA_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCAA",
+        "EventName": "UNC_HBO_MC_RX_DATA_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_DATA_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA2",
+        "EventName": "UNC_HBO_MC_RX_DATA_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_DATA_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA0",
+        "EventName": "UNC_HBO_MC_RX_DATA_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_RSP_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA9",
+        "EventName": "UNC_HBO_MC_RX_RSP_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_RSP_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCAB",
+        "EventName": "UNC_HBO_MC_RX_RSP_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_RSP_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA3",
+        "EventName": "UNC_HBO_MC_RX_RSP_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_RX_RSP_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xCA1",
+        "EventName": "UNC_HBO_MC_RX_RSP_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_CONNECTION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDCC",
+        "EventName": "UNC_HBO_MC_TX_CONNECTION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_DATA_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC8",
+        "EventName": "UNC_HBO_MC_TX_DATA_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_DATA_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDCA",
+        "EventName": "UNC_HBO_MC_TX_DATA_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_DATA_VC0_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC6",
+        "EventName": "UNC_HBO_MC_TX_DATA_VC0_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_DATA_VC1_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC4",
+        "EventName": "UNC_HBO_MC_TX_DATA_VC1_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_REQ_NULL_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC9",
+        "EventName": "UNC_HBO_MC_TX_REQ_NULL_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_REQ_NULL_PACKET",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDCB",
+        "EventName": "UNC_HBO_MC_TX_REQ_NULL_PACKET",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_REQ_VC0_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC7",
+        "EventName": "UNC_HBO_MC_TX_REQ_VC0_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_REQ_VC1_CREDITS_NA",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC5",
+        "EventName": "UNC_HBO_MC_TX_REQ_VC1_CREDITS_NA",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_VALID_DATA_VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC2",
+        "EventName": "UNC_HBO_MC_TX_VALID_DATA_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_VALID_DATA_VC1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC0",
+        "EventName": "UNC_HBO_MC_TX_VALID_DATA_VC1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_VALID_REQ_VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC3",
+        "EventName": "UNC_HBO_MC_TX_VALID_REQ_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MC_TX_VALID_REQ_VC1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDC1",
+        "EventName": "UNC_HBO_MC_TX_VALID_REQ_VC1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "MFS Late kill in MFS Pipe arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x3C",
+        "EventName": "UNC_HBO_MFS_LATEKILL_IN_MFS_PIPE_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "MFS Late kill in Pipe",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x3A",
+        "EventName": "UNC_HBO_MFS_LATEKILL_IN_PIPE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "MFS Late kill in Tractor",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x3B",
+        "EventName": "UNC_HBO_MFS_LATEKILL_IN_TRACTOR",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDED",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDEE",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDEF",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF0",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF1",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF2",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF3",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF4",
+        "EventName": "UNC_HBO_MFS_PIPE_ALLOCATION_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS Pipe arbiter VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x3D",
+        "EventName": "UNC_HBO_MFS_PIPE_ARBITER_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS Pipe arbiter VC1 RD",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x3E",
+        "EventName": "UNC_HBO_MFS_PIPE_ARBITER_VC1_RD",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS Pipe arbiter VC1 WR",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x40",
+        "EventName": "UNC_HBO_MFS_PIPE_ARBITER_VC1_WR",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_BLOCKED_ALLOC_AVOID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE6",
+        "EventName": "UNC_HBO_MFS_PIPE_BLOCKED_ALLOC_AVOID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_BLOCKED_NO_VICTIM_CRD",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE7",
+        "EventName": "UNC_HBO_MFS_PIPE_BLOCKED_NO_VICTIM_CRD",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "MFS Pipe bypass win",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x39",
+        "EventName": "UNC_HBO_MFS_PIPE_BYPASSWIN",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_BYPASS_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE8",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_BYPASS_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF5",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF6",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF7",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF8",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDF9",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFA",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFB",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFC",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_HIT_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_CL_MISS",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE4",
+        "EventName": "UNC_HBO_MFS_PIPE_CL_MISS",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_COMMIT_UPDATE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE1",
+        "EventName": "UNC_HBO_MFS_PIPE_COMMIT_UPDATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_EMPTY_WAYMASK_NO_ALLOC",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE5",
+        "EventName": "UNC_HBO_MFS_PIPE_EMPTY_WAYMASK_NO_ALLOC",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_LOOKUP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE0",
+        "EventName": "UNC_HBO_MFS_PIPE_LOOKUP",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_LOOKUP_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1D",
+        "EventName": "UNC_HBO_MFS_PIPE_LOOKUP_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_LOOKUP_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1E",
+        "EventName": "UNC_HBO_MFS_PIPE_LOOKUP_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_LOOKUP_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1F",
+        "EventName": "UNC_HBO_MFS_PIPE_LOOKUP_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_LOOKUP_INC_BLOCK",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDEC",
+        "EventName": "UNC_HBO_MFS_PIPE_LOOKUP_INC_BLOCK",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_M2E_DOWNGRADE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDEA",
+        "EventName": "UNC_HBO_MFS_PIPE_M2E_DOWNGRADE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_MANY_REJECTS_NO_ALLOC",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDEB",
+        "EventName": "UNC_HBO_MFS_PIPE_MANY_REJECTS_NO_ALLOC",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0D",
+        "EventName": "UNC_HBO_MFS_PIPE_READ",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0E",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0F",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE10",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE11",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE12",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE13",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE14",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFD",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFE",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDFF",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE00",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE01",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE02",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE03",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE04",
+        "EventName": "UNC_HBO_MFS_PIPE_READ_HIT_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_SCRUB_LOOKUP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE3",
+        "EventName": "UNC_HBO_MFS_PIPE_SCRUB_LOOKUP",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_SET_BYPASS_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE9",
+        "EventName": "UNC_HBO_MFS_PIPE_SET_BYPASS_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_VICTIM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xDE2",
+        "EventName": "UNC_HBO_MFS_PIPE_VICTIM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE15",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE16",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE17",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE18",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE19",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1A",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1B",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE1C",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE05",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_ATOM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE06",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_ATOM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_CCF",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE07",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_CCF",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_DEVICE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE08",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_DEVICE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE09",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0A",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY2",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0B",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY2",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY3",
+        "Counter": "0,1,2,3",
+        "EventCode": "0xE0C",
+        "EventName": "UNC_HBO_MFS_PIPE_WRITE_HIT_ENTRY3",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS RD arbiter VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x41",
+        "EventName": "UNC_HBO_MFS_RD_ARBITER_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS RD arbiter VC1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x42",
+        "EventName": "UNC_HBO_MFS_RD_ARBITER_VC1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Valid MFS read request",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x4A",
+        "EventName": "UNC_HBO_MFS_RD_REQUEST",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS WR arbiter VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x43",
+        "EventName": "UNC_HBO_MFS_WR_ARBITER_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter MFS WR arbiter VC1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x44",
+        "EventName": "UNC_HBO_MFS_WR_ARBITER_VC1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Valid MFS write request",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x4B",
+        "EventName": "UNC_HBO_MFS_WR_REQUEST",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Occupancy counter",
+        "Counter": "0",
+        "EventCode": "0x3F",
+        "EventName": "UNC_HBO_OCCUPANCY",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_ALLOCATION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x145",
+        "EventName": "UNC_HBO_PIPE_ALLOCATION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_ATOM_MONITOR_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x151",
+        "EventName": "UNC_HBO_PIPE_ATOM_MONITOR_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_BLOCKED_ALLOC_AVOID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14B",
+        "EventName": "UNC_HBO_PIPE_BLOCKED_ALLOC_AVOID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_BLOCKED_NO_VICTIM_CRD",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14C",
+        "EventName": "UNC_HBO_PIPE_BLOCKED_NO_VICTIM_CRD",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_BLOCKED_SAME_SET_MATCH",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14A",
+        "EventName": "UNC_HBO_PIPE_BLOCKED_SAME_SET_MATCH",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Pipe bypass win",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x22",
+        "EventName": "UNC_HBO_PIPE_BYPASSWIN",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_CCF_MONITOR_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x150",
+        "EventName": "UNC_HBO_PIPE_CCF_MONITOR_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_CL_BYPASS_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14D",
+        "EventName": "UNC_HBO_PIPE_CL_BYPASS_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_CL_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x148",
+        "EventName": "UNC_HBO_PIPE_CL_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_CL_MISS",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x149",
+        "EventName": "UNC_HBO_PIPE_CL_MISS",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_COMMIT_UPDATE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x142",
+        "EventName": "UNC_HBO_PIPE_COMMIT_UPDATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_DEALLOCATION",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x146",
+        "EventName": "UNC_HBO_PIPE_DEALLOCATION",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter - Pipe lkp arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x29",
+        "EventName": "UNC_HBO_PIPE_LKP_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_LOOKUP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x140",
+        "EventName": "UNC_HBO_PIPE_LOOKUP",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_MRU_UPDATE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x147",
+        "EventName": "UNC_HBO_PIPE_MRU_UPDATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_SCRUB_LOOKUP",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x144",
+        "EventName": "UNC_HBO_PIPE_SCRUB_LOOKUP",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_SET_BYPASS_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14E",
+        "EventName": "UNC_HBO_PIPE_SET_BYPASS_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_SNOOP_NEEDED",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x152",
+        "EventName": "UNC_HBO_PIPE_SNOOP_NEEDED",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_UPDATE",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x141",
+        "EventName": "UNC_HBO_PIPE_UPDATE",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter - Pipe upd arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x2A",
+        "EventName": "UNC_HBO_PIPE_UPD_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_VALID_ARRAY_BYPASS_HIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x14F",
+        "EventName": "UNC_HBO_PIPE_VALID_ARRAY_BYPASS_HIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_PIPE_VICTIM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x143",
+        "EventName": "UNC_HBO_PIPE_VICTIM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter - snoop IDI arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x33",
+        "EventName": "UNC_HBO_SNP_IDI_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts valid snoop response IDI and UPI",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x48",
+        "EventName": "UNC_HBO_SNP_RSP_IDI_UPI",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Counts valid snoop response UPI",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x49",
+        "EventName": "UNC_HBO_SNP_RSP_UPI",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "any bid valid per arbiter - snoop UPI arbiter",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x34",
+        "EventName": "UNC_HBO_SNP_UPI_ARBITER",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_CXM_RD_VC0_REQ_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16C",
+        "EventName": "UNC_HBO_TRACTOR_CXM_RD_VC0_REQ_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_CXM_RD_VC1_REQ_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16B",
+        "EventName": "UNC_HBO_TRACTOR_CXM_RD_VC1_REQ_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "Tractor Empty",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x26",
+        "EventName": "UNC_HBO_TRACTOR_EMPTY",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_CXM_RD_VC0",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x163",
+        "EventName": "UNC_HBO_TRACTOR_FULL_CXM_RD_VC0",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_CXM_RD_VC1",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x162",
+        "EventName": "UNC_HBO_TRACTOR_FULL_CXM_RD_VC1",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_MFS_VICTIM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x164",
+        "EventName": "UNC_HBO_TRACTOR_FULL_MFS_VICTIM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_REQ_IDI",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x168",
+        "EventName": "UNC_HBO_TRACTOR_FULL_REQ_IDI",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_REQ_UPI",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x167",
+        "EventName": "UNC_HBO_TRACTOR_FULL_REQ_UPI",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_SHARED",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16A",
+        "EventName": "UNC_HBO_TRACTOR_FULL_SHARED",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_UPI_WB",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x166",
+        "EventName": "UNC_HBO_TRACTOR_FULL_UPI_WB",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_VC0_WUO",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x161",
+        "EventName": "UNC_HBO_TRACTOR_FULL_VC0_WUO",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_VC1_RWD",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x160",
+        "EventName": "UNC_HBO_TRACTOR_FULL_VC1_RWD",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_FULL_VICTIM",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x165",
+        "EventName": "UNC_HBO_TRACTOR_FULL_VICTIM",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_MFS_VICTIM_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16F",
+        "EventName": "UNC_HBO_TRACTOR_MFS_VICTIM_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_MFS_VICTIM_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x176",
+        "EventName": "UNC_HBO_TRACTOR_MFS_VICTIM_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_OCCUPANCY_SHARED",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x169",
+        "EventName": "UNC_HBO_TRACTOR_OCCUPANCY_SHARED",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_CXM_RD_VC0_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17A",
+        "EventName": "UNC_HBO_TRACTOR_REQ_CXM_RD_VC0_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_CXM_RD_VC1_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x179",
+        "EventName": "UNC_HBO_TRACTOR_REQ_CXM_RD_VC1_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_IDI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x173",
+        "EventName": "UNC_HBO_TRACTOR_REQ_IDI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_IDI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17C",
+        "EventName": "UNC_HBO_TRACTOR_REQ_IDI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_UPI_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x172",
+        "EventName": "UNC_HBO_TRACTOR_REQ_UPI_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_REQ_UPI_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x17B",
+        "EventName": "UNC_HBO_TRACTOR_REQ_UPI_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_UPI_WB_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x171",
+        "EventName": "UNC_HBO_TRACTOR_UPI_WB_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_UPI_WB_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x178",
+        "EventName": "UNC_HBO_TRACTOR_UPI_WB_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VC0_WUO_REQ_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16E",
+        "EventName": "UNC_HBO_TRACTOR_VC0_WUO_REQ_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VC0_WUO_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x175",
+        "EventName": "UNC_HBO_TRACTOR_VC0_WUO_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VC1_RWD_REQ_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x16D",
+        "EventName": "UNC_HBO_TRACTOR_VC1_RWD_REQ_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VC1_RWD_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x174",
+        "EventName": "UNC_HBO_TRACTOR_VC1_RWD_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VICTIM_CREDIT",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x170",
+        "EventName": "UNC_HBO_TRACTOR_VICTIM_CREDIT",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "UNC_HBO_TRACTOR_VICTIM_VALID",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x177",
+        "EventName": "UNC_HBO_TRACTOR_VICTIM_VALID",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    },
+    {
+        "BriefDescription": "VISA signal counting",
+        "Counter": "0,1,2,3",
+        "EventCode": "0x02",
+        "EventName": "UNC_HBO_VISA_SIGNAL",
+        "PerPkg": "1",
+        "Unit": "HBO"
+    }
+]
