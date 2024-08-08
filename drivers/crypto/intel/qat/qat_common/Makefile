@@ -2,6 +2,7 @@
 obj-$(CONFIG_CRYPTO_DEV_QAT) += intel_qat.o
 ccflags-y += -DDEFAULT_SYMBOL_NAMESPACE='"CRYPTO_QAT"'
 intel_qat-objs := adf_cfg.o \
+	adf_bank_state.o \
 	adf_dc.o \
 	adf_isr.o \
 	adf_ctl_drv.o \
