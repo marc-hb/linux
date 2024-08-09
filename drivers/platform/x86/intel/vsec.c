@@ -46,6 +46,9 @@ static const char *intel_vsec_name(enum intel_vsec_id id)
 	case VSEC_ID_CRASHLOG:
 		return "crashlog";
 
+	case VSEC_ID_S3M:
+		return "s3m";
+
 	case VSEC_ID_SDSI:
 		return "sdsi";
 
@@ -69,6 +72,8 @@ static bool intel_vsec_supported(u16 id, unsigned long caps)
 		return !!(caps & VSEC_CAP_WATCHER);
 	case VSEC_ID_CRASHLOG:
 		return !!(caps & VSEC_CAP_CRASHLOG);
+	case VSEC_ID_S3M:
+		return !!(caps & VSEC_CAP_S3M);
 	case VSEC_ID_SDSI:
 		return !!(caps & VSEC_CAP_SDSI);
 	case VSEC_ID_TPMI:
@@ -517,7 +522,8 @@ static const struct intel_vsec_platform_info dg1_info = {
 
 /* DMR OOBMSM info */
 static const struct intel_vsec_platform_info dmr_oobmsm_info = {
-	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI | VSEC_CAP_DISCOVERY,
+	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI | VSEC_CAP_DISCOVERY |
+		VSEC_CAP_S3M,
 	.quirks = VSEC_QUIRK_OOBMSM,
 };
 
@@ -529,7 +535,7 @@ static const struct intel_vsec_platform_info mtl_info = {
 /* OOBMSM info */
 static const struct intel_vsec_platform_info oobmsm_info = {
 	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_SDSI | VSEC_CAP_TPMI |
-		VSEC_CAP_DISCOVERY,
+		VSEC_CAP_DISCOVERY | VSEC_CAP_S3M,
 	.quirks = VSEC_QUIRK_OOBMSM,
 };
 
