@@ -571,6 +571,14 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->global_status_rsvd = pmu->global_ctrl_rsvd &
 					  ~(MSR_CORE_PERF_GLOBAL_OVF_CTRL_OVF_BUF |
 					    MSR_CORE_PERF_GLOBAL_OVF_CTRL_COND_CHGD);
+
+		if (pmu->version >= 5)
+			pmu->global_status_rsvd &=
+					~(MSR_CORE_PERF_GLOBAL_STATUS_LBR_FREEZE |
+					  MSR_CORE_PERF_GLOBAL_STATUS_CTR_FREEZE |
+					  MSR_CORE_PERF_GLOBAL_STATUS_ASCI |
+					  MSR_CORE_PERF_GLOBAL_OVF_CTRL_OVF_UNCORE);
+
 		if (vmx_pt_mode_is_host_guest())
 			pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
 	}
