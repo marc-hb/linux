@@ -560,6 +560,7 @@ struct kvm_pmu {
 	u64 global_ctrl;
 	u64 global_status;
 	u64 global_status_set;
+	u64 global_inuse;
 	u64 counter_bitmask[2];
 	u64 global_ctrl_rsvd;
 	u64 global_status_rsvd;

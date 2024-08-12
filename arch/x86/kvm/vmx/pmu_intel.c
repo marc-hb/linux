@@ -156,6 +156,9 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 	case MSR_CORE_PERF_FIXED_CTR_CTRL:
 		return kvm_pmu_has_perf_global_ctrl(pmu);
 	case MSR_CORE_PERF_GLOBAL_STATUS_SET:
+	case MSR_CORE_PERF_GLOBAL_INUSE:
+		/* For now we only support version 2 and 5, so the features
+		 * from v3 ~ v4 are consolidated in version 5. */
 		return vcpu_to_pmu(vcpu)->version >= 5;
 	case MSR_IA32_PEBS_ENABLE:
 		ret = vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PEBS_FORMAT;
@@ -334,6 +337,9 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		/* Write only register. */
 		msr_info->data = 0;
 		break;
+	case MSR_CORE_PERF_GLOBAL_INUSE:
+		msr_info->data = pmu->global_inuse;
+		break;
 	case MSR_IA32_PEBS_ENABLE:
 		msr_info->data = pmu->pebs_enable;
 		break;
@@ -391,6 +397,9 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		if (pmu->fixed_ctr_ctrl != data)
 			reprogram_fixed_counters(pmu, data);
 		break;
+	case MSR_CORE_PERF_GLOBAL_INUSE:
+		/* Read only MSR. */
+		return 1;
 	case MSR_CORE_PERF_GLOBAL_STATUS_SET:
 		/*
 		 * GLOBAL STATUS_SET, sets bits in GLOBAL_STATUS, so the
@@ -894,7 +903,7 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 
 	/* Global ctrl register is already saved at VM-exit. */
 	rdmsrl(MSR_CORE_PERF_GLOBAL_STATUS, pmu->global_status);
-
+	rdmsrl(MSR_CORE_PERF_GLOBAL_INUSE, pmu->global_inuse);
 	/* Clear hardware MSR_CORE_PERF_GLOBAL_STATUS MSR, if non-zero. */
 	if (pmu->global_status)
 		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, pmu->global_status);
