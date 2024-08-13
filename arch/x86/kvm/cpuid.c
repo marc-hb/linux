@@ -182,8 +182,10 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 	best = kvm_find_cpuid_entry(vcpu, 0xa);
 	if (vcpu->kvm->arch.enable_pmu && best) {
 		union cpuid10_eax eax;
+		union cpuid10_edx edx;
 
 		eax.full = best->eax;
+		edx.full = best->edx;
 		if (enable_mediated_pmu &&
 		    eax.split.version_id > kvm_pmu_cap.version)
 			return -EINVAL;
@@ -192,6 +194,12 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 		if (eax.split.version_id > 1 && eax.split.version_id < 5 &&
 		    best->ecx != 0)
 			return -EINVAL;
+		if (eax.split.version_id >= 5) {
+			int mask_all = (1 << edx.split.num_counters_fixed) - 1;
+
+			if ((best->ecx & mask_all) != mask_all)
+				return -EINVAL;
+		}
 	}
 
 	/*
@@ -1460,7 +1468,10 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 
 		entry->eax = eax.full;
 		entry->ebx = kvm_pmu_cap.events_mask;
-		entry->ecx = 0;
+		if (kvm_pmu_cap.version < 5)
+			entry->ecx = 0;
+		else
+			entry->ecx &= (1 << kvm_pmu_cap.num_counters_fixed) - 1;
 		entry->edx = edx.full;
 		break;
 	}

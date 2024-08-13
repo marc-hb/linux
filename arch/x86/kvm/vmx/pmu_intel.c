@@ -567,6 +567,12 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (pmu->version == 1) {
 		pmu->nr_arch_fixed_counters = 0;
 	} else {
+		/*
+		 * Note: Fixed counters bitmap (CPUID.0xa.ecx) is not checked here
+		 * 	 since fixed counters are always continuous until Perfmon v6+.
+		 *	 The later v6 support would use a counter bitamp to replace
+		 *	 current counter number and add check for CPUID.0xa.ecx.
+		 */
 		pmu->nr_arch_fixed_counters = min_t(int, edx.split.num_counters_fixed,
 						    kvm_pmu_cap.num_counters_fixed);
 		edx.split.bit_width_fixed = min_t(int, edx.split.bit_width_fixed,
