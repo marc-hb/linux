@@ -5665,13 +5665,22 @@ void vmx_set_dr7(struct kvm_vcpu *vcpu, unsigned long val)
 
 bool vmx_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated)
 {
-	/* Writing 1 to any of the upper 32 bits results in #GP(0) */
-	if (data >> 32)
-		 return false;
+	u64 volatile_bits = DR7_VOLATILE;
 
-	/* Writing 1 to the non-volatile bits won't cause #GP */
+	/*
+	 * Writing 1 to any of the upper 32 bits results in #GP(0),
+	 * Writing 1 to the non-volatile bits won't cause #GP.
+	 */
+	if (vmx_guest_has_intel_pttt(vcpu)) {
+		 if (data >> 36)
+			 return false;
+
+		volatile_bits |= DR7_DRx_PT_LOG;
+	} else if (data >> 32)
+			 return false;
+
 	if (validated)
-		*validated = data & DR7_VOLATILE;
+		*validated = data & volatile_bits;
 
 	return true;
 }
