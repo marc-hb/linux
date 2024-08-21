@@ -7704,7 +7704,7 @@ __init int intel_pmu_init(void)
 		intel_pmu_init_lnc(NULL);
 		x86_pmu.pebs_ept = 1;
 		x86_pmu.hw_config = hsw_hw_config;
-		x86_pmu.pebs_latency_data = lnl_latency_data;
+		x86_pmu.pebs_latency_data = pnc_latency_data;
 		x86_pmu.get_event_constraints = glc_get_event_constraints;
 		extra_attr = boot_cpu_has(X86_FEATURE_RTM) ?
 			hsw_format_attr : nhm_format_attr;
@@ -7712,7 +7712,6 @@ __init int intel_pmu_init(void)
 		mem_attr = glc_events_attrs;
 		td_attr = glc_td_events_attrs;
 		tsx_attr = glc_tsx_events_attrs;
-		intel_pmu_pebs_data_source_skl(true);
 		pr_cont("Panthercove events, ");
 		name = "panthercove";
 		break;

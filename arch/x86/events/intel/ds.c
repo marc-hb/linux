@@ -72,6 +72,27 @@ union intel_x86_pebs_dse {
 		unsigned int lnc_addr_blk:1;
 		unsigned int ld_reserved6:18;
 	};
+	struct {
+		union {
+			unsigned int pnc_dse:8;
+			struct {
+				unsigned int pnc_pre0_3:4;
+				unsigned int pnc_pre4:1;
+				unsigned int pnc_pre5:1;
+				unsigned int pnc_pre6:1;
+				unsigned int pnc_pre7:1;
+			};
+		};
+		unsigned int pnc_l2_miss:1;
+		unsigned int pnc_xq_promotion:1;
+		unsigned int ld_reserved7:1;
+		unsigned int pnc_stlb_miss:1;
+		unsigned int pnc_locked:1;
+		unsigned int pnc_data_blk:1;
+		unsigned int pnc_addr_blk:1;
+		unsigned int pnc_wcb_full:1;
+		unsigned int ld_reserved8:16;
+	};
 };
 
 
@@ -226,6 +247,49 @@ void __init intel_pmu_pebs_data_source_lnl(void)
 	memcpy(data_source, pebs_data_source, sizeof(pebs_data_source));
 	__intel_pmu_pebs_data_source_cmt(data_source);
 }
+
+/* Version for Panthercove and later */
+#define PNC_PEBS_DATA_SOURCE_MAX	16
+
+/* L2 hit */
+static u64 pnc_pebs_l2_hit_data_source[PNC_PEBS_DATA_SOURCE_MAX] = {
+	P(OP, LOAD) | P(LVL, MISS) | LEVEL(NA) | P(SNOOP, NA),	/* 0x00: non-cache access */
+	OP_LH | P(LVL, NA)  | LEVEL(L0) | P(SNOOP, NONE),	/* 0x01: L0 hit */
+	OP_LH | P(LVL, L1)  | LEVEL(L1) | P(SNOOP, NONE),	/* 0x02: L1 hit */
+	OP_LH | P(LVL, LFB) | LEVEL(LFB) | P(SNOOP, NONE),	/* 0x03: L1 Miss Handling Buffer hit */
+	0,							/* 0x04: Reserved */
+	0,							/* 0x05: Reserved */
+	0,							/* 0x06: Reserved */
+	0,							/* 0x07: Reserved */
+	0,							/* 0x08: Reserved */
+	0,							/* 0x09: Reserved */
+	0,							/* 0x0a: Reserved */
+	0,							/* 0x0b: Reserved */
+	0,							/* 0x0c: Reserved */
+	0,							/* 0x0d: Reserved */
+	0,							/* 0x0e: Reserved */
+	OP_LH | P(LVL, UNC) | LEVEL(NA) | P(SNOOP, NONE),	/* 0x0f: uncached */
+};
+
+/* L2 miss */
+static u64 pnc_pebs_l2_miss_data_source[PNC_PEBS_DATA_SOURCE_MAX] = {
+	P(OP, LOAD) | P(LVL, NA) | LEVEL(NA) | P(SNOOP, NA),	/* 0x00: invalid */
+	0,							/* 0x01: Reserved */
+	OP_LH | P(LVL, L3) | LEVEL(L3) | P(REGION, L_SHARE),	/* 0x02: local CA shared cache */
+	OP_LH | P(LVL, L3) | LEVEL(L3) | P(REGION, L_NON_SHARE),/* 0x03: local CA non-shared cache */
+	OP_LH | P(LVL, L3) | LEVEL(L3) | P(REGION, O_IO),	/* 0x04: other CA IO agent */
+	OP_LH | P(LVL, L3) | LEVEL(L3) | P(REGION, O_SHARE),	/* 0x05: other CA shared cache */
+	OP_LH | P(LVL, L3) | LEVEL(L3) | P(REGION, O_NON_SHARE),/* 0x06: other CA non-shared cache */
+	OP_LH | LEVEL(RAM) | P(REGION, MMIO),			/* 0x07: MMIO */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM0),			/* 0x08: Memory region 0 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM1),			/* 0x09: Memory region 1 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM2),			/* 0x0a: Memory region 2 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM3),			/* 0x0b: Memory region 3 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM4),			/* 0x0c: Memory region 4 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM5),			/* 0x0d: Memory region 5 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM6),			/* 0x0e: Memory region 6 */
+	OP_LH | LEVEL(RAM) | P(REGION, MEM7),			/* 0x0f: Memory region 7 */
+};
 
 static u64 precise_store_data(u64 status)
 {
@@ -407,6 +471,68 @@ u64 arl_h_latency_data(struct perf_event *event, u64 status)
 		return cmt_latency_data(event, status);
 
 	return lnl_latency_data(event, status);
+}
+
+u64 pnc_latency_data(struct perf_event *event, u64 status)
+{
+	union intel_x86_pebs_dse dse;
+	union perf_mem_data_src src;
+	u64 val;
+
+	dse.val = status;
+
+	/* LNC core latency data */
+	if (!dse.pnc_l2_miss) {
+		val = pnc_pebs_l2_hit_data_source[dse.pnc_dse & 0xf];
+	} else {
+		val = pnc_pebs_l2_miss_data_source[dse.pnc_pre0_3];
+		if (dse.pnc_pre0_3 > 0x1 && dse.pnc_pre0_3 < 0x7)
+			val |= dse.pnc_pre4 ? P(LVL, REM_CCE1) : 0;
+		else if (dse.pnc_pre0_3 > 0x7)
+			val |= dse.pnc_pre4 ? P(LVL, REM_RAM1) : P(LVL, LOC_RAM);
+
+		if (dse.pnc_pre4)
+			val |= REM;
+
+		if (dse.pnc_pre0_3 == 0x2) {
+			u8 snoop = dse.pnc_pre6 | dse.pnc_pre7;
+
+			if (snoop == 0x0)
+				val |= P(SNOOP, NA);
+			else if (snoop == 0x1)
+				val |= P(SNOOP, MISS);
+			else if (snoop == 0x2)
+				val |= P(SNOOP, HIT);
+			else if (snoop == 0x3)
+				val |= P(SNOOP, NONE);
+		} else if (dse.pnc_pre0_3 > 0x2 && dse.pnc_pre0_3 < 0x7) {
+			val |= dse.pnc_pre6 ? P(SNOOPX, FWD) : 0;
+		}
+	}
+
+	if (!val)
+		val = P(OP, LOAD) | LEVEL(NA) | P(SNOOP, NA);
+
+	if (dse.pnc_stlb_miss)
+		val |= P(TLB, MISS) | P(TLB, L2);
+	else
+		val |= P(TLB, HIT) | P(TLB, L1) | P(TLB, L2);
+
+	if (dse.pnc_locked)
+		val |= P(LOCK, LOCKED);
+
+	if (dse.pnc_data_blk)
+		val |= P(BLK, DATA);
+	if (dse.pnc_addr_blk)
+		val |= P(BLK, ADDR);
+	if (!dse.pnc_data_blk && !dse.pnc_addr_blk)
+		val |= P(BLK, NA);
+
+	src.val = val;
+	if (event->hw.flags & PERF_X86_EVENT_PEBS_ST_HSW)
+		src.mem_op = P(OP,STORE);
+
+	return src.val;
 }
 
 static u64 load_latency_data(struct perf_event *event, u64 status)
