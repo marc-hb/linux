@@ -121,6 +121,19 @@ static inline bool fw_writes_is_enabled(struct kvm_vcpu *vcpu)
 	return (vcpu_get_perf_capabilities(vcpu) & PERF_CAP_FW_WRITES) != 0;
 }
 
+static inline bool legacy_pebs_is_enabled(struct kvm_vcpu *vcpu)
+{
+	int pebs_format = (vcpu_get_perf_capabilities(vcpu) &
+			   PERF_CAP_PEBS_FORMAT) >> PERF_CAP_PEBS_FORMAT_SHIFT;
+
+	return vmx_pebs_supported() && pebs_format < PERF_CAP_ARCH_PEBS_FORMAT;
+}
+
+static inline bool pebs_baseline_is_enabled(struct kvm_vcpu *vcpu)
+{
+	return (vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PEBS_BASELINE) != 0;
+}
+
 static inline struct kvm_pmc *get_fw_gp_pmc(struct kvm_pmu *pmu, u32 msr)
 {
 	if (!fw_writes_is_enabled(pmu_to_vcpu(pmu)))
