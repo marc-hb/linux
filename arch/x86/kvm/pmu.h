@@ -305,7 +305,7 @@ static inline void kvm_init_pmu_capability(const struct kvm_pmu_ops *pmu_ops)
 
 	if (is_intel && enable_mediated_pmu)
 		kvm_pmu_cap.version = kvm_pmu_cap.version >= 5 ?
-				      min(kvm_pmu_cap.version, 5) :
+				      min(kvm_pmu_cap.version, 6) :
 				      min(kvm_pmu_cap.version, 2);
 	else
 		kvm_pmu_cap.version = min(kvm_pmu_cap.version, 2);
