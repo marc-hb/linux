@@ -7990,7 +7990,8 @@ static __init u64 vmx_get_perf_capabilities(void)
 		 *    guest via adaptive PEBS, and make adaptive PEBS mutually
 		 *    exclusive with KVM_SET_PMU_EVENT_FILTER if necessary.
 		 */
-		perf_cap &= ~PERF_CAP_PEBS_BASELINE;
+		if (!enable_mediated_pmu)
+			perf_cap &= ~PERF_CAP_PEBS_BASELINE;
 	}
 
 	if (enable_mediated_pmu)
