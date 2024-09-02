@@ -1131,6 +1131,37 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 	}
 }
 
+static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
+{
+	union vmx_exit_reason exit_reason = to_vmx(vcpu)->exit_reason;
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u32 intr_info = vmx_get_intr_info(vcpu);
+
+	/*
+	 * If sampling period is set to too small like <=2, it may lead to
+	 * the speed of handling PEBS overflow PMI can't catch up with the
+	 * speed of PEBS overflow PMI generation. Thus the pending guest PEBS
+	 * overflow PMI could be delivered after KVM calls perf_guest_exit() to
+	 * switch back PMI to NMI (clearing PMI mask bit). This guest PMI would
+	 * be recognized a suspicious host NMI and directly dropped instead of
+	 * re-injecting into guest.
+	 *
+	 * Since no PMI is injected into guest, the PEBS overflow bit in guest
+	 * global_status would never be cleared and then it blocks to generate
+	 * new PEBS overflow PMI. So it traps a deadlock and no PEBS records can
+	 * be captured eventually after the suspicious NMI happens.
+	 *
+	 * To avoid this issue, don't switch guest/host PMU state if guest PEBS
+	 * overflow PMI has been armed but not delivered.
+	 */
+	if ((pmu->global_status & GLOBAL_STATUS_BUFFER_OVF) &&
+	    !(exit_reason.basic == EXIT_REASON_EXTERNAL_INTERRUPT &&
+	      is_intr_type_n(intr_info, INTR_TYPE_EXT_INTR, KVM_GUEST_PMI_VECTOR)))
+		return true;
+
+	return false;
+}
+
 struct kvm_pmu_ops intel_pmu_ops __initdata = {
 	.rdpmc_ecx_to_pmc = intel_rdpmc_ecx_to_pmc,
 	.msr_idx_to_pmc = intel_msr_idx_to_pmc,
@@ -1144,6 +1175,7 @@ struct kvm_pmu_ops intel_pmu_ops __initdata = {
 	.cleanup = intel_pmu_cleanup,
 	.put_guest_context = intel_put_guest_context,
 	.load_guest_context = intel_load_guest_context,
+	.context_switch_need_skip = intel_pmu_context_switch_need_skip,
 	.EVENTSEL_EVENT = ARCH_PERFMON_EVENTSEL_EVENT,
 	.MAX_NR_GP_COUNTERS = KVM_MAX_NR_INTEL_GP_COUNTERS,
 	.MIN_NR_GP_COUNTERS = 1,

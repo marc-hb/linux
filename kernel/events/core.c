@@ -6059,7 +6059,7 @@ static inline void perf_host_exit(struct perf_cpu_context *cpuctx)
 	}
 }
 
-static void perf_switch_guest_ctx(bool enter, u32 guest_lvtpc)
+void perf_switch_guest_ctx(bool enter, u32 guest_lvtpc)
 {
 	struct mediated_pmus_list *pmus = this_cpu_ptr(&mediated_pmus);
 	struct perf_cpu_pmu_context *cpc;
@@ -6076,6 +6076,7 @@ static void perf_switch_guest_ctx(bool enter, u32 guest_lvtpc)
 	}
 	rcu_read_unlock();
 }
+EXPORT_SYMBOL_GPL(perf_switch_guest_ctx);
 
 /* When entering a guest, schedule out all exclude_guest events. */
 void perf_guest_enter(u32 guest_lvtpc)

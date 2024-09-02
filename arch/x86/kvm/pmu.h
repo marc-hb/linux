@@ -43,6 +43,7 @@ struct kvm_pmu_ops {
 	void (*cleanup)(struct kvm_vcpu *vcpu);
 	void (*put_guest_context)(struct kvm_vcpu *vcpu);
 	void (*load_guest_context)(struct kvm_vcpu *vcpu);
+	bool (*context_switch_need_skip)(struct kvm_vcpu *vcpu);
 
 	const u64 EVENTSEL_EVENT;
 	const int MAX_NR_GP_COUNTERS;

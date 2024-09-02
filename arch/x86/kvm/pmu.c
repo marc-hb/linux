@@ -1222,6 +1222,14 @@ void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
 }
 EXPORT_SYMBOL_GPL(kvm_pmu_load_guest_pmcs);
 
+static bool kvm_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
+{
+	if (!kvm_pmu_ops.context_switch_need_skip)
+		return false;
+
+	return kvm_pmu_call(context_switch_need_skip)(vcpu);
+}
+
 void kvm_pmu_put_guest_context(struct kvm_vcpu *vcpu)
 {
 	if (!kvm_mediated_pmu_enabled(vcpu))
@@ -1231,7 +1239,8 @@ void kvm_pmu_put_guest_context(struct kvm_vcpu *vcpu)
 
 	kvm_pmu_call(put_guest_context)(vcpu);
 
-	perf_guest_exit();
+	if (!kvm_pmu_context_switch_need_skip(vcpu))
+		perf_guest_exit();
 }
 
 void kvm_pmu_load_guest_context(struct kvm_vcpu *vcpu)
@@ -1245,7 +1254,13 @@ void kvm_pmu_load_guest_context(struct kvm_vcpu *vcpu)
 
 	guest_lvtpc = APIC_DM_FIXED | KVM_GUEST_PMI_VECTOR |
 		(kvm_lapic_get_reg(vcpu->arch.apic, APIC_LVTPC) & APIC_LVT_MASKED);
-	perf_guest_enter(guest_lvtpc);
+
+	if (!kvm_pmu_context_switch_need_skip(vcpu)) {
+		perf_guest_enter(guest_lvtpc);
+	} else {
+		/* Update guest LVTPC value into HW. */
+		perf_switch_guest_ctx(true, guest_lvtpc);
+	}
 
 	kvm_pmu_call(load_guest_context)(vcpu);
 }
