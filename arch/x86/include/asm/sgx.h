@@ -410,6 +410,18 @@ struct sgx_sigstruct {
  * comment!
  */
 
+enum sgx_sighashtype {
+	SGX_SIGHASHTYPE_SHA256 = 0,
+};
+
+struct sgx_sighash {
+	struct sgx_sighashalg {
+		unsigned int h_len;
+		char name[128];
+	} *hashalg;
+	u64 digest[] __counted_by(h_len);
+};
+
 #ifdef CONFIG_X86_SGX_KVM
 int sgx_virt_ecreate(struct sgx_pageinfo *pageinfo, void __user *secs,
 		     int *trapnr);

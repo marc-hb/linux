@@ -408,14 +408,25 @@ static int __sgx_virt_einit(void __user *sigstruct, void __user *token,
 int sgx_virt_einit(void __user *sigstruct, void __user *token,
 		   void __user *secs, u64 *lepubkeyhash, int *trapnr)
 {
+	struct sgx_sighash *sighash __free(kfree) = NULL;
+	struct sgx_sighashalg *hashalg;
 	int ret;
 
 	if (!cpu_feature_enabled(X86_FEATURE_SGX_LC)) {
 		ret = __sgx_virt_einit(sigstruct, token, secs);
 	} else {
+		hashalg = &sgx_sighashes[0];
+		sighash = kzalloc(struct_size(sighash, digest, hashalg->h_len), GFP_KERNEL);
+		if (!sighash)
+			return -ENOMEM;
+
+		sighash->hashalg = hashalg;
+
+		memcpy(sighash->digest, lepubkeyhash, hashalg->h_len * sizeof(u64));
+
 		preempt_disable();
 
-		sgx_update_lepubkeyhash(lepubkeyhash);
+		sgx_update_lepubkeyhash(sighash);
 
 		ret = __sgx_virt_einit(sigstruct, token, secs);
 		preempt_enable();
