@@ -95,6 +95,15 @@ static inline int sgx2_supported(void)
 	return eax & 0x2;
 }
 
+static inline int sgx256_supported(void)
+{
+	unsigned int eax, ebx, ecx, edx;
+
+	__cpuid_count(SGX_CPUID, 0x0, eax, ebx, ecx, edx);
+
+	return eax & BIT(12);
+}
+
 static unsigned long elf_sym_hash(const char *name)
 {
 	unsigned long h = 0, high;
@@ -1989,6 +1998,18 @@ TEST_F(enclave, remove_untouched_page)
 	EXPECT_EQ(ret, 0);
 	EXPECT_EQ(errno_save, 0);
 	EXPECT_EQ(remove_ioc.count, 4096);
+}
+
+TEST_F(enclave, sha384_opt_in)
+{
+	struct opt_in opt_params = {
+		.body_attributes	= SGX_ATTR_SHA_384,
+		.sighashtype		= SGX_SIGHASHTYPE_SHA384,
+	};
+
+	if (!sgx256_supported())
+		SKIP(return, "System does not support the SHA384 mode");
+	ASSERT_TRUE(setup_test_encl(ENCL_HEAP_SIZE_DEFAULT, &self->encl, _metadata, &opt_params));
 }
 
 TEST_HARNESS_MAIN
