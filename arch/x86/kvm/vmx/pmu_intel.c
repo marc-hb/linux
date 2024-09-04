@@ -585,6 +585,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	struct kvm_cpuid_entry2 *entry23_0 = NULL;
 	struct kvm_cpuid_entry2 *entry23_1 = NULL;
 	struct kvm_cpuid_entry2 *entry23_3 = NULL;
+	struct kvm_cpuid_entry2 *entry23_4 = NULL;
+	struct kvm_cpuid_entry2 *entry23_5 = NULL;
 	union cpuid10_eax eax;
 	union cpuid10_edx edx;
 	u64 perf_capabilities;
@@ -622,6 +624,12 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		if (eax.split.events_subleaf)
 			entry23_3 = kvm_find_cpuid_entry_index(vcpu, 0x23,
 						ARCH_PERFMON_ARCH_EVENTS_LEAF);
+		if (eax.split.pebs_caps_subleaf)
+			entry23_4 = kvm_find_cpuid_entry_index(vcpu, 0x23,
+						ARCH_PERFMON_PEBS_CAP_LEAF);
+		if (eax.split.pebs_cnts_subleaf)
+			entry23_5 = kvm_find_cpuid_entry_index(vcpu, 0x23,
+						ARCH_PERFMON_PEBS_COUNTER_LEAF);
 	}
 
 	pmu->version = eax.split.version_id;
@@ -746,6 +754,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	}
 
 	intel_update_msr_base(vcpu);
+
+	pmu->arch_pebs = kvm_pmu_cap.arch_pebs && entry23_4 && entry23_5;
 }
 
 static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)

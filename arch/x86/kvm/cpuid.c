@@ -1659,6 +1659,20 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 			entry->ecx = 0;
 			entry->edx = 0;
 		}
+
+		/* subleaf 4 */
+		if (kvm_pmu_cap.arch_pebs && eax.split.pebs_caps_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_PEBS_CAP_LEAF);
+			if (!entry)
+				goto out;
+		}
+
+		/* subleaf 5 */
+		if (kvm_pmu_cap.arch_pebs && eax.split.pebs_cnts_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_PEBS_COUNTER_LEAF);
+			if (!entry)
+				goto out;
+		}
 		break;
 	}
 	case 0x24: {
