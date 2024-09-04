@@ -438,7 +438,8 @@ struct sgx_sighash {
 int sgx_virt_ecreate(struct sgx_pageinfo *pageinfo, void __user *secs,
 		     int *trapnr);
 int sgx_virt_einit(void __user *sigstruct, void __user *token,
-		   void __user *secs, u64 *lepubkeyhash, int *trapnr);
+		   void __user *secs, u64 *lepubkeyhash, u64 leconfig,
+		   int *trapnr);
 #endif
 
 int sgx_set_attribute(unsigned long *allowed_attributes,
