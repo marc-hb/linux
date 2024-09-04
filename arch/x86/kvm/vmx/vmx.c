@@ -167,7 +167,7 @@ module_param(allow_smaller_maxphyaddr, bool, S_IRUGO);
  * List of MSRs that can be directly passed to the guest.
  * In addition to these x2apic, PT and LBR MSRs are handled specially.
  */
-static u32 vmx_possible_passthrough_msrs[MAX_POSSIBLE_PASSTHROUGH_MSRS] = {
+static u32 vmx_possible_passthrough_msrs[] = {
 	MSR_IA32_SPEC_CTRL,
 	MSR_IA32_PRED_CMD,
 	MSR_IA32_FLUSH_CMD,
@@ -4199,6 +4199,8 @@ void vmx_msr_filter_changed(struct kvm_vcpu *vcpu)
 	if (!cpu_has_vmx_msr_bitmap())
 		return;
 
+	BUILD_BUG_ON(ARRAY_SIZE(vmx_possible_passthrough_msrs) > MAX_POSSIBLE_PASSTHROUGH_MSRS);
+
 	/*
 	 * Redo intercept permissions for MSRs that KVM is passing through to
 	 * the guest.  Disabling interception will check the new MSR filter and
@@ -7649,8 +7651,8 @@ int vmx_vcpu_create(struct kvm_vcpu *vcpu)
 	}
 
 	/* The MSR bitmap starts with all ones */
-	bitmap_fill(vmx->shadow_msr_intercept.read, MAX_POSSIBLE_PASSTHROUGH_MSRS);
-	bitmap_fill(vmx->shadow_msr_intercept.write, MAX_POSSIBLE_PASSTHROUGH_MSRS);
+	bitmap_fill(vmx->shadow_msr_intercept.read, ARRAY_SIZE(vmx_possible_passthrough_msrs));
+	bitmap_fill(vmx->shadow_msr_intercept.write, ARRAY_SIZE(vmx_possible_passthrough_msrs));
 
 	vmx_disable_intercept_for_msr(vcpu, MSR_IA32_TSC, MSR_TYPE_R);
 #ifdef CONFIG_X86_64
