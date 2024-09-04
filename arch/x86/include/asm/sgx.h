@@ -117,6 +117,8 @@ enum sgx_miscselect {
  *				EINIT as an authorization to run an enclave.
  * %SGX_ATTR_ASYNC_EXIT_NOTIFY:	Allow enclaves to be notified after an
  *				asynchronous exit has occurred.
+ * %SGX_ATTR_SHA_384:		Allow enclaves to opt-in for use of SHA384
+ *				hashes instead of legacy SHA256.
  */
 enum sgx_attribute {
 	SGX_ATTR_INIT		   = BIT(0),
@@ -130,18 +132,20 @@ enum sgx_attribute {
 				  /* BIT(8) is reserved */
 				  /* BIT(9) is reserved */
 	SGX_ATTR_ASYNC_EXIT_NOTIFY = BIT(10),
+	SGX_ATTR_SHA_384	   = BIT(11),
 };
 
 #define SGX_ATTR_RESERVED_MASK	(BIT_ULL(3) | \
 				 BIT_ULL(6) | \
 				 BIT_ULL(8) | \
 				 BIT_ULL(9) | \
-				 GENMASK_ULL(63, 11))
+				 GENMASK_ULL(63, 12))
 
 #define SGX_ATTR_UNPRIV_MASK	(SGX_ATTR_DEBUG	    | \
 				 SGX_ATTR_MODE64BIT | \
 				 SGX_ATTR_KSS	    | \
-				 SGX_ATTR_ASYNC_EXIT_NOTIFY)
+				 SGX_ATTR_ASYNC_EXIT_NOTIFY | \
+				 SGX_ATTR_SHA_384)
 
 #define SGX_ATTR_PRIV_MASK	(SGX_ATTR_PROVISIONKEY	| \
 				 SGX_ATTR_EINITTOKENKEY)
