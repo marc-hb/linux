@@ -4585,7 +4585,7 @@ static u64 vmx_tertiary_exec_control(struct vcpu_vmx *vmx)
 	if (!enable_ipiv || !kvm_vcpu_apicv_active(vcpu))
 		exec_control &= ~TERTIARY_EXEC_IPI_VIRT;
 
-	if (!enable_ept || !boot_cpu_has(X86_FEATURE_ARCH_PEBS))
+	if (!enable_ept || !kvm_pmu_cap.arch_pebs)
 		exec_control &= ~TERTIARY_EXEC_PEBS2GPA;
 
 	return exec_control;

@@ -524,6 +524,7 @@ struct kvm_pmc {
 	 */
 	u64 emulated_counter;
 	u64 eventsel;
+	u64 arch_pebs_cfg_c;
 	struct perf_event *perf_event;
 	struct kvm_vcpu *vcpu;
 	/*
@@ -604,6 +605,10 @@ struct kvm_pmu {
 	u64 pebs_data_cfg_rsvd;
 
 	bool arch_pebs;
+	u64 arch_pebs_base;
+	u64 arch_pebs_index;
+	u64 arch_pebs_index_rsvd;
+	u64 arch_pebs_cfg_c_rsvd;
 
 	/*
 	 * If a guest counter is cross-mapped to host counter with different

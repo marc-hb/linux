@@ -805,6 +805,7 @@ static void kvm_pmu_reset(struct kvm_vcpu *vcpu)
 		pmc_stop_counter(pmc);
 		pmc->counter = 0;
 		pmc->emulated_counter = 0;
+		pmc->arch_pebs_cfg_c = 0;
 
 		if (pmc_is_gp(pmc))
 			pmc->eventsel = 0;

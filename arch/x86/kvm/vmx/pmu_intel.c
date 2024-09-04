@@ -184,23 +184,31 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 	case MSR_PERF_METRICS:
 		return vcpu_has_perf_metrics(vcpu);
 	case MSR_IA32_PEBS_ENABLE:
-		ret = vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PEBS_FORMAT;
+		ret = !pmu->arch_pebs &&
+		      (vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PEBS_FORMAT);
 		break;
 	case MSR_IA32_DS_AREA:
 		ret = guest_cpu_cap_has(vcpu, X86_FEATURE_DS);
 		break;
 	case MSR_PEBS_DATA_CFG:
 		perf_capabilities = vcpu_get_perf_capabilities(vcpu);
-		ret = (perf_capabilities & PERF_CAP_PEBS_BASELINE) &&
-			((perf_capabilities & PERF_CAP_PEBS_FORMAT) > 3);
+		ret = !pmu->arch_pebs &&
+		      (perf_capabilities & PERF_CAP_PEBS_BASELINE) &&
+		      ((perf_capabilities & PERF_CAP_PEBS_FORMAT) > 3);
+		break;
+	case MSR_IA32_PEBS_BASE:
+	case MSR_IA32_PEBS_INDEX:
+		ret = pmu->arch_pebs;
 		break;
 	default:
 		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0) ||
 			get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0) ||
 			get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CTR) ||
 			get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A) ||
+			get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_C) ||
 			get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0) ||
 			get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR) ||
+			get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CFG_C) ||
 			get_fw_gp_pmc(pmu, msr) ||
 			intel_pmu_is_valid_lbr_msr(vcpu, msr) ||
 			intel_pmu_is_valid_extra_msr(vcpu, msr);
@@ -386,6 +394,12 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_PEBS_DATA_CFG:
 		msr_info->data = pmu->pebs_data_cfg;
 		break;
+	case MSR_IA32_PEBS_BASE:
+		msr_info->data = pmu->arch_pebs_base;
+		break;
+	case MSR_IA32_PEBS_INDEX:
+		msr_info->data = pmu->arch_pebs_index;
+		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
 		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0)) ||
@@ -403,6 +417,10 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)) ||
 			   (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A))) {
 			msr_info->data = pmc->eventsel;
+			break;
+		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_C)) ||
+			   (pmc = get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CFG_C))) {
+			msr_info->data = pmc->arch_pebs_cfg_c;
 			break;
 		} else if (intel_pmu_handle_lbr_msrs_access(vcpu, msr_info, true)) {
 			break;
@@ -475,6 +493,15 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 
 		pmu->pebs_data_cfg = data;
 		break;
+	case MSR_IA32_PEBS_BASE:
+		pmu->arch_pebs_base = msr_info->data;
+		break;
+	case MSR_IA32_PEBS_INDEX:
+		if (data & pmu->arch_pebs_index_rsvd)
+			return 1;
+
+		pmu->arch_pebs_index = msr_info->data;
+		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
 		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0)) ||
@@ -507,6 +534,12 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 				pmc->eventsel = data;
 				kvm_pmu_request_counter_reprogram(pmc);
 			}
+			break;
+		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_C)) ||
+			   (pmc = get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CFG_C))) {
+			if (data & pmu->arch_pebs_cfg_c_rsvd)
+				return 1;
+			pmc->arch_pebs_cfg_c = msr_info->data;
 			break;
 		} else if (intel_pmu_handle_lbr_msrs_access(vcpu, msr_info, false)) {
 			break;
@@ -756,6 +789,12 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	intel_update_msr_base(vcpu);
 
 	pmu->arch_pebs = kvm_pmu_cap.arch_pebs && entry23_4 && entry23_5;
+	pmu->arch_pebs_base = 0;
+	pmu->arch_pebs_index = 0;
+	pmu->arch_pebs_index_rsvd = GENMASK_ULL(3, 0) | GENMASK_ULL(30, 27) |
+				    GENMASK_ULL(35, 33) | GENMASK_ULL(63, 59);
+	pmu->arch_pebs_cfg_c_rsvd = GENMASK_ULL(34, 32) | BIT_ULL(39) |
+				    GENMASK_ULL(48, 42);
 }
 
 static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
