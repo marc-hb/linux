@@ -14,6 +14,8 @@
 
 #define X86_PMC_IDX_MAX					       64
 
+#define X86_MAX_NR_EXTRA_MSRS				       7
+
 #define MSR_ARCH_PERFMON_PERFCTR0			      0xc1
 #define MSR_ARCH_PERFMON_PERFCTR1			      0xc2
 
@@ -308,6 +310,8 @@ struct x86_pmu_capability {
 	int		bit_width_fixed;
 	unsigned int	events_mask;
 	int		events_mask_len;
+	unsigned int    extra_msrs[X86_MAX_NR_EXTRA_MSRS];
+	int		num_extra_msrs;
 	unsigned int	pebs_ept	:1;
 	unsigned int	mediated	:1;
 };

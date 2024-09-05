@@ -3209,6 +3209,8 @@ unsigned long perf_arch_misc_flags(struct pt_regs *regs)
 
 void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 {
+	struct extra_reg *er;
+
 	/* This API doesn't currently support enumerating hybrid PMUs. */
 	if (WARN_ON_ONCE(cpu_feature_enabled(X86_FEATURE_HYBRID_CPU)) ||
 	    !x86_pmu_initialized()) {
@@ -3230,6 +3232,12 @@ void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 	cap->events_mask_len	= x86_pmu.events_mask_len;
 	cap->pebs_ept		= x86_pmu.pebs_ept;
 	cap->mediated		= !!(pmu.capabilities & PERF_PMU_CAP_MEDIATED_VPMU);
+
+	for (er = x86_pmu.extra_regs; er && er->msr; er++) {
+		if (er->extra_msr_access &&
+			(cap->num_extra_msrs < X86_MAX_NR_EXTRA_MSRS))
+			cap->extra_msrs[cap->num_extra_msrs++] = er->msr;
+	}
 }
 EXPORT_SYMBOL_GPL(perf_get_x86_pmu_capability);
 

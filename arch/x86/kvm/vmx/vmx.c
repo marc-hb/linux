@@ -693,6 +693,11 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_LBR_CORE_FROM ... MSR_LBR_CORE_FROM + 8:
 	case MSR_LBR_CORE_TO ... MSR_LBR_CORE_TO + 8:
 		/* LBR MSRs. These are handled in vmx_update_intercept_for_lbr_msrs() */
+	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
+	case MSR_PEBS_LD_LAT_THRESHOLD:
+	case MSR_PEBS_FRONTEND:
+	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
+		/* model specific extra PMU MSRs */
 	case MSR_IA32_PMC0 ...
 		MSR_IA32_PMC0 + KVM_MAX_NR_GP_COUNTERS - 1:
 	case MSR_IA32_PERFCTR0 ...

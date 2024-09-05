@@ -620,6 +620,12 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 				  MSR_TYPE_RW, intercept);
 	vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_GLOBAL_OVF_CTRL,
 				  MSR_TYPE_RW, intercept);
+
+	/* All extra MSRs are model specific */
+	intercept = intercept || !cpuid_model_is_consistent(vcpu);
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		vmx_set_intercept_for_msr(vcpu, kvm_pmu_cap.extra_msrs[i],
+					  MSR_TYPE_RW, intercept);
 }
 
 static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
