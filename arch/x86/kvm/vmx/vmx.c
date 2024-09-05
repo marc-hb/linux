@@ -2514,9 +2514,11 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			if ((data & PERF_CAP_PEBS_MASK) !=
 			    (kvm_caps.supported_perf_cap & PERF_CAP_PEBS_MASK))
 				return 1;
-			if (!guest_cpu_cap_has(vcpu, X86_FEATURE_DS))
+			if (!kvm_pmu_cap.arch_pebs &&
+			    !guest_cpu_cap_has(vcpu, X86_FEATURE_DS))
 				return 1;
-			if (!guest_cpu_cap_has(vcpu, X86_FEATURE_DTES64))
+			if (!kvm_pmu_cap.arch_pebs &&
+			    !guest_cpu_cap_has(vcpu, X86_FEATURE_DTES64))
 				return 1;
 			if (!cpuid_model_is_consistent(vcpu))
 				return 1;
@@ -7975,7 +7977,7 @@ static __init u64 vmx_get_perf_capabilities(void)
 			perf_cap |= kvm_host.perf_capabilities & PERF_CAP_LBR_FMT;
 	}
 
-	if (vmx_pebs_supported()) {
+	if (vmx_pebs_supported() || kvm_pmu_cap.arch_pebs) {
 		perf_cap |= kvm_host.perf_capabilities & PERF_CAP_PEBS_MASK;
 
 		/*
