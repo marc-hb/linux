@@ -1455,10 +1455,11 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		}
 
 		eax.split.version_id = kvm_pmu_cap.version;
-		eax.split.num_counters = kvm_pmu_cap.num_counters_gp;
+		eax.split.num_counters = hweight64(kvm_pmu_cap.cntr_mask64);
 		eax.split.bit_width = kvm_pmu_cap.bit_width_gp;
 		eax.split.mask_length = kvm_pmu_cap.events_mask_len;
-		edx.split.num_counters_fixed = kvm_pmu_cap.num_counters_fixed;
+		edx.split.num_counters_fixed =
+			find_first_zero_bit(kvm_pmu_cap.fixed_cntr_mask, X86_PMC_IDX_MAX);
 		edx.split.bit_width_fixed = kvm_pmu_cap.bit_width_fixed;
 
 		if (kvm_pmu_cap.version)
@@ -1471,7 +1472,8 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		if (kvm_pmu_cap.version < 5)
 			entry->ecx = 0;
 		else
-			entry->ecx &= (1 << kvm_pmu_cap.num_counters_fixed) - 1;
+			entry->ecx = kvm_pmu_cap.fixed_cntr_mask64 &
+				     (BIT(edx.split.num_counters_fixed) - 1);
 		entry->edx = edx.full;
 		break;
 	}
@@ -1796,7 +1798,7 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		cpuid_entry_override(entry, CPUID_8000_0022_EAX);
 
 		if (kvm_cpu_cap_has(X86_FEATURE_PERFMON_V2))
-			ebx.split.num_core_pmc = kvm_pmu_cap.num_counters_gp;
+			ebx.split.num_core_pmc = hweight64(kvm_pmu_cap.cntr_mask64);
 		else if (kvm_cpu_cap_has(X86_FEATURE_PERFCTR_CORE))
 			ebx.split.num_core_pmc = AMD64_NUM_COUNTERS_CORE;
 		else

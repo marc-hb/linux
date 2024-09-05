@@ -27,12 +27,12 @@ enum pmu_type {
 
 static struct kvm_pmc *amd_pmu_get_pmc(struct kvm_pmu *pmu, int pmc_idx)
 {
-	unsigned int num_counters = pmu->nr_arch_gp_counters;
+	int index = array_index_nospec(pmc_idx, KVM_MAX_NR_AMD_GP_COUNTERS);
 
-	if (pmc_idx >= num_counters)
+	if (!gp_ctr_is_supported(pmu, index))
 		return NULL;
 
-	return &pmu->gp_counters[array_index_nospec(pmc_idx, num_counters)];
+	return &pmu->gp_counters[index];
 }
 
 static inline struct kvm_pmc *get_gp_pmc_amd(struct kvm_pmu *pmu, u32 msr,
@@ -77,7 +77,7 @@ static int amd_check_rdpmc_early(struct kvm_vcpu *vcpu, unsigned int idx)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 
-	if (idx >= pmu->nr_arch_gp_counters)
+	if (!gp_ctr_is_supported(pmu, idx))
 		return -EINVAL;
 
 	return 0;
@@ -116,7 +116,7 @@ static bool amd_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 		return pmu->version > 1;
 	default:
 		if (msr > MSR_F15H_PERF_CTR5 &&
-		    msr < MSR_F15H_PERF_CTL0 + 2 * pmu->nr_arch_gp_counters)
+		    msr < MSR_F15H_PERF_CTL0 + 2 * hweight64(pmu->all_valid_pmc_idx64))
 			return pmu->version > 1;
 		break;
 	}
@@ -196,6 +196,7 @@ static void __amd_pmu_refresh(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	union cpuid_0x80000022_ebx ebx;
+	u64 gp_bitmap;
 
 	pmu->version = 1;
 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_PERFMON_V2)) {
@@ -207,15 +208,14 @@ static void __amd_pmu_refresh(struct kvm_vcpu *vcpu)
 		BUILD_BUG_ON(x86_feature_cpuid(X86_FEATURE_PERFMON_V2).function != 0x80000022 ||
 			     x86_feature_cpuid(X86_FEATURE_PERFMON_V2).index);
 		ebx.full = kvm_find_cpuid_entry_index(vcpu, 0x80000022, 0)->ebx;
-		pmu->nr_arch_gp_counters = ebx.split.num_core_pmc;
+		gp_bitmap = BIT_ULL(ebx.split.num_core_pmc) - 1;
 	} else if (guest_cpu_cap_has(vcpu, X86_FEATURE_PERFCTR_CORE)) {
-		pmu->nr_arch_gp_counters = AMD64_NUM_COUNTERS_CORE;
+		gp_bitmap = BIT_ULL(AMD64_NUM_COUNTERS_CORE) - 1;
 	} else {
-		pmu->nr_arch_gp_counters = AMD64_NUM_COUNTERS;
+		gp_bitmap = BIT_ULL(AMD64_NUM_COUNTERS) - 1;
 	}
 
-	pmu->nr_arch_gp_counters = min_t(unsigned int, pmu->nr_arch_gp_counters,
-					 kvm_pmu_cap.num_counters_gp);
+	gp_bitmap &= kvm_pmu_cap.cntr_mask64;
 
 	if (kvm_pmu_has_perf_global_ctrl(pmu)) {
 		/*
@@ -225,7 +225,7 @@ static void __amd_pmu_refresh(struct kvm_vcpu *vcpu)
 		 * Emulate that behavior when refreshing the PMU so that userspace doesn't
 		 * need to manually set PERF_GLOBAL_CTRL.
 		 */
-		pmu->global_ctrl = BIT_ULL(pmu->nr_arch_gp_counters) - 1;
+		pmu->global_ctrl = gp_bitmap;
 		pmu->global_ctrl_rsvd = ~pmu->global_ctrl;
 		pmu->global_status_rsvd = pmu->global_ctrl_rsvd;
 	}
@@ -235,7 +235,8 @@ static void __amd_pmu_refresh(struct kvm_vcpu *vcpu)
 	pmu->raw_event_mask = AMD64_RAW_EVENT_MASK;
 	/* not applicable to AMD; but clean them to prevent any fall out */
 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
-	bitmap_set(pmu->all_valid_pmc_idx, 0, pmu->nr_arch_gp_counters);
+	bitmap_copy(pmu->all_valid_pmc_idx, (unsigned long *)&gp_bitmap,
+		    KVM_MAX_NR_AMD_GP_COUNTERS);
 
 	amd_update_msr_base(vcpu);
 }
@@ -245,9 +246,11 @@ static void amd_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct vcpu_svm *svm = to_svm(vcpu);
 	int msr_clear = !!(kvm_mediated_pmu_enabled(vcpu));
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
+	u64 unsupported_gp_bits;
 	int i;
 
-	for (i = 0; i < min(pmu->nr_arch_gp_counters, AMD64_NUM_COUNTERS); i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_AMD_GP_COUNTERS) {
 		/*
 		 * Legacy counters are always available irrespective of any
 		 * CPUID feature bits and when X86_FEATURE_PERFCTR_CORE is set,
@@ -259,7 +262,7 @@ static void amd_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 				     msr_clear, msr_clear);
 	}
 
-	for (i = 0; i < pmu->nr_arch_gp_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_AMD_GP_COUNTERS) {
 		/*
 		 * PERF_CTLx registers require interception in order to clear
 		 * HostOnly bit and set GuestOnly bit. This is to prevent the
@@ -276,7 +279,8 @@ static void amd_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 				     msr_clear, msr_clear);
 	}
 
-	for ( ; i < kvm_pmu_cap.num_counters_gp; i++) {
+	unsupported_gp_bits = kvm_pmu_cap.cntr_mask64 & ~gp_bits;
+	for_each_set_bit(i, (unsigned long*)&unsupported_gp_bits, KVM_MAX_NR_AMD_GP_COUNTERS) {
 		set_msr_interception(vcpu, svm->msrpm, MSR_F15H_PERF_CTL + 2 * i, 0, 0);
 		set_msr_interception(vcpu, svm->msrpm, MSR_F15H_PERF_CTR + 2 * i, 0, 0);
 	}
@@ -286,7 +290,7 @@ static void amd_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	 * a subset of counters provided in HW or its version is less than 2.
 	 */
 	if (kvm_mediated_pmu_enabled(vcpu) && kvm_pmu_has_perf_global_ctrl(pmu) &&
-	    pmu->nr_arch_gp_counters == kvm_pmu_cap.num_counters_gp)
+	    gp_bits == kvm_pmu_cap.cntr_mask64)
 		msr_clear = 1;
 	else
 		msr_clear = 0;

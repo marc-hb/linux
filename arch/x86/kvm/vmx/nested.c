@@ -637,12 +637,13 @@ static void nested_vmx_merge_pmu_msr_bitmaps(struct kvm_vcpu *vcpu,
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
 	int i;
 
 	if (!kvm_mediated_pmu_enabled(vcpu))
 		return;
 
-	for (i = 0; i < pmu->nr_arch_gp_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_GP_COUNTERS) {
 		nested_vmx_merge_msr_bitmaps_rw(MSR_ARCH_PERFMON_EVENTSEL0 + i);
 		nested_vmx_merge_msr_bitmaps_rw(MSR_IA32_PERFCTR0 + i);
 		nested_vmx_merge_msr_bitmaps_rw(MSR_IA32_PMC0 + i);

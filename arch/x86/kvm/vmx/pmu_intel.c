@@ -60,7 +60,7 @@ static inline bool intel_is_valid_pmc(struct kvm_pmu *pmu,
 				      unsigned int idx, bool fixed)
 {
 	return fixed ? fixed_ctr_is_supported(pmu, idx)
-		     : idx < pmu->nr_arch_gp_counters;
+		     : gp_ctr_is_supported(pmu, idx);
 }
 
 static struct kvm_pmc *intel_rdpmc_ecx_to_pmc(struct kvm_vcpu *vcpu,
@@ -101,7 +101,7 @@ static struct kvm_pmc *intel_rdpmc_ecx_to_pmc(struct kvm_vcpu *vcpu,
 		break;
 	case INTEL_RDPMC_GP:
 		counters = pmu->gp_counters;
-		num_counters = pmu->nr_arch_gp_counters;
+		num_counters = KVM_MAX_NR_INTEL_GP_COUNTERS;
 		bitmask = pmu->counter_bitmask[KVM_PMC_GP];
 		break;
 	default:
@@ -544,6 +544,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	union cpuid10_edx edx;
 	u64 perf_capabilities;
 	u64 fixed_bits;
+	u64 gp_bits;
 	int i;
 
 	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
@@ -567,8 +568,6 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (!pmu->version)
 		return;
 
-	pmu->nr_arch_gp_counters = min_t(int, eax.split.num_counters,
-					 kvm_pmu_cap.num_counters_gp);
 	eax.split.bit_width = min_t(int, eax.split.bit_width,
 				    kvm_pmu_cap.bit_width_gp);
 	pmu->counter_bitmask[KVM_PMC_GP] = BIT_ULL(eax.split.bit_width) - 1;
@@ -576,17 +575,18 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 				      kvm_pmu_cap.events_mask_len);
 	pmu->available_event_types = ~entry->ebx & (BIT_ULL(eax.split.mask_length) - 1);
 
-	bitmap_set(pmu->all_valid_pmc_idx, 0, pmu->nr_arch_gp_counters);
+	pmu->all_valid_pmc_idx64 = (BIT_ULL(eax.split.num_counters) - 1) &
+				   kvm_pmu_cap.cntr_mask64;
 
 	if (kvm_pmu_has_perf_global_ctrl(pmu)) {
 		/*
 		 * At RESET, Intel CPUs set all enable bits for general purpose counters
 		 * in IA32_PERF_GLOBAL_CTRL. Emulate this behavior.
 		 */
-		pmu->global_ctrl = BIT_ULL(pmu->nr_arch_gp_counters) - 1;
+		pmu->global_ctrl = pmu->all_valid_pmc_idx64;
 		pmu->global_ctrl_rsvd = ~pmu->global_ctrl;
 
-		for (i = 0; i < kvm_pmu_cap.num_counters_fixed; i++) {
+		for_each_set_bit(i, kvm_pmu_cap.fixed_cntr_mask, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
 			/* FxCtr[i]_is_supported := CPUID.0xA.ECX[i] || EDX[4:0] > i */
 			if (!(entry->ecx & BIT_ULL(i) || edx.split.num_counters_fixed > i))
 				continue;
@@ -640,6 +640,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
 
 	fixed_bits = fixed_ctrs_bitmap(pmu);
+	gp_bits = gp_ctrs_bitmap(pmu);
 	if (perf_capabilities & PERF_CAP_PEBS_FORMAT) {
 		if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
 			pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd;
@@ -652,7 +653,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			}
 			pmu->pebs_data_cfg_rsvd = ~0xff00000full;
 		} else {
-			pmu->pebs_enable_rsvd = ~(BIT_ULL(pmu->nr_arch_gp_counters) - 1);
+			pmu->pebs_enable_rsvd = ~gp_bits;
 		}
 	}
 
@@ -670,16 +671,20 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	bool intercept = !kvm_mediated_pmu_enabled(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
 	u64 unsupported_fixed_bits;
+	u64 unsupported_gp_bits;
 	int i;
 
-	for (i = 0; i < pmu->nr_arch_gp_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_INTEL_GP_COUNTERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PERFCTR0 + i,
 					  MSR_TYPE_RW, intercept);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i, MSR_TYPE_RW,
 					  intercept || !fw_writes_is_enabled(vcpu));
 	}
-	for ( ; i < kvm_pmu_cap.num_counters_gp; i++) {
+
+	unsupported_gp_bits = kvm_pmu_cap.cntr_mask64 & ~gp_bits;
+	for_each_set_bit(i, (unsigned long*)&unsupported_gp_bits, KVM_MAX_NR_INTEL_GP_COUNTERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PERFCTR0 + i,
 					  MSR_TYPE_RW, true);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i,
@@ -690,15 +695,15 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, intercept);
 
-	unsupported_fixed_bits = (BIT_ULL(kvm_pmu_cap.num_counters_fixed) - 1) & ~fixed_bits;
+	unsupported_fixed_bits = kvm_pmu_cap.fixed_cntr_mask64 & ~fixed_bits;
 	for_each_set_bit(i, (unsigned long*)&unsupported_fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS)
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, true);
 
 	if (kvm_mediated_pmu_enabled(vcpu) && kvm_pmu_has_perf_global_ctrl(pmu) &&
 	    vcpu_has_perf_metrics(vcpu) == kvm_host_has_perf_metrics() &&
-	    pmu->nr_arch_gp_counters == kvm_pmu_cap.num_counters_gp &&
-	    fixed_ctrs_bitmap(pmu) == (BIT_ULL(kvm_pmu_cap.num_counters_fixed) - 1))
+	    gp_bits == kvm_pmu_cap.cntr_mask64 &&
+	    fixed_bits == kvm_pmu_cap.fixed_cntr_mask64)
 		intercept = false;
 	else
 		intercept = true;
@@ -754,14 +759,13 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		 * Initialize guest PERF_GLOBAL_CTRL to reset value as SDM rules.
 		 *
 		 * Note: GUEST_IA32_PERF_GLOBAL_CTRL must be initialized to
-		 * "BIT_ULL(pmu->nr_arch_gp_counters) - 1" instead of pmu->global_ctrl
-		 * since pmu->global_ctrl is only be initialized when guest
-		 * pmu->version > 1. Otherwise if pmu->version is 1, pmu->global_ctrl
-		 * is 0 and guest counters are never really enabled.
+		 * gp_ctrs_bitmap(pmu) instead of pmu->global_ctrl since
+		 * pmu->global_ctrl is only be initialized when guest pmu->version > 1.
+		 * Otherwise if pmu->version is 1, pmu->global_ctrl is 0 and guest
+		 * counters are never really enabled.
 		 */
 		if (mediated)
-			vmcs_write64(GUEST_IA32_PERF_GLOBAL_CTRL,
-				     BIT_ULL(pmu->nr_arch_gp_counters) - 1);
+			vmcs_write64(GUEST_IA32_PERF_GLOBAL_CTRL, gp_ctrs_bitmap(pmu));
 	}
 
 	if (cpu_has_save_perf_global_ctrl())

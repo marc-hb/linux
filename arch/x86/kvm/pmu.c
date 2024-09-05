@@ -640,8 +640,8 @@ inline bool kvm_rdpmc_in_guest(struct kvm_vcpu *vcpu)
 	if (enable_vmware_backdoor)
 		return false;
 
-	return pmu->nr_arch_gp_counters == kvm_pmu_cap.num_counters_gp &&
-	       fixed_ctrs_bitmap(pmu) == (BIT_ULL(kvm_pmu_cap.num_counters_fixed) - 1) &&
+	return gp_ctrs_bitmap(pmu) == kvm_pmu_cap.cntr_mask64 &&
+	       fixed_ctrs_bitmap(pmu) == kvm_pmu_cap.fixed_cntr_mask64 &&
 	       vcpu_has_perf_metrics(vcpu) == kvm_host_has_perf_metrics() &&
 	       pmu->counter_bitmask[KVM_PMC_GP] ==
 				(BIT_ULL(kvm_pmu_cap.bit_width_gp) - 1) &&
@@ -838,7 +838,6 @@ void kvm_pmu_refresh(struct kvm_vcpu *vcpu)
 	kvm_pmu_reset(vcpu);
 
 	pmu->version = 0;
-	pmu->nr_arch_gp_counters = 0;
 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
 	pmu->reserved_bits = 0xffffffff00200000ull;
@@ -1153,6 +1152,7 @@ void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
 	struct kvm_pmc *pmc;
 	u32 eventsel_msr;
 	u32 counter_msr;
@@ -1163,7 +1163,7 @@ void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
 	 * leakage and also avoid this guest GP counter get accidentally
 	 * enabled during host running when host enable global ctrl.
 	 */
-	for (i = 0; i < pmu->nr_arch_gp_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_GP_COUNTERS) {
 		pmc = &pmu->gp_counters[i];
 		eventsel_msr = pmc_msr_addr(pmu, pmu->gp_eventsel_base, i);
 		counter_msr = pmc_msr_addr(pmu, pmu->gp_counter_base, i);
@@ -1192,6 +1192,7 @@ void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
 	struct kvm_pmc *pmc;
 	u32 eventsel_msr;
 	u32 counter_msr;
@@ -1202,7 +1203,7 @@ void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
 	 * in this case will be intercepted. Accessing to these counters and
 	 * selectors will cause #GP in the guest.
 	 */
-	for (i = 0; i < pmu->nr_arch_gp_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_GP_COUNTERS) {
 		pmc = &pmu->gp_counters[i];
 		eventsel_msr = pmc_msr_addr(pmu, pmu->gp_eventsel_base, i);
 		counter_msr = pmc_msr_addr(pmu, pmu->gp_counter_base, i);

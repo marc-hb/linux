@@ -310,8 +310,14 @@ union cpuid_0x80000022_ebx {
 
 struct x86_pmu_capability {
 	int		version;
-	int		num_counters_gp;
-	int		num_counters_fixed;
+	union {
+			u64 cntr_mask64;
+			DECLARE_BITMAP(cntr_mask, X86_PMC_IDX_MAX);
+	};
+	union {
+			u64 fixed_cntr_mask64;
+			DECLARE_BITMAP(fixed_cntr_mask, X86_PMC_IDX_MAX);
+	};
 	int		bit_width_gp;
 	int		bit_width_fixed;
 	unsigned int	events_mask;

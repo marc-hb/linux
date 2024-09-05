@@ -5265,9 +5265,8 @@ static __init void svm_set_cpu_caps(void)
 		 * access to enough counters to virtualize "core" support,
 		 * otherwise limit vPMU support to the legacy number of counters.
 		 */
-		if (kvm_pmu_cap.num_counters_gp < AMD64_NUM_COUNTERS_CORE)
-			kvm_pmu_cap.num_counters_gp = min(AMD64_NUM_COUNTERS,
-							  kvm_pmu_cap.num_counters_gp);
+		if (hweight64(kvm_pmu_cap.cntr_mask64) < AMD64_NUM_COUNTERS_CORE)
+			kvm_pmu_cap.cntr_mask64 &= (BIT_ULL(AMD64_NUM_COUNTERS) - 1);
 		else
 			kvm_cpu_cap_check_and_set(X86_FEATURE_PERFCTR_CORE);
 
