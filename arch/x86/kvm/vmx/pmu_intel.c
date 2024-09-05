@@ -540,6 +540,9 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 	struct kvm_cpuid_entry2 *entry;
+	struct kvm_cpuid_entry2 *entry23_0 = NULL;
+	struct kvm_cpuid_entry2 *entry23_1 = NULL;
+	struct kvm_cpuid_entry2 *entry23_3 = NULL;
 	union cpuid10_eax eax;
 	union cpuid10_edx edx;
 	u64 perf_capabilities;
@@ -557,6 +560,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (KVM_BUG_ON(lbr_desc->msr_passthrough, vcpu->kvm))
 		return;
 
+	/* CPUID 0xa leaf */
 	entry = kvm_find_cpuid_entry(vcpu, 0xa);
 	if (!entry)
 		return;
@@ -564,19 +568,51 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	eax.full = entry->eax;
 	edx.full = entry->edx;
 
+	/* CPUID 0x23 leaf */
+	entry23_0 = kvm_find_cpuid_entry_index(vcpu, 0x23, 0x0);
+	if (entry23_0) {
+		union cpuid35_eax eax;
+
+		eax.full = entry23_0->eax;
+		if (eax.split.cntr_subleaf)
+			entry23_1 = kvm_find_cpuid_entry_index(vcpu, 0x23,
+						ARCH_PERFMON_NUM_COUNTER_LEAF);
+		if (eax.split.events_subleaf)
+			entry23_3 = kvm_find_cpuid_entry_index(vcpu, 0x23,
+						ARCH_PERFMON_ARCH_EVENTS_LEAF);
+	}
+
 	pmu->version = eax.split.version_id;
 	if (!pmu->version)
 		return;
 
+	/* GP & Fixed counter bit-width */
 	eax.split.bit_width = min_t(int, eax.split.bit_width,
 				    kvm_pmu_cap.bit_width_gp);
 	pmu->counter_bitmask[KVM_PMC_GP] = BIT_ULL(eax.split.bit_width) - 1;
-	eax.split.mask_length = min_t(int, eax.split.mask_length,
-				      kvm_pmu_cap.events_mask_len);
-	pmu->available_event_types = ~entry->ebx & (BIT_ULL(eax.split.mask_length) - 1);
+	if (pmu->version > 1) {
+		edx.split.bit_width_fixed = min_t(int, edx.split.bit_width_fixed,
+						  kvm_pmu_cap.bit_width_fixed);
+		pmu->counter_bitmask[KVM_PMC_FIXED] =
+					BIT_ULL(edx.split.bit_width_fixed) - 1;
+	}
 
-	pmu->all_valid_pmc_idx64 = (BIT_ULL(eax.split.num_counters) - 1) &
-				   kvm_pmu_cap.cntr_mask64;
+	/* Events bitmap */
+	if (entry23_3) {
+		pmu->available_event_types = entry23_3->eax & kvm_pmu_cap.events_mask_ext;
+	} else {
+		eax.split.mask_length = min_t(int, eax.split.mask_length,
+					      kvm_pmu_cap.events_mask_len);
+		pmu->available_event_types = ~entry->ebx & (BIT_ULL(eax.split.mask_length) - 1);
+	}
+
+	/* GP counter bitmap */
+	if (entry23_1) {
+		pmu->all_valid_pmc_idx64 = entry23_1->eax & kvm_pmu_cap.cntr_mask64;
+	} else {
+		pmu->all_valid_pmc_idx64 = (BIT_ULL(eax.split.num_counters) - 1) &
+					   kvm_pmu_cap.cntr_mask64;
+	}
 
 	if (kvm_pmu_has_perf_global_ctrl(pmu)) {
 		/*
@@ -587,8 +623,11 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->global_ctrl_rsvd = ~pmu->global_ctrl;
 
 		for_each_set_bit(i, kvm_pmu_cap.fixed_cntr_mask, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
-			/* FxCtr[i]_is_supported := CPUID.0xA.ECX[i] || EDX[4:0] > i */
-			if (!(entry->ecx & BIT_ULL(i) || edx.split.num_counters_fixed > i))
+			if (entry23_1) {
+				if (!(entry23_1->ebx & BIT_ULL(i)))
+					continue;
+			} else if (!(entry->ecx & BIT_ULL(i) || edx.split.num_counters_fixed > i))
+				/* FxCtr[i]_is_supported := CPUID.0xA.ECX[i] || EDX[4:0] > i */
 				continue;
 
 			set_bit(INTEL_PMC_IDX_FIXED + i, pmu->all_valid_pmc_idx);
