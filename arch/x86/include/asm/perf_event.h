@@ -328,6 +328,7 @@ struct x86_pmu_capability {
 	int		num_extra_msrs;
 	unsigned int	pebs_ept	:1;
 	unsigned int	mediated	:1;
+	unsigned int	arch_pebs	:1;
 };
 
 /*

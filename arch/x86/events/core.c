@@ -3251,6 +3251,7 @@ void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 	cap->pebs_ept		= x86_pmu.pebs_ept;
 	cap->mediated		= !!(pmu.capabilities & PERF_PMU_CAP_MEDIATED_VPMU);
 	cap->config_mask	= x86_pmu.config_mask;
+	cap->arch_pebs		= x86_pmu.arch_pebs;
 
 	for (er = x86_pmu.extra_regs; er && er->msr; er++) {
 		if (er->extra_msr_access &&
