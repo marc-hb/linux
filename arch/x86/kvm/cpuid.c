@@ -1008,6 +1008,7 @@ void kvm_set_cpu_caps(void)
 		F(AVX_VNNI),
 		F(AVX512_BF16),
 		F(CMPCCXADD),
+		F(ARCH_PERFMON_EXT),
 		F(FZRM),
 		F(FSRS),
 		F(FSRC),
@@ -1603,6 +1604,59 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 			break;
 		}
 		break;
+	/* Intel archPerfmon extended leaf */
+	case 0x23: {
+		union cpuid35_eax eax;
+		union cpuid35_ebx ebx;
+
+		if (!enable_pmu || !static_cpu_has(X86_FEATURE_ARCH_PERFMON_EXT)) {
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+			break;
+		}
+
+		eax.full = entry->eax;
+
+		/* subleaf 0 */
+		ebx.full = 0;
+		if (kvm_pmu_cap.config_mask & ARCH_PERFMON_EVENTSEL_UMASK2)
+			ebx.split.umask2 = 1;
+		if (kvm_pmu_cap.config_mask & ARCH_PERFMON_EVENTSEL_EQ)
+			ebx.split.eq = 1;
+		entry->ebx = ebx.full;
+		entry->ecx = 0;
+		entry->edx = 0;
+
+		/* subleaf 1 */
+		if (eax.split.cntr_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_NUM_COUNTER_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = (u32)kvm_pmu_cap.cntr_mask64;
+			entry->ebx = (u32)kvm_pmu_cap.fixed_cntr_mask64;
+			entry->ecx = 0;
+			entry->edx = 0;
+		}
+
+		/* subleaf 2 */
+		if (eax.split.acr_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_ACR_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+		}
+
+		/* subleaf 3 */
+		if (eax.split.events_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_ARCH_EVENTS_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = (u32)kvm_pmu_cap.events_mask_ext;
+			entry->ebx = 0;
+			entry->ecx = 0;
+			entry->edx = 0;
+		}
+		break;
+	}
 	case 0x24: {
 		u8 avx10_version;
 
