@@ -13,6 +13,7 @@
 #include "adf_common_drv.h"
 #include "adf_cfg.h"
 #include "adf_heartbeat.h"
+#include "adf_uacce.h"
 #include "icp_qat_fw_init_admin.h"
 
 #define ADF_ADMIN_MAILBOX_STRIDE 0x1000
@@ -179,6 +180,8 @@ static int adf_init_ae(struct adf_accel_dev *accel_dev)
 	memset(&req, 0, sizeof(req));
 	memset(&resp, 0, sizeof(resp));
 	req.cmd_id = ICP_QAT_FW_INIT_AE;
+	if (adf_uacce_is_enabled(accel_dev))
+		req.fw_flags = ICP_QAT_FW_INIT_AE_AT_ENABLE_FLAG;
 
 	return adf_send_admin(accel_dev, &req, &resp, ae_mask);
 }

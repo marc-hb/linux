@@ -29,6 +29,7 @@ intel_qat-y := adf_accel_engine.o \
 	adf_kpt.o \
 	adf_mstate_mgr.o \
 	adf_ras.o \
+	adf_ring_queue.o \
 	adf_rl_admin.o \
 	adf_rl.o \
 	adf_sysfs.o \
@@ -38,6 +39,7 @@ intel_qat-y := adf_accel_engine.o \
 	adf_sysfs_rl.o \
 	adf_timer.o \
 	adf_transport.o \
+	adf_uacce.o \
 	qat_algs.o \
 	qat_algs_send.o \
 	qat_asym_algs.o \

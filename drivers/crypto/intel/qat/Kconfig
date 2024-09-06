@@ -15,6 +15,7 @@ config CRYPTO_DEV_QAT
 	select CRYPTO_ZSTD
 	select FW_LOADER
 	select CRC8
+	select UACCE
 
 config CRYPTO_DEV_QAT_DH895xCC
 	tristate "Support for Intel(R) DH895xCC"

@@ -43,5 +43,7 @@ int adf_cfg_add_key_value_param(struct adf_accel_dev *accel_dev,
 				enum adf_cfg_val_type type);
 int adf_cfg_get_param_value(struct adf_accel_dev *accel_dev,
 			    const char *section, const char *name, char *value);
+int adf_cfg_del_key_value_param(struct adf_accel_dev *accel_dev,
+				const char *section_name, const char *key);
 
 #endif

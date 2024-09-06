@@ -20,6 +20,7 @@
 #include <adf_gen6_tl.h>
 #include <adf_ras.h>
 #include <adf_timer.h>
+#include <adf_uacce.h>
 #include "adf_6xxx_hw_data.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw_51_comp.h"
@@ -888,6 +889,11 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 	if (ret)
 		return ret;
 
+	if (adf_uacce_is_enabled(accel_dev)) {
+		ret = adf_gen6_no_dev_config(accel_dev);
+		goto end;
+	}
+
 	ret = adf_cfg_section_add(accel_dev, "Accelerator0");
 	if (ret)
 		return ret;
@@ -906,6 +912,7 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 		break;
 	}
 
+end:
 	if (ret)
 		return ret;
 
@@ -1047,6 +1054,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->clock_frequency = ADF_6XXX_AE_FREQ;
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
+	hw_data->get_ring_base_addr = adf_gen6_get_ring_base_addr;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
 	hw_data->set_crypto_cap = adf_gen6_set_crypto_cap;
 	hw_data->kpt_capable = adf_kpt_capable;

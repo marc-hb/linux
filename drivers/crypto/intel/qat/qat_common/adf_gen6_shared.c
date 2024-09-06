@@ -7,6 +7,7 @@
 #include "adf_common_drv.h"
 #include "adf_gen4_config.h"
 #include "adf_gen4_hw_csr_data.h"
+#include "adf_gen4_hw_data.h"
 #include "adf_gen4_pfvf.h"
 #include "adf_gen4_vf_mig.h"
 #include "adf_gen6_shared.h"
@@ -59,3 +60,12 @@ int adf_gen6_crypto_dev_config(struct adf_accel_dev *accel_dev)
 	return adf_crypto_dev_config(accel_dev);
 }
 EXPORT_SYMBOL_GPL(adf_gen6_crypto_dev_config);
+
+int adf_gen6_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 ring_number,
+				enum adf_ring_queue_mode queue_mode)
+{
+	return adf_gen4_get_ring_base_addr(accel_dev, base_addr, ring_number,
+					   queue_mode);
+}
+EXPORT_SYMBOL_GPL(adf_gen6_get_ring_base_addr);

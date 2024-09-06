@@ -190,6 +190,50 @@ static u32 get_int_col_ctl_enable_mask(void)
 	return ADF_RING_CSR_INT_COL_CTL_ENABLE;
 }
 
+static void ring_pasid_enable(void __iomem *csr_base_addr, u32 ring_number,
+			      bool at, bool adi, bool priv, u32 pasid)
+{
+	u32 val;
+
+	val = ADF_CSR_RD(csr_base_addr, ADF_RING_CSR_PASIDCTL(ring_number));
+	val &= ~(ADF_PASIDCTL_PASID_MASK | ADF_PASIDCTL_PASID_ENABLE_RING);
+	val |= (pasid & ADF_PASIDCTL_PASID_MASK);
+	val |= ADF_PASIDCTL_ENABLE_PASID;
+
+	if (adi)
+		val |= ADF_PASIDCTL_ENABLE_ADI;
+
+	if (at)
+		val |= ADF_PASIDCTL_ENABLE_AT;
+
+	if (priv)
+		val |= ADF_PASIDCTL_ENABLE_PRIV;
+
+	ADF_CSR_WR(csr_base_addr, ADF_RING_CSR_PASIDCTL(ring_number), val);
+}
+
+static void ring_pasid_disable(void __iomem *csr_base_addr, u32 ring_number)
+{
+	u32 val;
+
+	val = ADF_CSR_RD(csr_base_addr, ADF_RING_CSR_PASIDCTL(ring_number));
+	val &= ~ADF_PASIDCTL_PASID_MASK;
+	val &= ~(ADF_PASIDCTL_ENABLE_PASID | ADF_PASIDCTL_ENABLE_ADI |
+		 ADF_PASIDCTL_ENABLE_AT | ADF_PASIDCTL_ENABLE_PRIV);
+
+	ADF_CSR_WR(csr_base_addr, ADF_RING_CSR_PASIDCTL(ring_number), val);
+}
+
+static u32 read_ring_pasid_value(void __iomem *csr_base_addr, u32 ring_number)
+{
+	u32 val;
+
+	val = ADF_CSR_RD(csr_base_addr, ADF_RING_CSR_PASIDCTL(ring_number));
+	val &= ADF_PASIDCTL_PASID_MASK;
+
+	return val;
+}
+
 void adf_gen4_init_hw_csr_ops(struct adf_hw_csr_ops *csr_ops)
 {
 	csr_ops->build_csr_ring_base_addr = build_csr_ring_base_addr;
@@ -227,5 +271,8 @@ void adf_gen4_init_hw_csr_ops(struct adf_hw_csr_ops *csr_ops)
 	csr_ops->read_csr_ring_srv_arb_en = read_csr_ring_srv_arb_en;
 	csr_ops->write_csr_ring_srv_arb_en = write_csr_ring_srv_arb_en;
 	csr_ops->get_int_col_ctl_enable_mask = get_int_col_ctl_enable_mask;
+	csr_ops->ring_pasid_enable = ring_pasid_enable;
+	csr_ops->ring_pasid_disable = ring_pasid_disable;
+	csr_ops->read_ring_pasid_value = read_ring_pasid_value;
 }
 EXPORT_SYMBOL_GPL(adf_gen4_init_hw_csr_ops);
