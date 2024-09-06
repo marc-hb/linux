@@ -3,6 +3,7 @@
 #include "adf_accel_devices.h"
 #include "adf_common_drv.h"
 #include "adf_gen4_hw_csr_data.h"
+#include "adf_gen4_hw_data.h"
 #include "adf_gen4_pfvf.h"
 #include "adf_gen4_config.h"
 #include "adf_gen4_vf_mig.h"
@@ -44,3 +45,12 @@ void adf_gen6_init_vf_mig_ops(struct qat_migdev_ops *vfmig_ops)
 	adf_gen4_init_vf_mig_ops(vfmig_ops);
 }
 EXPORT_SYMBOL_GPL(adf_gen6_init_vf_mig_ops);
+
+int adf_gen6_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 ring_number,
+				enum adf_ring_queue_mode queue_mode)
+{
+	return adf_gen4_get_ring_base_addr(accel_dev, base_addr, ring_number,
+					   queue_mode);
+}
+EXPORT_SYMBOL_GPL(adf_gen6_get_ring_base_addr);

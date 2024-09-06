@@ -120,6 +120,9 @@ int qat_comp_algs_register(void);
 void qat_comp_algs_unregister(void);
 void qat_comp_alg_callback(void *resp);
 
+int adf_uacce_register(void);
+int adf_uacce_unregister(void);
+
 int adf_isr_resource_alloc(struct adf_accel_dev *accel_dev);
 void adf_isr_resource_free(struct adf_accel_dev *accel_dev);
 int adf_vf_isr_resource_alloc(struct adf_accel_dev *accel_dev);

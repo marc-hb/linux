@@ -6,9 +6,11 @@
 #include "adf_cfg_services.h"
 #include "adf_common_drv.h"
 #include "adf_fw_config.h"
+#include "adf_gen4_hw_csr_data.h"
 #include "adf_gen4_hw_data.h"
 #include "adf_gen4_pm.h"
 #include "icp_qat_fw_comp.h"
+#include "adf_ring_queue.h"
 #include "icp_qat_hw_20_comp.h"
 #include "qat_crypto.h"
 
@@ -613,3 +615,32 @@ void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev)
 				    AES_CBC_HMAC_SHA512;
 }
 EXPORT_SYMBOL_GPL(adf_gen4_set_crypto_cap);
+
+int adf_gen4_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 ring_number,
+				enum adf_ring_queue_mode queue_mode)
+{
+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
+	struct adf_bar *etr_bar;
+
+	if (!base_addr || !hw_data || ring_number >= hw_data->num_banks)
+		return -EINVAL;
+
+	etr_bar = &GET_BARS(accel_dev)[hw_data->get_etr_bar_id(hw_data)];
+
+	switch (queue_mode) {
+	case ADF_RING_QUEUE_UQ:
+		*base_addr = etr_bar->base_addr + ADF_GEN4_UQ_BASE +
+			     ring_number * ADF_RING_BUNDLE_SIZE;
+		break;
+	case ADF_RING_QUEUE_WQ:
+		*base_addr = etr_bar->base_addr + ADF_GEN4_WQ_BASE +
+			     ring_number * ADF_RING_BUNDLE_SIZE;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_get_ring_base_addr);

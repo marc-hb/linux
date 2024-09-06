@@ -40,11 +40,13 @@ intel_qat-objs := adf_cfg.o \
 	qat_algs.o \
 	qat_asym_algs.o \
 	qat_algs_send.o \
+	adf_ring_queue.o \
 	adf_rl.o \
 	adf_rl_admin.o \
 	adf_sysfs_rl.o \
 	adf_kpt.o \
 	adf_sysfs_kpt.o \
+	adf_uacce.o \
 	qat_uclo.o \
 	qat_hal.o \
 	qat_bl.o \

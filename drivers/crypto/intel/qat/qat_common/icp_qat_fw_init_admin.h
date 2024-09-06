@@ -87,7 +87,8 @@ struct icp_qat_fw_init_admin_req {
 	union {
 		struct {
 			__u16 ibuf_size_in_kb;
-			__u16 resrvd3;
+			__u8 fw_flags;
+			__u8 resrvd3;
 		};
 		struct {
 			__u32 int_timer_ticks;
@@ -180,6 +181,9 @@ struct icp_qat_fw_init_admin_resp {
 
 #define ICP_QAT_FW_SYNC ICP_QAT_FW_HEARTBEAT_SYNC
 #define ICP_QAT_FW_CAPABILITIES_GET ICP_QAT_FW_CRYPTO_CAPABILITY_GET
+
+/* Init AE flags */
+#define ICP_QAT_FW_INIT_AE_AT_ENABLE_FLAG 0x01
 
 #define ICP_QAT_NUMBER_OF_PM_EVENTS 8
 

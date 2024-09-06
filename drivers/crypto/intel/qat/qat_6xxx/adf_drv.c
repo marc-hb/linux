@@ -145,6 +145,10 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 			ret = -ENOMEM;
 			goto out_err;
 		}
+		bar->base_addr = pci_resource_start(pdev, bar_nr);
+		if (!bar->base_addr)
+			dev_err(&pdev->dev, "Incorrect base_addr of bar %d\n",
+				bar_nr);
 	}
 
 	pci_set_master(pdev);

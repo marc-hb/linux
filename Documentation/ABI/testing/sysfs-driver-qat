@@ -196,3 +196,83 @@ Description:
 			4
 
 		This attribute is only available for qat_4xxx and qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/uacce
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RW) Read reports the current state of the uacce framework
+		enablement. Write to the attribute enables or disables
+		QAT utilization of the uacce framework.
+
+		The uacce framework enablement allows QAT devices to incorporate
+		the use of Intel's technology called Shared Virtual Memory (SVM),
+		which provides the capability for user space data buffers to be
+		used directly by the accelerator hardware with the virtual
+		address instead of the physical address.
+
+		Uacce framework is disabled by default.
+
+		The allowed values are:
+
+		* 1/Yy/on: Enable uacce framework.
+		* 0/Nn/off: Disable uacce framework.
+
+		It is possible to set this attribute only if the device
+		is in the `down` state (see /sys/bus/pci/devices/<BDF>/qat/state)
+
+		The following example shows how to switch QAT driver to use
+		uacce framework::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat/state
+			up
+			# cat /sys/bus/pci/devices/<BDF>/qat/uacce
+			off
+			# echo down > /sys/bus/pci/devices/<BDF>/qat/state
+			# echo 1 > /sys/bus/pci/devices/<BDF>/qat/uacce
+			# echo up > /sys/bus/pci/devices/<BDF>/qat/state
+			# cat /sys/bus/pci/devices/<BDF>/qat/uacce
+			on
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/ring_queue_mode
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RW) Read reports the current QAT device queue mode
+
+		Write to the attribute to set the queue mode.
+
+		The values are:
+
+		* "wq": Worker Queue, rings pairs are dedicated to a single
+		  process
+		* "uq": User Queue, ring pairs can be shared by multiple
+		  processes
+
+		This attribute is only taken into account if the device is
+		working with uacce framework enabled (see
+		/sys/bus/pci/devices/<BDF>/qat/uacce)
+
+		It is possible to set the configuration only if the device
+		is in the `down` state (see /sys/bus/pci/devices/<BDF>/qat/state)
+
+		The following example shows how to switch QAT driver into
+		worker queue mode::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat/state
+			up
+			# cat /sys/bus/pci/devices/<BDF>/qat/uacce
+			on
+			# cat /sys/bus/pci/devices/<BDF>/qat/ring_queue_mode
+			uq
+			# echo down > /sys/bus/pci/devices/<BDF>/qat/state
+			# echo wq > /sys/bus/pci/devices/<BDF>/qat/ring_queue_mode
+			# echo up > /sys/bus/pci/devices/<BDF>/qat/state
+			# cat /sys/bus/pci/devices/<BDF>/qat/ring_queue_mode
+			wq
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.

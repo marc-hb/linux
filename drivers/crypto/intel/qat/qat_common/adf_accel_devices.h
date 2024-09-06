@@ -13,9 +13,11 @@
 #include "adf_anti_rb.h"
 #include "adf_cfg_common.h"
 #include "adf_kpt.h"
+#include "adf_ring_queue.h"
 #include "adf_rl.h"
 #include "adf_telemetry.h"
 #include "adf_pfvf_msg.h"
+#include "adf_uacce.h"
 #include "icp_qat_hw.h"
 
 #define ADF_DH895XCC_DEVICE_NAME "dh895xcc"
@@ -235,6 +237,10 @@ struct adf_hw_csr_ops {
 	void (*write_csr_ring_srv_arb_en)(void __iomem *csr_base_addr, u32 bank,
 					  u32 value);
 	u32 (*get_int_col_ctl_enable_mask)(void);
+	void (*ring_pasid_enable)(void __iomem *csr_base_addr, u32 bank_number,
+				  bool at, bool adi, bool priv, u32 pasid);
+	void (*ring_pasid_disable)(void __iomem *csr_base_addr, u32 bank_number);
+	u32 (*read_ring_pasid_value)(void __iomem *csr_base_addr, u32 bank_number);
 };
 
 struct adf_cfg_device_data;
@@ -357,6 +363,9 @@ struct adf_hw_device_data {
 	int (*get_rl_sla_val)(struct adf_accel_dev *accel_dev, u32 bank_num,
 			      u32 *sla_val, u32 msg_type);
 	bool (*kpt_capable)(struct adf_accel_dev *accel_dev);
+	int (*get_ring_base_addr)(struct adf_accel_dev *accel_dev,
+				  resource_size_t *uq_base_addr, u32 bank_number,
+				  enum adf_ring_queue_mode queue_mode);
 	struct adf_pfvf_ops pfvf_ops;
 	struct adf_hw_csr_ops csr_ops;
 	struct adf_dc_ops dc_ops;
@@ -505,6 +514,7 @@ struct adf_accel_dev {
 	struct adf_heartbeat *heartbeat;
 	struct adf_rl *rate_limiting;
 	struct adf_sysfs sysfs;
+	struct adf_uacce_data uacce_data;
 	union {
 		struct {
 			/* protects VF2PF interrupts access */
@@ -528,5 +538,6 @@ struct adf_accel_dev {
 	bool autoreset_on_error;
 	u32 accel_id;
 	struct dentry *hw_version_dbgfile;
+	enum adf_ring_queue_mode ring_queue_mode;
 };
 #endif

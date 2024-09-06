@@ -8,6 +8,7 @@
 #include "adf_gen4_config.h"
 #include "adf_heartbeat.h"
 #include "adf_transport_access_macros.h"
+#include "adf_uacce.h"
 #include "qat_compression.h"
 #include "qat_crypto.h"
 
@@ -252,6 +253,11 @@ int adf_gen4_dev_config(struct adf_accel_dev *accel_dev)
 	if (ret)
 		goto err;
 
+	if (adf_uacce_is_enabled(accel_dev)) {
+		ret = adf_no_dev_config(accel_dev);
+		goto end;
+	}
+
 	ret = adf_cfg_section_add(accel_dev, "Accelerator0");
 	if (ret)
 		goto err;
@@ -275,6 +281,7 @@ int adf_gen4_dev_config(struct adf_accel_dev *accel_dev)
 		break;
 	}
 
+end:
 	if (ret)
 		goto err;
 

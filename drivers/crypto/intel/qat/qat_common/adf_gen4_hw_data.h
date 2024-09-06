@@ -128,6 +128,10 @@
 #define ADF_GEN4_VINTMSK_OFFSET(i)	(0x40B004 + (i) * 0x20)
 #define ADF_GEN4_VINTSOU_OFFSET(i)	(0x40B000 + (i) * 0x20)
 
+/* WQM Windows Base */
+#define ADF_GEN4_WQ_BASE		0x100000
+#define ADF_GEN4_UQ_BASE		0x180000
+
 struct adf_gen4_vfmig {
 	struct adf_mstate_mgr *mstate_mgr;
 	bool bank_stopped[ADF_GEN4_NUM_BANKS_PER_VF];
@@ -188,4 +192,8 @@ u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 				  struct rl_slice_cnt *slices);
 int adf_gen4_service_supported(u32 service_mask);
 void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev);
+int adf_gen4_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 bank_number,
+				enum adf_ring_queue_mode queue_mode);
+
 #endif

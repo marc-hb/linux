@@ -1032,6 +1032,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->clock_frequency = ADF_6XXX_AE_FREQ;
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
+	hw_data->get_ring_base_addr = adf_gen6_get_ring_base_addr;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
 	hw_data->set_crypto_cap = adf_gen6_set_crypto_cap;
 	hw_data->kpt_capable = adf_kpt_capable;

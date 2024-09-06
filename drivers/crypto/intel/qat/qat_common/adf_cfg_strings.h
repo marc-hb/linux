@@ -47,5 +47,9 @@
 #define ADF_ACCEL_STR "Accelerator%d"
 #define ADF_HEARTBEAT_TIMER  "HeartbeatTimer"
 #define ADF_SRIOV_ENABLED "SriovEnabled"
+#define ADF_UACCE_ENABLED "UacceEnabled"
+#define ADF_RING_QUEUE_MODE "RingQueueMode"
+#define ADF_CFG_RING_QUEUE_UQ "uq"
+#define ADF_CFG_RING_QUEUE_WQ "wq"
 
 #endif

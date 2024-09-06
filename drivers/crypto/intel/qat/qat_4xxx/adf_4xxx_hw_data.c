@@ -473,6 +473,7 @@ void adf_init_hw_data_4xxx(struct adf_hw_device_data *hw_data, u32 dev_id)
 	hw_data->get_num_svc_aes = adf_gen4_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen4_get_rl_svc_slice_cnt;
 	hw_data->service_supported = adf_gen4_service_supported;
+	hw_data->get_ring_base_addr = adf_gen4_get_ring_base_addr;
 
 	adf_gen4_set_err_mask(&hw_data->dev_err_mask);
 	adf_gen4_init_hw_csr_ops(&hw_data->csr_ops);
