@@ -3316,13 +3316,23 @@ void intel_pmu_switch_pebs(bool enter)
 {
 	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
 
-	if (!enter && boot_cpu_has(X86_FEATURE_PEBS)) {
-		/* restore host legacy PEBS MSRs */
-		wrmsrl(MSR_IA32_DS_AREA, (unsigned long)cpuc->ds);
-		if (x86_pmu.intel_cap.pebs_baseline) {
-			wrmsrl(MSR_PEBS_DATA_CFG, cpuc->active_pebs_data_cfg);
-			wrmsrl(MSR_IA32_PEBS_ENABLE,
-			       cpuc->pebs_enabled & ~cpuc->intel_ctrl_guest_mask);
+	if (enter) {
+		if (x86_pmu.arch_pebs)
+			rdmsrl(MSR_IA32_PEBS_INDEX, cpuc->pebs_index);
+	} else {
+		if (boot_cpu_has(X86_FEATURE_PEBS)) {
+			/* restore host legacy PEBS MSRs */
+			wrmsrl(MSR_IA32_DS_AREA, (unsigned long)cpuc->ds);
+			if (x86_pmu.intel_cap.pebs_baseline) {
+				wrmsrl(MSR_PEBS_DATA_CFG, cpuc->active_pebs_data_cfg);
+				wrmsrl(MSR_IA32_PEBS_ENABLE,
+				       cpuc->pebs_enabled & ~cpuc->intel_ctrl_guest_mask);
+			}
+		} else if (x86_pmu.arch_pebs) {
+			/* restore host arch PEBS MSRs */
+			u64 pebs_base = virt_to_phys(cpuc->pebs_vaddr) | PEBS_BUFFER_SHIFT;
+			wrmsrl(MSR_IA32_PEBS_BASE, pebs_base);
+			wrmsrl(MSR_IA32_PEBS_INDEX, cpuc->pebs_index);
 		}
 	}
 }

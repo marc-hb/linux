@@ -305,6 +305,7 @@ struct cpu_hw_events {
 
 	/* Cached CFG_C values */
 	u64			cfg_c_val[X86_PMC_IDX_MAX];
+	u64			pebs_index;
 
 	/*
 	 * Intel LBR bits
