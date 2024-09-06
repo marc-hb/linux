@@ -1249,6 +1249,9 @@ static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 	union vmx_exit_reason exit_reason = to_vmx(vcpu)->exit_reason;
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u32 intr_info = vmx_get_intr_info(vcpu);
+	u64 pebs_overflow = pmu->global_status &
+			    (GLOBAL_STATUS_BUFFER_OVF |
+			     GLOBAL_STATUS_ARCH_PEBS_THRESHOLD);
 
 	/*
 	 * If sampling period is set to too small like <=2, it may lead to
@@ -1267,7 +1270,7 @@ static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 	 * To avoid this issue, don't switch guest/host PMU state if guest PEBS
 	 * overflow PMI has been armed but not delivered.
 	 */
-	if ((pmu->global_status & GLOBAL_STATUS_BUFFER_OVF) &&
+	if (pebs_overflow &&
 	    !(exit_reason.basic == EXIT_REASON_EXTERNAL_INTERRUPT &&
 	      is_intr_type_n(intr_info, INTR_TYPE_EXT_INTR, KVM_GUEST_PMI_VECTOR)))
 		return true;
