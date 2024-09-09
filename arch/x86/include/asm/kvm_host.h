@@ -570,6 +570,7 @@ struct kvm_pmu {
 	u32 gp_counter_base;
 	u32 fixed_base;
 	u32 cntr_shift;
+	u64 extra_msrs[X86_MAX_NR_EXTRA_MSRS];
 
 	/*
 	 * Overlay the bitmap with a 64-bit atomic so that all bits can be

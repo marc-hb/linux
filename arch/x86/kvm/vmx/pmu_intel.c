@@ -835,6 +835,7 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	int i;
 
 	/* Global ctrl register is already saved at VM-exit. */
 	rdmsrl(MSR_CORE_PERF_GLOBAL_STATUS, pmu->global_status);
@@ -854,12 +855,20 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 		wrmsrl(MSR_CORE_PERF_FIXED_CTR_CTRL, 0);
 
 	kvm_pmu_put_guest_pmcs(vcpu);
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++) {
+		rdmsrl(kvm_pmu_cap.extra_msrs[i], pmu->extra_msrs[i]);
+
+		if (pmu->extra_msrs[i])
+			wrmsrl(kvm_pmu_cap.extra_msrs[i], 0);
+	}
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 global_status, toggle;
+	int i;
 
 	/* Clear host global_ctrl MSR if non-zero. */
 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0);
@@ -874,6 +883,9 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 	wrmsrl(MSR_CORE_PERF_FIXED_CTR_CTRL, pmu->fixed_ctr_ctrl);
 
 	kvm_pmu_load_guest_pmcs(vcpu);
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		wrmsrl(kvm_pmu_cap.extra_msrs[i], pmu->extra_msrs[i]);
 }
 
 struct kvm_pmu_ops intel_pmu_ops __initdata = {
