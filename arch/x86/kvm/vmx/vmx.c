@@ -4576,13 +4576,17 @@ static u32 vmx_exec_control(struct vcpu_vmx *vmx)
 static u64 vmx_tertiary_exec_control(struct vcpu_vmx *vmx)
 {
 	u64 exec_control = vmcs_config.cpu_based_3rd_exec_ctrl;
+	struct kvm_vcpu *vcpu = &vmx->vcpu;
 
 	/*
 	 * IPI virtualization relies on APICv. Disable IPI virtualization if
 	 * APICv is inhibited.
 	 */
-	if (!enable_ipiv || !kvm_vcpu_apicv_active(&vmx->vcpu))
+	if (!enable_ipiv || !kvm_vcpu_apicv_active(vcpu))
 		exec_control &= ~TERTIARY_EXEC_IPI_VIRT;
+
+	if (!enable_ept || !boot_cpu_has(X86_FEATURE_ARCH_PEBS))
+		exec_control &= ~TERTIARY_EXEC_PEBS2GPA;
 
 	return exec_control;
 }
