@@ -2344,6 +2344,8 @@ static int setup_tdparams(struct kvm *kvm, struct td_params *td_params,
 	MEMCPY_SAME_SIZE(td_params->mrowner, init_vm->mrowner);
 	MEMCPY_SAME_SIZE(td_params->mrownerconfig, init_vm->mrownerconfig);
 
+	td_params->mrconfigsvn = init_vm->mrconfigsvn;
+	td_params->mrownerconfigsvn = init_vm->mrownerconfigsvn;
 	return 0;
 }
 

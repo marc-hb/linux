@@ -99,11 +99,14 @@ struct td_params {
 	u64 mrconfigid[6];
 	u64 mrowner[6];
 	u64 mrownerconfig[6];
-	u64 reserved2[4];
+	u8 reserved2[8];
+	u16 mrconfigsvn;
+	u16 mrownerconfigsvn;
+	u8 reserved3[20];
 
 	union {
 		DECLARE_FLEX_ARRAY(struct tdx_cpuid_value, cpuid_values);
-		u8 reserved3[768];
+		u8 reserved4[768];
 	};
 } __packed __aligned(1024);
 
