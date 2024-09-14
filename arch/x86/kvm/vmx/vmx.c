@@ -7982,6 +7982,9 @@ static __init u64 vmx_get_perf_capabilities(void)
 		perf_cap &= ~PERF_CAP_PEBS_BASELINE;
 	}
 
+	if (enable_mediated_pmu)
+		perf_cap |= kvm_host.perf_capabilities & PERF_CAP_PERF_METRICS;
+
 	return perf_cap;
 }
 
