@@ -7396,6 +7396,7 @@ static void kvm_probe_feature_msr(u32 msr_index)
 
 static void kvm_probe_msr_to_save(u32 msr_index)
 {
+	int pebs_format;
 	u32 dummy[2];
 	int idx;
 
@@ -7495,6 +7496,14 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_FX0_CTR,
 				      KVM_MAX_NR_FIXED_COUNTERS - 1);
 		if (idx < 0 || !(BIT_ULL(idx) & kvm_pmu_cap.fixed_cntr_mask64))
+			return;
+		break;
+	case MSR_IA32_PEBS_ENABLE:
+	case MSR_IA32_DS_AREA:
+	case MSR_PEBS_DATA_CFG:
+		pebs_format = (kvm_caps.supported_perf_cap & PERF_CAP_PEBS_FORMAT) >>
+			      PERF_CAP_PEBS_FORMAT_SHIFT;
+		if (pebs_format == 0 || pebs_format == 0xf)
 			return;
 		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_CTL:
