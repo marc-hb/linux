@@ -549,7 +549,6 @@ struct kvm_pmc {
 struct kvm_pmu {
 	u8 version;
 	unsigned nr_arch_gp_counters;
-	unsigned nr_arch_fixed_counters;
 	unsigned available_event_types;
 	u64 fixed_ctr_ctrl;
 	u64 fixed_ctr_ctrl_rsvd;
@@ -584,7 +583,10 @@ struct kvm_pmu {
 		DECLARE_BITMAP(reprogram_pmi, X86_PMC_IDX_MAX);
 		atomic64_t __reprogram_pmi;
 	};
-	DECLARE_BITMAP(all_valid_pmc_idx, X86_PMC_IDX_MAX);
+	union {
+		DECLARE_BITMAP(all_valid_pmc_idx, X86_PMC_IDX_MAX);
+		u64 all_valid_pmc_idx64;
+	};
 	DECLARE_BITMAP(pmc_in_use, X86_PMC_IDX_MAX);
 
 	u64 ds_area;

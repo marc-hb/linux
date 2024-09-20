@@ -66,6 +66,17 @@ static inline bool kvm_pmu_has_perf_global_ctrl(struct kvm_pmu *pmu)
 	return pmu->version > 1;
 }
 
+static inline bool fixed_ctr_is_supported(struct kvm_pmu *pmu, unsigned int idx)
+{
+	return test_bit(INTEL_PMC_IDX_FIXED + idx, pmu->all_valid_pmc_idx);
+}
+
+static inline u64 fixed_ctrs_bitmap(struct kvm_pmu *pmu)
+{
+	return ((pmu->all_valid_pmc_idx64 >> INTEL_PMC_IDX_FIXED) &
+		GENMASK_ULL(KVM_MAX_NR_FIXED_COUNTERS, 0));
+}
+
 static inline bool kvm_mediated_pmu_enabled(struct kvm_vcpu *vcpu)
 {
 	return vcpu->kvm->arch.enable_pmu &&
@@ -92,7 +103,7 @@ static inline struct kvm_pmc *kvm_pmc_idx_to_pmc(struct kvm_pmu *pmu, int idx)
 		return &pmu->gp_counters[idx];
 
 	idx -= KVM_FIXED_PMC_BASE_IDX;
-	if (idx >= 0 && idx < pmu->nr_arch_fixed_counters)
+	if (idx >= 0 && fixed_ctr_is_supported(pmu, idx))
 		return &pmu->fixed_counters[idx];
 
 	return NULL;
@@ -167,9 +178,12 @@ static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr)
 {
 	int base = MSR_CORE_PERF_FIXED_CTR0;
 
-	if (msr >= base && msr < base + pmu->nr_arch_fixed_counters) {
+	if (msr >= base && msr < base + KVM_MAX_NR_FIXED_COUNTERS) {
 		u32 index = array_index_nospec(msr - base,
-					       pmu->nr_arch_fixed_counters);
+					       KVM_MAX_NR_FIXED_COUNTERS);
+
+		if (!fixed_ctr_is_supported(pmu, index))
+			return NULL;
 
 		return &pmu->fixed_counters[index];
 	}

@@ -641,7 +641,7 @@ inline bool kvm_rdpmc_in_guest(struct kvm_vcpu *vcpu)
 		return false;
 
 	return pmu->nr_arch_gp_counters == kvm_pmu_cap.num_counters_gp &&
-	       pmu->nr_arch_fixed_counters == kvm_pmu_cap.num_counters_fixed &&
+	       fixed_ctrs_bitmap(pmu) == (BIT_ULL(kvm_pmu_cap.num_counters_fixed) - 1) &&
 	       vcpu_has_perf_metrics(vcpu) == kvm_host_has_perf_metrics() &&
 	       pmu->counter_bitmask[KVM_PMC_GP] ==
 				(BIT_ULL(kvm_pmu_cap.bit_width_gp) - 1) &&
@@ -839,7 +839,6 @@ void kvm_pmu_refresh(struct kvm_vcpu *vcpu)
 
 	pmu->version = 0;
 	pmu->nr_arch_gp_counters = 0;
-	pmu->nr_arch_fixed_counters = 0;
 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
 	pmu->reserved_bits = 0xffffffff00200000ull;
@@ -1153,6 +1152,7 @@ cleanup:
 void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
 	struct kvm_pmc *pmc;
 	u32 eventsel_msr;
 	u32 counter_msr;
@@ -1176,7 +1176,7 @@ void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
 			wrmsrl(eventsel_msr, 0);
 	}
 
-	for (i = 0; i < pmu->nr_arch_fixed_counters; i++) {
+	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_FIXED_COUNTERS) {
 		pmc = &pmu->fixed_counters[i];
 		counter_msr = pmc_msr_addr(pmu, pmu->fixed_base, i);
 
@@ -1191,6 +1191,7 @@ EXPORT_SYMBOL_GPL(kvm_pmu_put_guest_pmcs);
 void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
 	struct kvm_pmc *pmc;
 	u32 eventsel_msr;
 	u32 counter_msr;
@@ -1209,7 +1210,8 @@ void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
 		wrmsrl(counter_msr, pmc->counter);
 		wrmsrl(eventsel_msr, pmc->eventsel);
 	}
-	for (i = 0; i < pmu->nr_arch_fixed_counters; i++) {
+
+	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_FIXED_COUNTERS) {
 		pmc = &pmu->fixed_counters[i];
 		counter_msr = pmc_msr_addr(pmu, pmu->fixed_base, i);
 
