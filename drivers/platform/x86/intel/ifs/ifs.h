@@ -295,6 +295,7 @@ struct ifs_test_msrs {
  * @generation: IFS test generation enumerated by hardware
  * @chunk_size: size of a test chunk
  * @array_gen: test generation of array test
+ * @all_lp_join: all logical processors join test
  */
 struct ifs_data {
 	int	loaded_version;
@@ -307,6 +308,7 @@ struct ifs_data {
 	u32	generation;
 	u32	chunk_size;
 	u32	array_gen;
+	bool	all_lp_join;
 };
 
 struct ifs_work {
