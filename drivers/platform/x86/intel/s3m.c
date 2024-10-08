@@ -366,15 +366,24 @@ static int s3m_probe(struct auxiliary_device *auxdev, const struct auxiliary_dev
 	 * This will send the mailbox discovery command. The response data
 	 * contains the size and feature set for a given S3M.
 	 */
+	pr_debug("s3m: Writing doe: size %d\n", priv->mmio_mb_buffer_size);
 	ret = write_doe(priv->mmio_mb, priv->mmio_mb_buffer_size, req, resp);
-	if (ret)
+	if (ret) {
+		pr_debug("s3m: Error: Doe command failed %d\n", ret);
 		return ret;
+	}
+	pr_debug("s3m: Command success\n");
+	pr_debug("s3m: length %d\n", resp->length);
 
-	if (resp->length < DOE_DISCOVERY_RESP_SIZE)
+	if (resp->length < DOE_DISCOVERY_RESP_SIZE) {
+		pr_debug("s3m: Error: Response shorter then %d\n", DOE_DISCOVERY_RESP_SIZE);
 		return -EIO;
+	}
 
 	priv->mmio_mb_buffer_size = resp->payload[1];
+	pr_debug("s3m: return buffer size %d\n", resp->payload[1]);
 	priv->s3m_features = resp->payload[2];
+	pr_debug("s3m: features 0x%x\n", resp->payload[2]);
 
 	ret = xa_alloc(&s3m_array, &priv->id, intel_vsec_dev, xa_limit_31b, GFP_KERNEL);
 	if (ret)
