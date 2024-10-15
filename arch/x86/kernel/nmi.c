@@ -374,13 +374,14 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 			pci_serr_error(reason, regs);
 		else if (reason & NMI_REASON_IOCHK)
 			io_check_error(reason, regs);
-#ifdef CONFIG_X86_32
+
 		/*
 		 * Reassert NMI in case it became active
 		 * meanwhile as it's edge-triggered:
 		 */
-		reassert_nmi();
-#endif
+		if (IS_ENABLED(CONFIG_X86_32))
+			reassert_nmi();
+
 		__this_cpu_add(nmi_stats.external, 1);
 		raw_spin_unlock(&nmi_reason_lock);
 		goto out;
