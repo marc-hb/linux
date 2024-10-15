@@ -115,9 +115,8 @@ static void nmi_check_duration(struct nmiaction *action, u64 duration)
 	remainder_ns = do_div(duration, (1000 * 1000));
 	decimal_msecs = remainder_ns / 1000;
 
-	printk_ratelimited(KERN_INFO
-		"INFO: NMI handler (%ps) took too long to run: %lld.%03d msecs\n",
-		action->handler, duration, decimal_msecs);
+	pr_info_ratelimited("INFO: NMI handler (%ps) took too long to run: %lld.%03d msecs\n",
+			    action->handler, duration, decimal_msecs);
 }
 
 static int nmi_handle(unsigned int type, struct pt_regs *regs)
