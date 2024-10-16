@@ -43,8 +43,8 @@ static int __init nmi_unk_cb(unsigned int val, struct pt_regs *regs)
 static void __init init_nmi_testsuite(void)
 {
 	/* trap all the unknown NMIs we may generate */
-	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk",
-			__initdata);
+	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, NMI_FLAG_NONE, "nmi_selftest_unk",
+			     __initdata);
 }
 
 static void __init cleanup_nmi_testsuite(void)

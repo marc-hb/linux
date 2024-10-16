@@ -18,6 +18,8 @@ extern int unknown_nmi_panic;
 
 #endif /* CONFIG_X86_LOCAL_APIC */
 
+/* nmiaction flags*/
+#define NMI_FLAG_NONE	0
 #define NMI_FLAG_FIRST	1
 
 enum {
