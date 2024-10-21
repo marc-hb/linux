@@ -7201,7 +7201,8 @@ static void nested_vmx_setup_secondary_ctls(u32 ept_caps,
 static void nested_vmx_setup_misc_data(struct vmcs_config *vmcs_conf,
 				       struct nested_vmx_msrs *msrs)
 {
-	msrs->misc_low = (u32)vmcs_conf->misc & VMX_MISC_SAVE_EFER_LMA;
+	msrs->misc_low = (u32)vmcs_conf->misc &
+		(VMX_MISC_SAVE_EFER_LMA | VMX_MISC_INTEL_PT);
 	msrs->misc_low |=
 		VMX_MISC_VMWRITE_SHADOW_RO_FIELDS |
 		VMX_MISC_EMULATED_PREEMPTION_TIMER_RATE |
