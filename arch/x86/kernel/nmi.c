@@ -315,16 +315,15 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 	bool b2b = false;
 
 	/*
-	 * CPU-specific NMI must be processed before non-CPU-specific
-	 * NMI, otherwise we may lose it, because the CPU-specific
-	 * NMI can not be detected/processed on other CPUs.
-	 */
-
-	/*
-	 * Back-to-back NMIs are interesting because they can either
-	 * be two NMI or more than two NMIs (any thing over two is dropped
-	 * due to NMI being edge-triggered).  If this is the second half
-	 * of the back-to-back NMI, assume we dropped things and process
+	 * Back-to-back NMIs are detected by comparing the RIP of the current
+	 * NMI with that of the previous NMI. If it is the same, it is assumed
+	 * that CPU did not have a chance to jump back into a non-NMI context
+	 * and execute code in between the two NMIs.
+	 *
+	 * Back-to-back NMIs are interesting because even if there are more
+	 * than two only a maximum of two can be detected (any thing over two
+	 * is dropped due to NMI being edge-triggered).  If this is the second
+	 * half of the back-to-back NMI, assume we dropped things and process
 	 * more handlers.  Otherwise reset the 'swallow' NMI behaviour
 	 */
 	if (regs->ip == __this_cpu_read(last_nmi_rip))
@@ -339,6 +338,11 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 	if (microcode_nmi_handler_enabled() && microcode_nmi_handler())
 		goto out;
 
+	/*
+	 * CPU-specific NMI must be processed before non-CPU-specific
+	 * NMI, otherwise we may lose it, because the CPU-specific
+	 * NMI can not be detected/processed on other CPUs.
+	 */
 	handled = nmi_handle(NMI_LOCAL, regs);
 	__this_cpu_add(nmi_stats.normal, handled);
 	if (handled) {
