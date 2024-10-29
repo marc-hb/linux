@@ -1146,32 +1146,44 @@ static void intel_pmu_destroy(struct kvm_vcpu *vcpu)
 }
 
 /*
- * Emulate LBR_On_PMI behavior for 1 < pmu.version < 4.
- *
- * If Freeze_LBR_On_PMI = 1, the LBR is frozen on PMI and
- * the KVM emulates to clear the LBR bit (bit 0) in IA32_DEBUGCTL.
- *
- * Guest needs to re-enable LBR to resume branches recording.
+ * Emulate legacy and streamlined Freeze_LBR_On_PMI behavior.
+ * In either case, guest needs to re-enable LBR to resume branches recording.
  */
-static void intel_pmu_legacy_freezing_lbrs_on_pmi(struct kvm_vcpu *vcpu)
+static void intel_pmu_freeze_lbr_on_pmi(struct kvm_vcpu *vcpu)
 {
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 data = vmcs_read64(GUEST_IA32_DEBUGCTL);
+	u8 version = vcpu_to_pmu(vcpu)->version;
 
-	if (data & DEBUGCTLMSR_FREEZE_LBRS_ON_PMI) {
-		data &= ~DEBUGCTLMSR_LBR;
-		vmcs_write64(GUEST_IA32_DEBUGCTL, data);
-	}
+	if (!(data & DEBUGCTLMSR_FREEZE_LBRS_ON_PMI))
+		return;
+
+	/* Legacy Freeze_LBR_on_PMI is supported */
+	if (version > 1 && version < 4) {
+		if (data & DEBUGCTLMSR_LBR) {
+			data &= ~DEBUGCTLMSR_LBR;
+			vmcs_write64(GUEST_IA32_DEBUGCTL, data);
+		}
+	} else if (vcpu_to_lbr_desc(vcpu)->msr_passthrough)
+		/*
+		 * Arch LBR is supported in mediated vPMU only, this implies:
+		 * - It's a mediated vPMU.
+		 * - Streamlined Freeze_LBR_on_PMI is supported.
+		 * - Guest LBR is enabled.
+		 *
+		 * pmu->global_status will be restored to guest context before
+		 * VM Entry to disable guest LBR recording before it's cleared
+		 * by the guest OS.
+		 */
+		pmu->global_status |= MSR_CORE_PERF_GLOBAL_STATUS_LBR_FREEZE;
 }
 
 static void intel_pmu_deliver_pmi(struct kvm_vcpu *vcpu)
 {
-	u8 version = vcpu_to_pmu(vcpu)->version;
-
 	if (!intel_pmu_lbr_is_enabled(vcpu))
 		return;
 
-	if (version > 1 && version < 4)
-		intel_pmu_legacy_freezing_lbrs_on_pmi(vcpu);
+	intel_pmu_freeze_lbr_on_pmi(vcpu);
 }
 
 static void vmx_update_intercept_for_lbr_msrs(struct kvm_vcpu *vcpu, bool set)
