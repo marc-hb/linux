@@ -205,6 +205,8 @@ static void intel_iommu_domain_free(struct iommu_domain *domain);
 int dmar_disabled = !IS_ENABLED(CONFIG_INTEL_IOMMU_DEFAULT_ON);
 int intel_iommu_sm = IS_ENABLED(CONFIG_INTEL_IOMMU_SCALABLE_MODE_DEFAULT_ON);
 
+static int dmar_ignored = 0;
+
 int intel_iommu_enabled = 0;
 EXPORT_SYMBOL_GPL(intel_iommu_enabled);
 
@@ -252,6 +254,9 @@ static int __init intel_iommu_setup(char *str)
 			dmar_disabled = 1;
 			no_platform_optin = 1;
 			pr_info("IOMMU disabled\n");
+		} else if (!strncmp(str, "ignore", 6)) {
+			dmar_ignored = 1;
+			pr_info("IOMMU ignored for test\n");
 		} else if (!strncmp(str, "igfx_off", 8)) {
 			disable_igfx_iommu = 1;
 			pr_info("Disable GFX device mapping\n");
@@ -3060,6 +3065,11 @@ int __init intel_iommu_init(void)
 	int ret = -ENODEV;
 	struct dmar_drhd_unit *drhd;
 	struct intel_iommu *iommu;
+
+	if (dmar_ignored) {
+		pr_info("Intel IOMMU ignored for test purpose.\n");
+		return 0;
+	}
 
 	/*
 	 * Intel IOMMU is required for a TXT/tboot launch or platform
