@@ -25,6 +25,7 @@ intel_qat-y := adf_accel_engine.o \
 	adf_init.o \
 	adf_isr.o \
 	adf_mstate_mgr.o \
+	adf_ras.o \
 	adf_rl_admin.o \
 	adf_rl.o \
 	adf_sysfs.o \
