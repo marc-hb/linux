@@ -104,6 +104,8 @@ struct adf_errors {
 	atomic_t counter[ADF_RAS_ERRORS];
 	bool sysfs_added;
 	bool enabled;
+	u32 uncorr_error_threshold;
+	u32 uncorr_error_timer;
 };
 
 static inline const char *get_sku_info(enum dev_sku_info info)
@@ -309,6 +311,8 @@ struct adf_hw_device_data {
 	int (*send_admin_init)(struct adf_accel_dev *accel_dev);
 	int (*start_timer)(struct adf_accel_dev *accel_dev);
 	void (*stop_timer)(struct adf_accel_dev *accel_dev);
+	int (*start_ras_timer)(struct adf_accel_dev *accel_dev);
+	void (*stop_ras_timer)(struct adf_accel_dev *accel_dev);
 	void (*check_hb_ctrs)(struct adf_accel_dev *accel_dev);
 	uint32_t (*get_hb_clock)(struct adf_hw_device_data *self);
 	int (*measure_clock)(struct adf_accel_dev *accel_dev);
@@ -480,6 +484,7 @@ struct adf_accel_dev {
 	struct module *owner;
 	struct adf_accel_pci accel_pci_dev;
 	struct adf_timer *timer;
+	struct adf_timer *ras_timer;
 	struct adf_heartbeat *heartbeat;
 	struct adf_rl *rate_limiting;
 	struct adf_sysfs sysfs;

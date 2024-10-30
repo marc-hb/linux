@@ -12,6 +12,7 @@
 #include <adf_gen6_pm.h>
 #include <adf_gen6_ras.h>
 #include <adf_gen6_shared.h>
+#include <adf_ras.h>
 #include <adf_timer.h>
 #include "adf_6xxx_hw_data.h"
 #include "icp_qat_fw_comp.h"
@@ -841,6 +842,8 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->init_device = adf_init_device;
 	hw_data->enable_pm = adf_gen6_enable_pm;
 	hw_data->service_supported = adf_gen6_service_supported;
+	hw_data->start_ras_timer = adf_ras_uncorrectable_timer_start;
+	hw_data->stop_ras_timer = adf_ras_uncorrectable_timer_stop;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);

@@ -227,6 +227,14 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 		}
 	}
 
+	if (hw_data->start_ras_timer) {
+		ret = hw_data->start_ras_timer(accel_dev);
+		if (ret) {
+			dev_err(&GET_DEV(accel_dev), "Failed to start ras uncorrectable timer\n");
+			return ret;
+		}
+	}
+
 	adf_heartbeat_start(accel_dev);
 	ret = adf_rl_start(accel_dev);
 	if (ret && ret != -EOPNOTSUPP)
@@ -331,6 +339,9 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 		hw_data->stop_timer(accel_dev);
 
 	hw_data->disable_iov(accel_dev);
+
+	if (hw_data->stop_ras_timer)
+		hw_data->stop_ras_timer(accel_dev);
 
 	if (wait)
 		msleep(100);

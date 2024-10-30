@@ -39,3 +39,22 @@ Description:	(WO) Write to resets all error counters of a device.
 			0
 
 		This attribute is only available for qat_4xxx and qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_ras/errors_nonfatal_threshold
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:	(RW) Contains the threshold value for non fatal errors.
+
+What:		/sys/bus/pci/devices/<BDF>/qat_ras/errors_nonfatal_timer
+Date:		May 2025
+KernelVersion:	6.15
+Contact:	qat-linux@intel.com
+Description:	(RW) Contains the time period in milliseconds to check the count of non fatal errors.
+
+		The following example reports how to set the non-fatal values:
+
+			# echo 2000 > /sys/bus/pci/devices/<BDF>/qat_ras/errors_nonfatal_timer
+			# echo 10 > /sys/bus/pci/devices/<BDF>/qat_ras/errors_nonfatal_threshold
+
+		This attribute is only available for qat_6xxx devices.
