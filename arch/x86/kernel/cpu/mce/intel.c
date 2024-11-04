@@ -468,11 +468,31 @@ static void intel_imc_init(struct cpuinfo_x86 *c)
 	}
 }
 
+/* Detect whether the reset of the bit-fix filter is supported. */
+static void intel_detect_bff_reset(void)
+{
+	u64 val;
+
+	rdmsrl(MSR_IA32_MCG_CAP, val);
+	if (!(val & MCG_TES_P))
+		return;
+
+	if (!cpu_feature_enabled(X86_FEATURE_CORE_CAPABILITIES))
+		return;
+
+	rdmsrl(MSR_IA32_CORE_CAPS, val);
+	if (!(val & MSR_IA32_CORE_CAPS_BFF_RESET_DETECT))
+		return;
+
+	mce_flags.bff_reset = 1;
+}
+
 void mce_intel_feature_init(struct cpuinfo_x86 *c)
 {
 	intel_init_cmci();
 	intel_init_lmce();
 	intel_imc_init(c);
+	intel_detect_bff_reset();
 }
 
 void mce_intel_feature_clear(struct cpuinfo_x86 *c)

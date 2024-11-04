@@ -229,7 +229,10 @@ struct mce_vendor_flags {
 	/* Skylake, Cascade Lake, Cooper Lake REP;MOVS* quirk */
 	skx_repmov_quirk	: 1,
 
-	__reserved_0		: 55;
+	/* (Intel) Inidicate the presence of bit-fix filter reset MSRs. */
+	bff_reset		: 1,
+
+	__reserved_0		: 54;
 };
 
 extern struct mce_vendor_flags mce_flags;
