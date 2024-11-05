@@ -319,6 +319,7 @@ struct adf_hw_device_data {
 	u32 (*get_ae_mask)(struct adf_hw_device_data *self);
 	u32 (*get_accel_cap)(struct adf_accel_dev *accel_dev);
 	void (*set_crypto_cap)(struct adf_accel_dev *accel_dev);
+	void (*set_comp_cap)(struct adf_accel_dev *accel_dev);
 	u32 (*get_sram_bar_id)(struct adf_hw_device_data *self);
 	u32 (*get_misc_bar_id)(struct adf_hw_device_data *self);
 	u32 (*get_etr_bar_id)(struct adf_hw_device_data *self);
@@ -413,6 +414,7 @@ struct adf_hw_device_data {
 	u32 num_hb_ctrs;
 	u8 num_rps;
 	bool aes_192_fallback;
+	bool zstd_supported;
 };
 
 /* CSR write macro */

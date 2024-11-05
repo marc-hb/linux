@@ -151,6 +151,9 @@ static int adf_dev_init(struct adf_accel_dev *accel_dev)
 	if (hw_data->set_crypto_cap)
 		hw_data->set_crypto_cap(accel_dev);
 
+	if (hw_data->set_comp_cap)
+		hw_data->set_comp_cap(accel_dev);
+
 	/*
 	 * Subservice initialisation is divided into two stages: init and start.
 	 * This is to facilitate any ordering dependencies between services

@@ -493,6 +493,9 @@ static int build_comp_block(void *ctx, enum adf_dc_algo algo)
 	case QAT_DEFLATE:
 		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
 	break;
+	case QAT_ZSTD:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_ZSTD_COMPRESS;
+	break;
 	default:
 		return -EINVAL;
 	}
@@ -515,6 +518,9 @@ static int build_decomp_block(void *ctx, enum adf_dc_algo algo)
 	switch (algo) {
 	case QAT_DEFLATE:
 		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
+	break;
+	case QAT_ZSTD:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_ZSTD_DECOMPRESS;
 	break;
 	default:
 		return -EINVAL;
@@ -687,6 +693,13 @@ static u32 get_ae_mask(struct adf_hw_device_data *self)
 		mask &= ~ADF_AE_GROUP_2;
 
 	return mask;
+}
+
+static void set_comp_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->zstd_supported = true;
 }
 
 static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
@@ -994,6 +1007,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_admin_info = get_admin_info;
 	hw_data->get_accel_cap = get_accel_cap;
 	hw_data->get_sku = get_sku;
+	hw_data->set_comp_cap = set_comp_cap;
 	hw_data->init_admin_comms = adf_init_admin_comms;
 	hw_data->exit_admin_comms = adf_exit_admin_comms;
 	hw_data->send_admin_init = adf_send_admin_init;
