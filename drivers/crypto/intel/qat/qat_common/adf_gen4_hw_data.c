@@ -508,7 +508,8 @@ int adf_gen4_bank_drain_start(struct adf_accel_dev *accel_dev,
 	return ret;
 }
 
-static void adf_gen4_build_comp_dc_hw_block(void **ctx)
+static void adf_gen4_build_comp_dc_hw_block(void **ctx,
+					    enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
@@ -519,8 +520,13 @@ static void adf_gen4_build_comp_dc_hw_block(void **ctx)
 	u32 upper_val;
 	u32 lower_val;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
+	break;
+	default:
+		return;
+	}
 	hw_comp_lower_csr.skip_ctrl = ICP_QAT_HW_COMP_20_BYTE_SKIP_3BYTE_LITERAL;
 	hw_comp_lower_csr.algo = ICP_QAT_HW_COMP_20_HW_COMP_FORMAT_ILZ77;
 	hw_comp_lower_csr.lllbd = ICP_QAT_HW_COMP_20_LLLBD_CTRL_LLLBD_ENABLED;
@@ -537,7 +543,8 @@ static void adf_gen4_build_comp_dc_hw_block(void **ctx)
 	cd_pars->u.sl.comp_slice_cfg_word[1] = upper_val;
 }
 
-static void adf_gen4_build_decomp_dc_hw_block(void **ctx)
+static void adf_gen4_build_decomp_dc_hw_block(void **ctx,
+					      enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
@@ -546,8 +553,13 @@ static void adf_gen4_build_decomp_dc_hw_block(void **ctx)
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
 	u32 lower_val;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
+	break;
+	default:
+		return;
+	}
 	hw_decomp_lower_csr.algo = ICP_QAT_HW_DECOMP_20_HW_DECOMP_FORMAT_DEFLATE;
 	lower_val = ICP_QAT_FW_DECOMP_20_BUILD_CONFIG_LOWER(hw_decomp_lower_csr);
 

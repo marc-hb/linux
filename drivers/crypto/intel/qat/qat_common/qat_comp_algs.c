@@ -14,6 +14,11 @@
 #include "qat_compression.h"
 #include "qat_algs_send.h"
 
+#define HW_CAP_ZSTD(accel_dev) \
+	(GET_HW_DATA(accel_dev)->zstd_supported)
+
+#define QAT_ZSTD_DRIVER_LEN	8
+
 static DEFINE_MUTEX(algs_lock);
 static unsigned int active_devs;
 
@@ -28,6 +33,8 @@ struct qat_compression_ctx {
 	u8 comp_ctx[QAT_COMP_CTX_SIZE];
 	struct qat_compression_instance *inst;
 	int (*qat_comp_callback)(struct qat_compression_req *qat_req, void *resp);
+	struct crypto_acomp *ftfm;
+	bool fallback;
 };
 
 struct qat_dst {
@@ -44,8 +51,53 @@ struct qat_compression_req {
 	int actual_dlen;
 	struct qat_alg_req alg_req;
 	struct work_struct resubmit;
+	struct work_struct zstd_sw_fallback_work;
 	struct qat_dst dst;
 };
+
+static inline struct acomp_alg *__crypto_acomp_alg(struct crypto_alg *alg)
+{
+	return container_of(alg, struct acomp_alg, calg.base);
+}
+
+static inline struct acomp_alg *crypto_acomp_alg(struct crypto_acomp *tfm)
+{
+	return __crypto_acomp_alg(crypto_acomp_tfm(tfm)->__crt_alg);
+}
+
+static void qat_zstd_sw_fallback(struct work_struct *work)
+{
+	struct qat_compression_req *qat_req =
+		container_of(work, struct qat_compression_req, zstd_sw_fallback_work);
+	struct qat_compression_ctx *ctx = qat_req->qat_compression_ctx;
+	struct adf_accel_dev *accel_dev = ctx->inst->accel_dev;
+	struct acomp_alg *alg = crypto_acomp_alg(ctx->ftfm);
+	struct acomp_req *areq = qat_req->acompress_req;
+	struct acomp_req *nreq = acomp_request_ctx(areq);
+	int ret = 0;
+
+	dev_info(&GET_DEV(accel_dev), "Software Fallback executed\n");
+
+	memcpy(nreq, areq, sizeof(*areq));
+
+	nreq->base.tfm = crypto_acomp_tfm(ctx->ftfm);
+
+	if (qat_req->dir == COMPRESSION) {
+		ret = alg->compress(nreq);
+		if (ret)
+			dev_err(&GET_DEV(accel_dev),
+				"Software compression failed ret=%d\n", ret);
+	} else if (qat_req->dir == DECOMPRESSION) {
+		ret = alg->decompress(nreq);
+		if (ret)
+			dev_err(&GET_DEV(accel_dev),
+				"Software decompression failed ret=%d\n", ret);
+	}
+
+	areq->dlen = nreq->dlen;
+	qat_bl_free_bufl(accel_dev, &qat_req->buf);
+	acomp_request_complete(areq, ret);
+}
 
 static int qat_alg_send_dc_message(struct qat_compression_req *qat_req,
 				   struct qat_compression_instance *inst,
@@ -175,8 +227,14 @@ static void qat_comp_generic_callback(struct qat_compression_req *qat_req,
 		res = ctx->qat_comp_callback(qat_req, resp);
 
 end:
-	qat_bl_free_bufl(accel_dev, &qat_req->buf);
-	acomp_request_complete(areq, res);
+	if (res && (!(strncmp((crypto_tfm_alg_driver_name(crypto_acomp_tfm(tfm))),
+			      "qat_zstd", QAT_ZSTD_DRIVER_LEN)))) {
+		INIT_WORK(&qat_req->zstd_sw_fallback_work, qat_zstd_sw_fallback);
+		adf_misc_wq_queue_work(&qat_req->zstd_sw_fallback_work);
+	} else {
+		qat_bl_free_bufl(accel_dev, &qat_req->buf);
+		acomp_request_complete(areq, res);
+	}
 }
 
 void qat_comp_alg_callback(void *resp)
@@ -190,7 +248,8 @@ void qat_comp_alg_callback(void *resp)
 	qat_alg_send_backlog(backlog);
 }
 
-static int qat_comp_alg_init_tfm(struct crypto_acomp *acomp_tfm)
+static int qat_comp_alg_init_tfm(struct crypto_acomp *acomp_tfm,
+				 enum icp_qat_hw_compression_algo alg_name)
 {
 	struct crypto_tfm *tfm = crypto_acomp_tfm(acomp_tfm);
 	struct qat_compression_ctx *ctx = crypto_tfm_ctx(tfm);
@@ -208,7 +267,20 @@ static int qat_comp_alg_init_tfm(struct crypto_acomp *acomp_tfm)
 		return -EINVAL;
 	ctx->inst = inst;
 
-	qat_comp_build_deflate(ctx->inst->accel_dev, ctx->comp_ctx);
+	switch (alg_name) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		qat_comp_build_deflate(ctx->inst->accel_dev, ctx->comp_ctx);
+	break;
+	case ICP_QAT_HW_COMPRESSION_ALGO_ZSTD:
+		if (HW_CAP_ZSTD(ctx->inst->accel_dev))
+			qat_comp_build_zstd(ctx->inst->accel_dev, ctx->comp_ctx);
+	break;
+	default:
+		qat_compression_put_instance(ctx->inst);
+		dev_err(&GET_DEV(ctx->inst->accel_dev),
+			"Algorithm not supported\n");
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -219,7 +291,38 @@ static void qat_comp_alg_exit_tfm(struct crypto_acomp *acomp_tfm)
 	struct qat_compression_ctx *ctx = crypto_tfm_ctx(tfm);
 
 	qat_compression_put_instance(ctx->inst);
+
+	if (ctx->ftfm)
+		crypto_free_acomp(ctx->ftfm);
+
 	memset(ctx, 0, sizeof(*ctx));
+}
+
+static int qat_comp_alg_init_tfm_deflate(struct crypto_acomp *acomp_tfm)
+{
+	return qat_comp_alg_init_tfm(acomp_tfm, ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE);
+}
+
+static int qat_comp_alg_init_tfm_zstd(struct crypto_acomp *acomp_tfm)
+{
+	struct crypto_tfm *tfm = crypto_acomp_tfm(acomp_tfm);
+	struct qat_compression_ctx *ctx = crypto_tfm_ctx(tfm);
+	int ret = 0;
+
+	ret = qat_comp_alg_init_tfm(acomp_tfm, ICP_QAT_HW_COMPRESSION_ALGO_ZSTD);
+	if (ret)
+		return ret;
+
+	ctx->ftfm = crypto_alloc_acomp("zstd_acomp", 0, 0);
+	if (IS_ERR(ctx->ftfm)) {
+		qat_comp_alg_exit_tfm(acomp_tfm);
+		return -EINVAL;
+	}
+
+	if (!HW_CAP_ZSTD(ctx->inst->accel_dev))
+		ctx->fallback = true;
+
+	return ret;
 }
 
 static int qat_comp_alg_compress_decompress(struct acomp_req *areq, enum direction dir,
@@ -231,10 +334,12 @@ static int qat_comp_alg_compress_decompress(struct acomp_req *areq, enum directi
 	struct crypto_tfm *tfm = crypto_acomp_tfm(acomp_tfm);
 	struct qat_compression_ctx *ctx = crypto_tfm_ctx(tfm);
 	struct qat_compression_instance *inst = ctx->inst;
+	struct acomp_req *nreq = acomp_request_ctx(areq);
 	gfp_t f = qat_algs_alloc_flags(&areq->base);
 	struct qat_sgl_to_bufl_params params = {0};
 	int slen = areq->slen - shdr - sftr;
 	int dlen = areq->dlen - dhdr - dftr;
+	struct acomp_alg *alg = NULL;
 	dma_addr_t sfbuf, dfbuf;
 	u8 *req = qat_req->req;
 	size_t ovf_buff_sz;
@@ -289,11 +394,38 @@ static int qat_comp_alg_compress_decompress(struct acomp_req *areq, enum directi
 	if (dir == COMPRESSION) {
 		qat_req->actual_dlen = dlen;
 		dlen += ovf_buff_sz;
+		if (ctx->fallback) {
+			alg = crypto_acomp_alg(ctx->ftfm);
+			memcpy(nreq, areq, sizeof(*areq));
+			nreq->base.tfm = crypto_acomp_tfm(ctx->ftfm);
+			ret = alg->compress(nreq);
+			if (ret)
+				dev_err(&GET_DEV(ctx->inst->accel_dev),
+					"Software compression failed ret=%d\n", ret);
+			areq->dlen = nreq->dlen;
+			qat_bl_free_bufl(ctx->inst->accel_dev, &qat_req->buf);
+			acomp_request_complete(areq, ret);
+			return 0;
+		}
 		qat_comp_create_compression_req(ctx->comp_ctx, req,
 						(u64)(__force long)sfbuf, slen,
 						(u64)(__force long)dfbuf, dlen,
 						(u64)(__force long)qat_req);
 	} else {
+		if (ctx->fallback) {
+			alg = crypto_acomp_alg(ctx->ftfm);
+			memcpy(nreq, areq, sizeof(*areq));
+			nreq->base.tfm = crypto_acomp_tfm(ctx->ftfm);
+
+			ret = alg->decompress(nreq);
+			if (ret)
+				dev_err(&GET_DEV(ctx->inst->accel_dev),
+					"Software decompression failed ret=%d\n", ret);
+			areq->dlen = nreq->dlen;
+			qat_bl_free_bufl(ctx->inst->accel_dev, &qat_req->buf);
+			acomp_request_complete(areq, ret);
+			return 0;
+		}
 		qat_comp_create_decompression_req(ctx->comp_ctx, req,
 						  (u64)(__force long)sfbuf, slen,
 						  (u64)(__force long)dfbuf, dlen,
@@ -326,7 +458,23 @@ static struct acomp_alg qat_acomp[] = { {
 		.cra_ctxsize = sizeof(struct qat_compression_ctx),
 		.cra_module = THIS_MODULE,
 	},
-	.init = qat_comp_alg_init_tfm,
+	.init = qat_comp_alg_init_tfm_deflate,
+	.exit = qat_comp_alg_exit_tfm,
+	.compress = qat_comp_alg_compress,
+	.decompress = qat_comp_alg_decompress,
+	.dst_free = sgl_free,
+	.reqsize = sizeof(struct qat_compression_req),
+}, {
+	.base = {
+		.cra_name = "zstd",
+		.cra_driver_name = "qat_zstd",
+		.cra_priority = 4001,
+		.cra_flags = CRYPTO_ALG_ASYNC | CRYPTO_ALG_ALLOCATES_MEMORY |
+			     CRYPTO_ALG_NEED_FALLBACK,
+		.cra_ctxsize = sizeof(struct qat_compression_ctx),
+		.cra_module = THIS_MODULE,
+	},
+	.init = qat_comp_alg_init_tfm_zstd,
 	.exit = qat_comp_alg_exit_tfm,
 	.compress = qat_comp_alg_compress,
 	.decompress = qat_comp_alg_decompress,

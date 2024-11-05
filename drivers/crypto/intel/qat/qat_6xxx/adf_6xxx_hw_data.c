@@ -505,7 +505,8 @@ static int adf_gen6_ring_pair_reset(struct adf_accel_dev *accel_dev, u32 bank_nu
 	return ret;
 }
 
-static void adf_gen6_build_comp_dc_hw_block(void **ctx)
+static void adf_gen6_build_comp_dc_hw_block(void **ctx,
+					    enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
@@ -514,8 +515,16 @@ static void adf_gen6_build_comp_dc_hw_block(void **ctx)
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
 	u32 lower_val;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
+	break;
+	case ICP_QAT_HW_COMPRESSION_ALGO_ZSTD:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_ZSTD_COMPRESS;
+	break;
+	default:
+		return;
+	}
 	hw_comp_lower_csr.lllbd = ICP_QAT_HW_COMP_51_LLLBD_CTRL_LLLBD_DISABLED;
 	hw_comp_lower_csr.sd = ICP_QAT_HW_COMP_51_SEARCH_DEPTH_LEVEL_1;
 	lower_val = ICP_QAT_FW_COMP_51_BUILD_CONFIG_LOWER(hw_comp_lower_csr);
@@ -523,15 +532,24 @@ static void adf_gen6_build_comp_dc_hw_block(void **ctx)
 	cd_pars->u.sl.comp_slice_cfg_word[1] = 0;
 }
 
-static void adf_gen6_build_decomp_dc_hw_block(void **ctx)
+static void adf_gen6_build_decomp_dc_hw_block(void **ctx,
+					      enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
 	struct icp_qat_fw_comp_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
+	break;
+	case ICP_QAT_HW_COMPRESSION_ALGO_ZSTD:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_ZSTD_DECOMPRESS;
+	break;
+	default:
+		return;
+	}
 	cd_pars->u.sl.comp_slice_cfg_word[0] = 0;
 	cd_pars->u.sl.comp_slice_cfg_word[1] = 0;
 }
@@ -703,6 +721,13 @@ static u32 get_ae_mask(struct adf_hw_device_data *self)
 	u32 ae_disable = self->fuses;
 
 	return ~ae_disable & ADF_6XXX_ACCELENGINES_MASK;
+}
+
+static void set_comp_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+
+	hw_data->zstd_supported = true;
 }
 
 static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
@@ -963,6 +988,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_arb_info = adf_gen6_get_arb_info;
 	hw_data->get_admin_info = adf_gen6_get_admin_info;
 	hw_data->get_accel_cap = get_accel_cap;
+	hw_data->set_comp_cap = set_comp_cap;
 	hw_data->get_sku = adf_gen6_get_sku;
 	hw_data->init_admin_comms = adf_init_admin_comms;
 	hw_data->exit_admin_comms = adf_exit_admin_comms;

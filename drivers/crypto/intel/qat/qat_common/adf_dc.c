@@ -3,8 +3,10 @@
 #include "adf_accel_devices.h"
 #include "adf_dc.h"
 #include "icp_qat_fw_comp.h"
+#include "icp_qat_hw.h"
 
-void qat_comp_build_deflate(struct adf_accel_dev *accel_dev, void *ctx)
+void qat_comp_build_common(struct adf_accel_dev *accel_dev, void *ctx,
+			   enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl = (struct icp_qat_fw_comp_req *)ctx;
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
@@ -26,7 +28,7 @@ void qat_comp_build_deflate(struct adf_accel_dev *accel_dev, void *ctx)
 					    ICP_QAT_FW_COMP_ENABLE_SECURE_RAM_USED_AS_INTMD_BUF);
 
 	/* HW config block for compression */
-	GET_HW_DATA(accel_dev)->dc_ops.build_comp_dc_hw_block(&ctx);
+	GET_HW_DATA(accel_dev)->dc_ops.build_comp_dc_hw_block(&ctx, algo);
 
 	req_pars->crc.legacy.initial_adler = COMP_CPR_INITIAL_ADLER;
 	req_pars->crc.legacy.initial_crc32 = COMP_CPR_INITIAL_CRC;
@@ -53,5 +55,15 @@ void qat_comp_build_deflate(struct adf_accel_dev *accel_dev, void *ctx)
 	ctx = req_tmpl;
 
 	/* HW config block for decompression */
-	GET_HW_DATA(accel_dev)->dc_ops.build_decomp_dc_hw_block(&ctx);
+	GET_HW_DATA(accel_dev)->dc_ops.build_decomp_dc_hw_block(&ctx, algo);
+}
+
+void qat_comp_build_zstd(struct adf_accel_dev *accel_dev, void *ctx)
+{
+	return qat_comp_build_common(accel_dev, ctx, ICP_QAT_HW_COMPRESSION_ALGO_ZSTD);
+}
+
+void qat_comp_build_deflate(struct adf_accel_dev *accel_dev, void *ctx)
+{
+	return qat_comp_build_common(accel_dev, ctx, ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE);
 }

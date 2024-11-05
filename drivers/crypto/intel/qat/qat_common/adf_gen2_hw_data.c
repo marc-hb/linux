@@ -173,15 +173,21 @@ void adf_gen2_set_ssm_wdtimer(struct adf_accel_dev *accel_dev)
 }
 EXPORT_SYMBOL_GPL(adf_gen2_set_ssm_wdtimer);
 
-static void adf_gen2_build_comp_dc_hw_block(void **ctx)
+static void adf_gen2_build_comp_dc_hw_block(void **ctx,
+					    enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
 	struct icp_qat_fw_comp_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_STATIC;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_STATIC;
+	break;
+	default:
+		return;
+	}
 	cd_pars->u.sl.comp_slice_cfg_word[0] =
 		ICP_QAT_HW_COMPRESSION_CONFIG_BUILD
 		(ICP_QAT_HW_COMPRESSION_DIR_COMPRESS,
@@ -191,15 +197,21 @@ static void adf_gen2_build_comp_dc_hw_block(void **ctx)
 		 ICP_QAT_HW_COMPRESSION_FILE_TYPE_0);
 }
 
-static void adf_gen2_build_decomp_dc_hw_block(void **ctx)
+static void adf_gen2_build_decomp_dc_hw_block(void **ctx,
+					      enum icp_qat_hw_compression_algo algo)
 {
 	struct icp_qat_fw_comp_req *req_tmpl =
 		(struct icp_qat_fw_comp_req *)*ctx;
 	struct icp_qat_fw_comp_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
 	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
 
-	header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
-
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
+	break;
+	default:
+		return;
+	}
 	cd_pars->u.sl.comp_slice_cfg_word[0] =
 		ICP_QAT_HW_COMPRESSION_CONFIG_BUILD
 		(ICP_QAT_HW_COMPRESSION_DIR_DECOMPRESS,

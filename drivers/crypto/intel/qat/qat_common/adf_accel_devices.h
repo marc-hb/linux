@@ -263,8 +263,10 @@ struct adf_pfvf_ops {
 };
 
 struct adf_dc_ops {
-	void (*build_comp_dc_hw_block)(void **ctx);
-	void (*build_decomp_dc_hw_block)(void **ctx);
+	void (*build_comp_dc_hw_block)(void **ctx,
+				       enum icp_qat_hw_compression_algo algo);
+	void (*build_decomp_dc_hw_block)(void **ctx,
+					 enum icp_qat_hw_compression_algo algo);
 };
 
 struct qat_migdev_ops {
@@ -297,6 +299,7 @@ struct adf_hw_device_data {
 	u32 (*get_ae_mask)(struct adf_hw_device_data *self);
 	u32 (*get_accel_cap)(struct adf_accel_dev *accel_dev);
 	void (*set_crypto_cap)(struct adf_accel_dev *accel_dev);
+	void (*set_comp_cap)(struct adf_accel_dev *accel_dev);
 	u32 (*get_sram_bar_id)(struct adf_hw_device_data *self);
 	u32 (*get_misc_bar_id)(struct adf_hw_device_data *self);
 	u32 (*get_etr_bar_id)(struct adf_hw_device_data *self);
@@ -393,6 +396,7 @@ struct adf_hw_device_data {
 	u8 num_rps;
 	bool no_crypto_instance;
 	bool aes_192_fallback;
+	bool zstd_supported;
 };
 
 /* CSR write macro */
