@@ -748,6 +748,17 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
 			continue;
 
 		/*
+		 * Newer Intel systems are able to reset the bit-fix filter.
+		 * Track the status of this bit-fix filter and print warning
+		 * messages if it overflows frequently. This indicates that
+		 * there are enough real defects to overflow the bit-fix filter,
+		 * which might lead to uncorrected errors soon. Therefore,
+		 * the system needs to be scheduled for servicing.
+		 */
+		if (mce_flags.bff_reset)
+			mce_track_bff(m);
+
+		/*
 		 * If we are logging everything (at CPU online) or this
 		 * is a corrected error, then we must log it.
 		 */
