@@ -15,6 +15,7 @@ static const char *const adf_cfg_services[] = {
 	[SVC_SYM] = ADF_CFG_SYM,
 	[SVC_DC] = ADF_CFG_DC,
 	[SVC_DCC] = ADF_CFG_DCC,
+	[SVC_DECOMP] = ADF_CFG_DECOMP,
 };
 
 /*
@@ -43,6 +44,7 @@ static_assert(BITS_PER_LONG >= SVC_BASE_COUNT);
 static_assert(sizeof(ADF_CFG_SYM ADF_SERVICES_DELIMITER
 		     ADF_CFG_ASYM ADF_SERVICES_DELIMITER
 		     ADF_CFG_DC ADF_SERVICES_DELIMITER
+		     ADF_CFG_DECOMP ADF_SERVICES_DELIMITER
 		     ADF_CFG_DCC) < ADF_CFG_MAX_VAL_LEN_IN_BYTES);
 
 static int adf_service_string_to_mask(struct adf_accel_dev *accel_dev, const char *buf,

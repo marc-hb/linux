@@ -76,6 +76,10 @@ static const unsigned long thrd_mask_dcc[ADF_6XXX_MAX_ACCELENGINES] = {
 	0x00, 0x00, 0x00, 0x00, 0x07, 0x07, 0x03, 0x03, 0x00
 };
 
+static const unsigned long thrd_mask_dcpr[ADF_6XXX_MAX_ACCELENGINES] = {
+	0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x00
+};
+
 static const char *const adf_6xxx_fw_objs[] = {
 	[ADF_FW_CY_OBJ] = ADF_6XXX_CY_OBJ,
 	[ADF_FW_DC_OBJ] = ADF_6XXX_DC_OBJ,
@@ -125,6 +129,9 @@ static int get_service(unsigned long *mask)
 	if (test_and_clear_bit(SVC_DCC, mask))
 		return SVC_DCC;
 
+	if (test_and_clear_bit(SVC_DECOMP, mask))
+		return SVC_DECOMP;
+
 	return -EINVAL;
 }
 
@@ -138,6 +145,8 @@ static enum adf_cfg_service_type get_ring_type(enum adf_services service)
 	case SVC_DC:
 	case SVC_DCC:
 		return COMP;
+	case SVC_DECOMP:
+		return DECOMP;
 	default:
 		return UNUSED;
 	}
@@ -154,6 +163,8 @@ static const unsigned long *get_thrd_mask(enum adf_services service)
 		return thrd_mask_cpr;
 	case SVC_DCC:
 		return thrd_mask_dcc;
+	case SVC_DECOMP:
+		return thrd_mask_dcpr;
 	default:
 		return NULL;
 	}
@@ -528,6 +539,9 @@ static u32 adf_gen6_get_num_svc_aes(struct adf_accel_dev *accel_dev,
 	case COMP:
 		obj_type = ADF_FW_DC_OBJ;
 		break;
+	case DECOMP:
+		obj_type = ADF_FW_DC_OBJ;
+		break;
 	default:
 		return 0;
 	}
@@ -552,6 +566,8 @@ static u32 adf_gen6_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 		return slices->pke_cnt;
 	case COMP:
 		return slices->cpr_cnt + slices->dcpr_cnt;
+	case DECOMP:
+		return slices->dcpr_cnt;
 	default:
 		return 0;
 	}
@@ -699,7 +715,7 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		caps |= capabilities_asym;
 	if (test_bit(SVC_SYM, &mask))
 		caps |= capabilities_sym;
-	if (test_bit(SVC_DC, &mask))
+	if (test_bit(SVC_DC, &mask) || test_bit(SVC_DECOMP, &mask))
 		caps |= capabilities_dc;
 	if (test_bit(SVC_DCC, &mask)) {
 		/*
@@ -813,6 +829,7 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 	switch (adf_get_service_enabled(accel_dev)) {
 	case SVC_DC:
 	case SVC_DCC:
+	case SVC_DC | SVC_DECOMP:
 		ret = adf_gen6_comp_dev_config(accel_dev);
 		break;
 	default:
@@ -861,6 +878,7 @@ static void adf_gen6_init_rl_data(struct adf_rl_hw_data *rl_data)
 	rl_data->max_tp[ADF_SVC_ASYM] = ADF_6XXX_RL_MAX_TP_ASYM;
 	rl_data->max_tp[ADF_SVC_SYM] = ADF_6XXX_RL_MAX_TP_SYM;
 	rl_data->max_tp[ADF_SVC_DC] = ADF_6XXX_RL_MAX_TP_DC;
+	rl_data->max_tp[ADF_SVC_DECOMP] = ADF_6XXX_RL_MAX_TP_DECOMP;
 	rl_data->scan_interval = ADF_6XXX_RL_SCANS_PER_SEC;
 	rl_data->scale_ref = ADF_6XXX_RL_SLICE_REF;
 }
