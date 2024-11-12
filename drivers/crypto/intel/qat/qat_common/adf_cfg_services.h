@@ -14,6 +14,7 @@ enum adf_services {
 	SVC_ID_ASYM,
 	SVC_ID_DC,
 	SVC_ID_DCC,
+	SVC_ID_DECOMP,
 	SVC_ID_COUNT
 };
 
@@ -21,6 +22,7 @@ enum adf_services {
 #define SVC_ASYM	BIT(SVC_ID_ASYM)
 #define SVC_DC		BIT(SVC_ID_DC)
 #define SVC_DCC		BIT(SVC_ID_DCC)
+#define SVC_DECOMP      BIT(SVC_ID_DECOMP)
 
 extern const char *const adf_cfg_services[SVC_ID_COUNT];
 

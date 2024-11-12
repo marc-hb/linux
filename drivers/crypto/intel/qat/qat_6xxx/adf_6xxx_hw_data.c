@@ -69,6 +69,10 @@ static const unsigned long thrd_mask_dcc[ADF_6XXX_MAX_ACCELENGINES] = {
 	0, 0, 0, 0, 0x7, 0x7, 0x3, 0x3, 0
 };
 
+static const unsigned long thrd_mask_dcpr[ADF_6XXX_MAX_ACCELENGINES] = {
+	0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0x2, 0
+};
+
 static const char *const adf_6xxx_fw_objs[] = {
 	[ADF_FW_CY_OBJ] = ADF_6XXX_CY_OBJ,
 	[ADF_FW_DC_OBJ] = ADF_6XXX_DC_OBJ,
@@ -136,6 +140,9 @@ static bool get_rp_config(struct adf_accel_dev *accel_dev,
 			break;
 		case SVC_DCC:
 			adf_rp_config[i].service = SVC_ID_DCC;
+			break;
+		case SVC_DECOMP:
+			adf_rp_config[i].service = SVC_ID_DECOMP;
 			break;
 		default:
 			return false;
@@ -209,7 +216,13 @@ static u32 adf_gen6_get_arb_mask(struct adf_accel_dev *accel_dev, u32 accel_id)
 			for_each_set_bit(thrd, &thrd_mask_dcc[accel_id],
 					 ADF_NUM_THREADS_PER_AE)
 				thd2arb_mask |=
-					(rp_config[id].ring_mask << (thrd * 4));
+				(rp_config[id].ring_mask << (thrd * 4));
+			break;
+		case SVC_ID_DECOMP:
+			for_each_set_bit(thrd, &thrd_mask_dcpr[accel_id],
+					 ADF_NUM_THREADS_PER_AE)
+				thd2arb_mask |=
+				(rp_config[id].ring_mask << (thrd * 4));
 			break;
 		default:
 			break;
@@ -254,6 +267,9 @@ static u16 adf_gen6_get_ring_to_svc_map(struct adf_accel_dev *accel_dev)
 		case SVC_ID_DC:
 		case SVC_ID_DCC:
 			svc = COMP;
+			break;
+		case SVC_ID_DECOMP:
+			svc = DECOMP;
 			break;
 		default:
 			svc = UNUSED;
@@ -544,6 +560,9 @@ static u32 adf_gen6_get_num_svc_aes(struct adf_accel_dev *accel_dev,
 	case COMP:
 		obj_type = ADF_FW_DC_OBJ;
 		break;
+	case DECOMP:
+		obj_type = ADF_FW_DC_OBJ;
+		break;
 	default:
 		return 0;
 	}
@@ -568,6 +587,8 @@ static u32 adf_gen6_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 		return slices->pke_cnt;
 	case COMP:
 		return slices->cpr_cnt + slices->dcpr_cnt;
+	case DECOMP:
+		return slices->dcpr_cnt;
 	default:
 		return 0;
 	}
@@ -735,7 +756,7 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		caps |= capabilities_asym;
 	if (svc_mask & SVC_SYM)
 		caps |= capabilities_sym;
-	if (svc_mask & SVC_DC)
+	if (svc_mask & SVC_DC || svc_mask & SVC_DECOMP)
 		caps |= capabilities_dc;
 	if (svc_mask & SVC_DCC) {
 		/*
@@ -866,6 +887,7 @@ static void adf_gen6_init_rl_data(struct adf_rl_hw_data *rl_data)
 	rl_data->max_tp[ADF_SVC_ASYM] = ADF_6XXX_RL_MAX_TP_ASYM;
 	rl_data->max_tp[ADF_SVC_SYM] = ADF_6XXX_RL_MAX_TP_SYM;
 	rl_data->max_tp[ADF_SVC_DC] = ADF_6XXX_RL_MAX_TP_DC;
+	rl_data->max_tp[ADF_SVC_DECOMP] = ADF_6XXX_RL_MAX_TP_DECOMP;
 	rl_data->scan_interval = ADF_6XXX_RL_SCANS_PER_SEC;
 	rl_data->scale_ref = ADF_6XXX_RL_SLICE_REF;
 }

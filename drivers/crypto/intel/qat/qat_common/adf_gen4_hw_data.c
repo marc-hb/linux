@@ -277,7 +277,7 @@ int adf_gen4_service_supported(u32 service_mask)
 {
 	int num_svc = hweight32(service_mask);
 
-	if (service_mask >= BIT(SVC_ID_COUNT))
+	if (service_mask >= BIT(SVC_ID_COUNT) || service_mask & SVC_DECOMP)
 		return -EINVAL;
 
 	switch (num_svc) {

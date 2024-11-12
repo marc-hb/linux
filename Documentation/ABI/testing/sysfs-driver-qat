@@ -44,8 +44,24 @@ Description:	(RW) Reports the current configuration of the QAT device.
 		  and compression services
 
 		Additional values available for qat_6xxx devices only:
+		* decomp: the device is configured for running decompression
+		  services
+		* dc;decomp: the device is configured for running compression
+		  and decompression services
+		* sym;decomp: the device is configured for running symmetric
+		  crypto services and decompression services
+		* asym;decomp: the device is configured for running
+		  asymmetric crypto services and decompression services
 		* sym;asym;dc: the device is configured for running crypto
-		  and compression services
+		  services and compression services
+		* sym;asym;decomp: the device is configured for running crypto
+		  services and decompression services
+		* sym;dc;decomp: the device is configured for running
+		  symmetric crypto services, compression services and
+		  decompression services
+		* asym;dc;decomp: the device is configured for running
+		  asymmetric crypto services, compression services and
+		  decompression services
 
 		It is possible to set the configuration only if the device
 		is in the `down` state (see /sys/bus/pci/devices/<BDF>/qat/state)

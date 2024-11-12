@@ -266,6 +266,8 @@ int adf_gen4_dev_config(struct adf_accel_dev *accel_dev)
 		break;
 	case SVC_DC:
 	case SVC_DCC:
+	case SVC_DECOMP:
+	case SVC_DC | SVC_DECOMP:
 		ret = adf_comp_dev_config(accel_dev);
 		break;
 	default:

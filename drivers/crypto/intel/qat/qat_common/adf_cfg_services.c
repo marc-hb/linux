@@ -13,6 +13,7 @@ const char *const adf_cfg_services[] = {
 	[SVC_ID_ASYM] = ADF_CFG_ASYM,
 	[SVC_ID_DC] = ADF_CFG_DC,
 	[SVC_ID_DCC] = ADF_CFG_DCC,
+	[SVC_ID_DECOMP] = ADF_CFG_DECOMP,
 };
 EXPORT_SYMBOL_GPL(adf_cfg_services);
 
