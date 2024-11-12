@@ -485,6 +485,8 @@ static void intel_detect_bff_reset(void)
 		return;
 
 	mce_flags.bff_reset = 1;
+
+	pr_info_once("Bit-fix filter reset capability detected.");
 }
 
 void mce_intel_feature_init(struct cpuinfo_x86 *c)
