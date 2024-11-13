@@ -48,6 +48,24 @@ static int get_tdx_sys_info_tdmr(struct tdx_sys_info_tdmr *sysinfo_tdmr)
 	return ret;
 }
 
+static int get_tdx_sys_info_cmr(struct tdx_sys_info_cmr *sysinfo_cmr)
+{
+	int ret = 0;
+	u64 val;
+	int i;
+
+	if (!ret && !(ret = read_sys_metadata_field(0x9000000100000000, &val)))
+		sysinfo_cmr->num_cmrs = val;
+	for (i = 0; i < sysinfo_cmr->num_cmrs; i++)
+		if (!ret && !(ret = read_sys_metadata_field(0x9000000300000080 + i, &val)))
+			sysinfo_cmr->cmr_base[i] = val;
+	for (i = 0; i < sysinfo_cmr->num_cmrs; i++)
+		if (!ret && !(ret = read_sys_metadata_field(0x9000000300000100 + i, &val)))
+			sysinfo_cmr->cmr_size[i] = val;
+
+	return ret;
+}
+
 static int get_tdx_sys_info_td_ctrl(struct tdx_sys_info_td_ctrl *sysinfo_td_ctrl)
 {
 	int ret = 0;
@@ -103,6 +121,7 @@ static int get_tdx_sys_info(struct tdx_sys_info *sysinfo)
 	ret = ret ?: get_tdx_sys_info_features(&sysinfo->features);
 	ret = ret ?: get_tdx_sys_info_attributes(&sysinfo->attributes);
 	ret = ret ?: get_tdx_sys_info_tdmr(&sysinfo->tdmr);
+	ret = ret ?: get_tdx_sys_info_cmr(&sysinfo->cmr);
 	ret = ret ?: get_tdx_sys_info_td_ctrl(&sysinfo->td_ctrl);
 	ret = ret ?: get_tdx_sys_info_td_conf(&sysinfo->td_conf);
 

@@ -21,6 +21,12 @@ struct tdx_sys_info_tdmr {
 	u16 pamt_1g_entry_size;
 };
 
+struct tdx_sys_info_cmr {
+	u16 num_cmrs;
+	u64 cmr_base[32];
+	u64 cmr_size[32];
+};
+
 struct tdx_sys_info_td_ctrl {
 	u16 tdr_base_size;
 	u16 tdcs_base_size;
@@ -42,6 +48,7 @@ struct tdx_sys_info {
 	struct tdx_sys_info_features features;
 	struct tdx_sys_info_attibutes attributes;
 	struct tdx_sys_info_tdmr tdmr;
+	struct tdx_sys_info_cmr cmr;
 	struct tdx_sys_info_td_ctrl td_ctrl;
 	struct tdx_sys_info_td_conf td_conf;
 };
