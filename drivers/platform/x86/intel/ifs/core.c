@@ -22,6 +22,7 @@ static const struct x86_cpu_id ifs_cpu_ids[] __initconst = {
 	X86_MATCH(INTEL_ATOM_CRESTMONT_X, ARRAY_GEN1),
 	X86_MATCH(INTEL_ATOM_DARKMONT_X, ARRAY_GEN1),
 	X86_MATCH(INTEL_PANTHERCOVE_X, ARRAY_GEN0),
+	X86_MATCH(INTEL_PANTHERLAKE_L, ARRAY_GEN1),
 	{}
 };
 MODULE_DEVICE_TABLE(x86cpu, ifs_cpu_ids);
@@ -125,6 +126,10 @@ static int __init ifs_init(void)
 
 	for_each_possible_cpu(cpu)
 		memset(per_cpu_ptr(&ifs_scan_n, cpu), 0, sizeof(struct ifs_test_output));
+
+	if (boot_cpu_data.x86_vfm == INTEL_PANTHERLAKE_L)
+		printk("intel_ifs: Experimetal IFS support only on PTL e-cores\n");
+
 	return 0;
 
 err_exit:
