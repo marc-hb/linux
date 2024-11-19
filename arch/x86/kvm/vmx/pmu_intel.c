@@ -14,6 +14,7 @@
 #include <linux/kvm_host.h>
 #include <linux/perf_event.h>
 #include <asm/perf_event.h>
+#include <asm/fpu/xstate.h>
 #include "x86.h"
 #include "cpuid.h"
 #include "lapic.h"
@@ -594,6 +595,41 @@ static __always_inline u64 intel_get_fixed_pmc_eventsel(struct kvm_pmu *pmu,
 	eventsel = perf_get_hw_event_config(fixed_pmc_perf_ids[index]);
 	WARN_ON_ONCE(!eventsel && fixed_ctr_is_supported(pmu, index));
 	return eventsel;
+}
+
+/*
+ * This API purposely doesn't include the pmu->passthrough check so that it can
+ * be used before the VM is created.  Since KVM chooses to support Arch LBR on
+ * mediated vPMU only, this API returns true is not enough to justify whether
+ * or not Arch LBR is enabled for the guest.
+ */
+bool guest_can_use_arch_lbr(void)
+{
+	u32 eax, ebx, ecx, edx, size;
+
+	if (!vmx_lbr_caps.nr ||
+	    !cpu_feature_enabled(X86_FEATURE_ARCH_LBR) ||
+	    !cpu_has_vmx_arch_lbr())
+		return false;
+
+	if (!boot_cpu_has(X86_FEATURE_XSAVES) ||
+	    !(kvm_host.xss & XFEATURE_MASK_LBR))
+		return false;
+
+	/*
+	 * KVM doesn't allow guest to configure different LBR depth from the
+	 * maximum host depth, which is enumerated by CPUID.1CH.EAX. The size
+	 * of the XSAVE LBR state is enumerated by CPUID.0DH Arch LBR leaf,
+	 * and the values are supposed to be matched.
+	 */
+	size = sizeof(struct arch_lbr_state) +
+	       vmx_lbr_caps.nr * sizeof(struct lbr_entry);
+	cpuid_count(0xd, XFEATURE_LBR, &eax, &ebx, &ecx, &edx);
+
+	if (!eax || WARN_ON(eax != size))
+		return false;
+
+	return true;
 }
 
 static inline void intel_update_msr_base(struct kvm_vcpu *vcpu)
