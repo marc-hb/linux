@@ -150,8 +150,12 @@ static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
 	if (!intel_pmu_lbr_is_enabled(vcpu))
 		return ret;
 
-	ret = (index == MSR_LBR_SELECT) || (index == MSR_LBR_TOS) ||
-		(index >= records->from && index < records->from + records->nr) ||
+	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR)) {
+		if (index == MSR_LBR_SELECT || index == MSR_LBR_TOS)
+			return true;
+	}
+
+	ret = (index >= records->from && index < records->from + records->nr) ||
 		(index >= records->to && index < records->to + records->nr);
 
 	if (!ret && records->info)
@@ -630,9 +634,13 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
 
 	/*
-	 * Setting passthrough of LBR MSRs is done only in the VM-Entry loop,
-	 * and PMU refresh is disallowed after the vCPU has run, i.e. this code
+	 * In legacy (non-mediated) vPMU, setting passthrough of LBR MSRs is
+	 * done only in the VM-Entry loop, while in mediated vPMU, LBR MSRs
+	 * is passthrough after LBR_CTL.LBREn is set by the guest.
+	 *
+	 * PMU refresh is disallowed after the vCPU has run, i.e. this code
 	 * should never be reached while KVM is passing through MSRs.
+	 *
 	 */
 	if (KVM_BUG_ON(lbr_desc->msr_passthrough, vcpu->kvm))
 		return;
@@ -1015,8 +1023,10 @@ static void vmx_update_intercept_for_lbr_msrs(struct kvm_vcpu *vcpu, bool set)
 			vmx_set_intercept_for_msr(vcpu, lbr->info + i, MSR_TYPE_RW, set);
 	}
 
-	vmx_set_intercept_for_msr(vcpu, MSR_LBR_SELECT, MSR_TYPE_RW, set);
-	vmx_set_intercept_for_msr(vcpu, MSR_LBR_TOS, MSR_TYPE_RW, set);
+	if (!cpu_feature_enabled(X86_FEATURE_ARCH_LBR)) {
+		vmx_set_intercept_for_msr(vcpu, MSR_LBR_SELECT, MSR_TYPE_RW, set);
+		vmx_set_intercept_for_msr(vcpu, MSR_LBR_TOS, MSR_TYPE_RW, set);
+	}
 }
 
 static inline void vmx_disable_lbr_msrs_passthrough(struct kvm_vcpu *vcpu)
