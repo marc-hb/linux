@@ -3,6 +3,7 @@
 #define _ASM_X86_PERF_EVENT_H
 
 #include <linux/static_call.h>
+#include <asm/fpu/xstate.h>
 
 /*
  * Performance event hw details:
@@ -779,6 +780,23 @@ extern unsigned long perf_arch_guest_misc_flags(struct pt_regs *regs);
 struct perf_guest_switch_msr {
 	unsigned msr;
 	u64 host, guest;
+};
+
+/*
+ * Add padding to guarantee the 64-byte alignment of the state buffer.
+ *
+ * The structure is dynamically allocated. The size of the LBR state may vary
+ * based on the number of LBR registers.
+ *
+ * Do not put anything after the LBR state.
+ */
+union arch_lbr_xsave_state {
+	struct xregs_state			xsave;
+	struct {
+		struct fxregs_state		i387;
+		struct xstate_header		header;
+		struct arch_lbr_state		lbr;
+	} __packed __aligned(XSAVE_ALIGNMENT);
 };
 
 struct x86_pmu_lbr {
