@@ -200,12 +200,20 @@ KVM_ONE_VCPU_TEST(vmx_pmu_caps, lbr_perf_capabilities, guest_code)
 		return;
 
 	vcpu_set_msr(vcpu, MSR_IA32_PERF_CAPABILITIES, host_cap.capabilities);
-	vcpu_set_msr(vcpu, MSR_LBR_TOS, 7);
+	if (kvm_cpu_has(X86_FEATURE_ARCH_LBR))
+		vcpu_set_msr(vcpu, MSR_ARCH_LBR_CTL, 6);
+	else
+		vcpu_set_msr(vcpu, MSR_LBR_TOS, 7);
 
 	vcpu_clear_cpuid_entry(vcpu, X86_PROPERTY_PMU_VERSION.function);
 
-	r = _vcpu_set_msr(vcpu, MSR_LBR_TOS, 7);
-	TEST_ASSERT(!r, "Writing LBR_TOS should fail after disabling vPMU");
+	if (kvm_cpu_has(X86_FEATURE_ARCH_LBR)) {
+		r = _vcpu_set_msr(vcpu, MSR_ARCH_LBR_CTL, 6);
+		TEST_ASSERT(!r, "Writing LBR_CTL should fail after disabling vPMU");
+	} else {
+		r = _vcpu_set_msr(vcpu, MSR_LBR_TOS, 7);
+		TEST_ASSERT(!r, "Writing LBR_TOS should fail after disabling vPMU");
+	}
 }
 
 KVM_ONE_VCPU_TEST(vmx_pmu_caps, perf_capabilities_unsupported, guest_code)
