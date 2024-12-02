@@ -50,6 +50,12 @@ struct sgx_sighashalg sgx_sighashes[] = {
 	{
 		.h_len     = 4,
 		.name      = "sha256",
+		.le_config = 0,
+	},
+	{
+		.h_len     = 6,
+		.name      = "sha384",
+		.le_config = MSR_IA32_SGXLECONFIG_SHA384_ENABLE,
 	},
 };
 
@@ -882,6 +888,13 @@ void sgx_update_lepubkeyhash(struct sgx_sighash *sighash)
 	for (i = 0; i < sighash->hashalg->h_len; i++)
 		wrmsrl(MSR_IA32_SGXLEPUBKEYHASH0 + i, sighash->digest[i]);
 
+	if (cpu_feature_enabled(X86_FEATURE_SGX256)) {
+		if (sighash->hashalg->h_len == 4) {
+			wrmsrl(MSR_IA32_SGXLEPUBKEYHASH4, 0);
+			wrmsrl(MSR_IA32_SGXLEPUBKEYHASH5, 0);
+		}
+		wrmsrl(MSR_IA32_SGXLECONFIG, sighash->hashalg->le_config);
+	}
 }
 
 const struct file_operations sgx_provision_fops = {

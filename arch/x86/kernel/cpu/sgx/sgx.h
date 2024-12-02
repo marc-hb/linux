@@ -104,6 +104,6 @@ static inline int __init sgx_vepc_init(void)
 
 void sgx_update_lepubkeyhash(struct sgx_sighash *sighash);
 
-extern struct sgx_sighashalg sgx_sighashes[1];
+extern struct sgx_sighashalg sgx_sighashes[2];
 
 #endif /* _X86_SGX_H */

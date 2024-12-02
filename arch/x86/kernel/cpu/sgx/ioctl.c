@@ -494,6 +494,13 @@ static int sgx_encl_init(struct sgx_encl *encl, struct sgx_sigstruct *sigstruct,
 	int ret;
 
 	sighashtype = sigstruct->header.sighashtype;
+	switch (sighashtype) {
+	case SGX_SIGHASHTYPE_SHA256:
+	case SGX_SIGHASHTYPE_SHA384:
+		break;
+	default:
+		return -EINVAL;
+	}
 
 	hashalg = &sgx_sighashes[sighashtype];
 	sighash = kzalloc(struct_size(sighash, digest, hashalg->h_len),
