@@ -22,6 +22,7 @@
 #include <asm/fpu/xstate.h>
 #include <asm/sgx.h>
 #include <asm/cpuid.h>
+#include <asm/intel_pt.h>
 #include "cpuid.h"
 #include "lapic.h"
 #include "mmu.h"
@@ -219,6 +220,14 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 		/* It's legal to have a CPUID.1CH leaf with zero LBR depth. */
 		return -EINVAL;
 	}
+
+	best = kvm_find_cpuid_entry_index(vcpu, 0x14, 1);
+	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT)) {
+		if (best && ((best->eax & 0x3) > intel_pt_validate_hw_cap(
+						 PT_CAP_num_address_ranges)))
+			return -EINVAL;
+	} else if (best && (best->eax & 0x3))
+		return -EINVAL;
 
 	/*
 	 * Exposing dynamic xfeatures to the guest requires additional
