@@ -36,6 +36,7 @@ enum cpuid_leafs
 	CPUID_8000_0021_EAX,
 	CPUID_LNX_5,
 	CPUID_7_1_EDX,
+	CPUID_7_1_ECX,
 	NR_CPUID_WORDS,
 };
 
