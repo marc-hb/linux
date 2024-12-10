@@ -12,6 +12,9 @@ int adf_gen6_enable_pm(struct adf_accel_dev *accel_dev)
 	if (ret)
 		return ret;
 
+	/* Initialize PM internal data */
+	adf_gen6_init_dev_pm_data(accel_dev);
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(adf_gen6_enable_pm);
