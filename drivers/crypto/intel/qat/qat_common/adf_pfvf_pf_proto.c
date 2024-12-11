@@ -227,6 +227,45 @@ out:
 	return resp;
 }
 
+static struct pfvf_message handle_rl_ir_req(struct adf_accel_dev *accel_dev,
+					    u8 vf_nr, struct pfvf_message req)
+{
+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
+	struct pfvf_message resp = { 0 };
+	u32 bank_num, sla_val;
+
+	bank_num = (vf_nr * hw_data->num_banks_per_vf) + req.data;
+	dev_dbg(&GET_DEV(accel_dev),
+		"RL info message received from VF%d for rp%d\n", vf_nr,
+		bank_num);
+
+	/* Check if callback has been registered for getting the RL SLA value.
+	 * If the callback does not exist, or the callback returns a non-zero
+	 * value, log an error message indicating that the operation is not
+	 * supported. Set sla_val to 0xFFFFFFFF to indicate an invalid or
+	 * unavailable SLA value.
+	 */
+	if (!hw_data->get_rl_sla_val ||
+	    hw_data->get_rl_sla_val(accel_dev, bank_num, &sla_val, req.type)) {
+		dev_err(&GET_DEV(accel_dev),
+			"Failed to get SLA value: operation not supported\n");
+		sla_val = 0xFFFFFFFF;
+	}
+
+	/* Prepare the response data by combining the bank number and the
+	 * SLA value using the respective masks.
+	 */
+	resp.data = FIELD_PREP(ADF_PF2VF_RL_RESP_RP_MASK, req.data) |
+		    FIELD_PREP(ADF_PF2VF_RL_RESP_VAL_MASK, sla_val);
+
+	if (req.type == ADF_VF2PF_MSGTYPE_CIR_REQ)
+		resp.type = ADF_PF2VF_MSGTYPE_CIR_RESP;
+	else
+		resp.type = ADF_PF2VF_MSGTYPE_PIR_RESP;
+
+	return resp;
+}
+
 static int adf_handle_vf2pf_msg(struct adf_accel_dev *accel_dev, u8 vf_nr,
 				struct pfvf_message msg, struct pfvf_message *resp)
 {
@@ -300,6 +339,10 @@ static int adf_handle_vf2pf_msg(struct adf_accel_dev *accel_dev, u8 vf_nr,
 		break;
 	case ADF_VF2PF_MSGTYPE_RP_RESET:
 		*resp = handle_rp_reset_req(accel_dev, vf_nr, msg);
+		break;
+	case ADF_VF2PF_MSGTYPE_CIR_REQ:
+	case ADF_VF2PF_MSGTYPE_PIR_REQ:
+		*resp = handle_rl_ir_req(accel_dev, vf_nr, msg);
 		break;
 	default:
 		dev_dbg(&GET_DEV(accel_dev),

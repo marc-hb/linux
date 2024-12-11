@@ -360,6 +360,8 @@ struct adf_hw_device_data {
 			       enum adf_cfg_service_type svc_type);
 	u32 (*get_rl_svc_slice_cnt)(enum adf_cfg_service_type svc,
 				    struct rl_slice_cnt *slices);
+	int (*get_rl_sla_val)(struct adf_accel_dev *accel_dev, u32 bank_num,
+			      u32 *sla_val, u32 msg_type);
 	struct adf_pfvf_ops pfvf_ops;
 	struct adf_hw_csr_ops csr_ops;
 	struct adf_dc_ops dc_ops;
