@@ -491,6 +491,7 @@ static __always_inline u64 intel_get_fixed_pmc_eventsel(unsigned int index)
 		[0] = PERF_COUNT_HW_INSTRUCTIONS,
 		[1] = PERF_COUNT_HW_CPU_CYCLES,
 		[2] = PERF_COUNT_HW_REF_CPU_CYCLES,
+		[3] = PERF_COUNT_HW_TOPDOWN_SLOTS,
 	};
 	u64 eventsel;
 
