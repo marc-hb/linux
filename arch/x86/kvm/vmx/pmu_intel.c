@@ -160,6 +160,8 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 		/* For now we only support version 2 and 5, so the features
 		 * from v3 ~ v4 are consolidated in version 5. */
 		return vcpu_to_pmu(vcpu)->version >= 5;
+	case MSR_PERF_METRICS:
+		return vcpu_has_perf_metrics(vcpu);
 	case MSR_IA32_PEBS_ENABLE:
 		ret = vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PEBS_FORMAT;
 		break;
@@ -340,6 +342,9 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_CORE_PERF_GLOBAL_INUSE:
 		msr_info->data = pmu->global_inuse;
 		break;
+	case MSR_PERF_METRICS:
+		msr_info->data = pmu->perf_metrics;
+		break;
 	case MSR_IA32_PEBS_ENABLE:
 		msr_info->data = pmu->pebs_enable;
 		break;
@@ -409,6 +414,9 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			return 1;
 
 		pmu->global_status_set = data;
+		break;
+	case MSR_PERF_METRICS:
+		pmu->perf_metrics = data;
 		break;
 	case MSR_IA32_PEBS_ENABLE:
 		if (data & pmu->pebs_enable_rsvd)
@@ -646,6 +654,12 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		} else {
 			pmu->pebs_enable_rsvd = ~(BIT_ULL(pmu->nr_arch_gp_counters) - 1);
 		}
+	}
+
+	pmu->perf_metrics = 0;
+	if (perf_capabilities & PERF_CAP_PERF_METRICS) {
+		pmu->global_ctrl_rsvd &= ~GLOBAL_CTRL_EN_PERF_METRICS;
+		pmu->global_status_rsvd &= ~GLOBAL_STATUS_PERF_METRICS_OVF;
 	}
 
 	intel_update_msr_base(vcpu);
