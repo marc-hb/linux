@@ -221,9 +221,7 @@ module_param(ple_window_max, uint, 0444);
 
 /* Default is SYSTEM mode, 1 for host-guest mode (which is BROKEN) */
 int __read_mostly pt_mode = PT_MODE_SYSTEM;
-#ifdef CONFIG_BROKEN
 module_param(pt_mode, int, S_IRUGO);
-#endif
 
 struct x86_pmu_lbr __ro_after_init vmx_lbr_caps;
 
@@ -8625,7 +8623,7 @@ __init int vmx_hardware_setup(void)
 
 	if (pt_mode != PT_MODE_SYSTEM && pt_mode != PT_MODE_HOST_GUEST)
 		return -EINVAL;
-	if (!enable_ept || !enable_pmu || !cpu_has_vmx_intel_pt())
+	if (!enable_ept || !cpu_has_vmx_intel_pt() || !enable_mediated_pmu)
 		pt_mode = PT_MODE_SYSTEM;
 	if (pt_mode == PT_MODE_HOST_GUEST)
 		vt_init_ops.handle_intel_pt_intr = vmx_handle_intel_pt_intr;
