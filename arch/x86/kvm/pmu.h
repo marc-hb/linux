@@ -243,6 +243,22 @@ static inline void kvm_init_pmu_capability(const struct kvm_pmu_ops *pmu_ops)
 		perf_get_hw_event_config(PERF_COUNT_HW_BRANCH_INSTRUCTIONS);
 }
 
+/*
+ * kvm_pmu_cap.extra_msrs[] contains MSRs supported by the host, but
+ * KVM fully supports them only in passthrough vPMU.  So that it doesn't
+ * mean the MSR is fully supported even if this function returns true.
+ */
+static inline bool kvm_pmu_is_possible_extra_msr(u32 msr)
+{
+	int i;
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		if (kvm_pmu_cap.extra_msrs[i] == msr)
+			return true;
+
+	return false;
+}
+
 static inline void kvm_pmu_request_counter_reprogram(struct kvm_pmc *pmc)
 {
 	set_bit(pmc->idx, pmc_to_pmu(pmc)->reprogram_pmi);

@@ -367,6 +367,11 @@ static const u32 msrs_to_save_pmu[] = {
 	MSR_F15H_PERF_CTR0, MSR_F15H_PERF_CTR1, MSR_F15H_PERF_CTR2,
 	MSR_F15H_PERF_CTR3, MSR_F15H_PERF_CTR4, MSR_F15H_PERF_CTR5,
 
+	MSR_OFFCORE_RSP_0, MSR_OFFCORE_RSP_1,
+	MSR_PEBS_LD_LAT_THRESHOLD,
+	MSR_PEBS_FRONTEND,
+	MSR_SNOOP_RSP_0, MSR_SNOOP_RSP_1,
+
 	MSR_AMD64_PERF_CNTR_GLOBAL_CTL,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR,
@@ -7444,6 +7449,19 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 	     MSR_ARCH_PERFMON_FIXED_CTR0 + KVM_MAX_NR_FIXED_COUNTERS - 1:
 		if (msr_index - MSR_ARCH_PERFMON_FIXED_CTR0 >=
 		    kvm_pmu_cap.num_counters_fixed)
+			return;
+		break;
+	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
+	case MSR_PEBS_LD_LAT_THRESHOLD:
+	case MSR_PEBS_FRONTEND:
+	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
+		/*
+		 * We won't know if passthrough vPMU is enabled until vPMU
+		 * is initialized.  For now we put host supported MSRs in
+		 * msrs_to_save[], but KVM won't support them if passthrough
+		 * vPMU is not enabled.
+		 */
+		if (!kvm_pmu_is_possible_extra_msr(msr_index))
 			return;
 		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_CTL:

@@ -139,6 +139,13 @@ static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
 	return ret;
 }
 
+static inline bool intel_pmu_is_valid_extra_msr(struct kvm_vcpu *vcpu, u32 msr)
+{
+	return (kvm_pmu_is_possible_extra_msr(msr) &&
+		kvm_mediated_pmu_enabled(vcpu) &&
+		cpuid_model_is_consistent(vcpu));
+}
+
 static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
@@ -163,7 +170,8 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0) ||
 			get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0) ||
 			get_fixed_pmc(pmu, msr) || get_fw_gp_pmc(pmu, msr) ||
-			intel_pmu_is_valid_lbr_msr(vcpu, msr);
+			intel_pmu_is_valid_lbr_msr(vcpu, msr) ||
+			intel_pmu_is_valid_extra_msr(vcpu, msr);
 		break;
 	}
 
@@ -287,6 +295,24 @@ dummy:
 	return true;
 }
 
+static bool intel_pmu_handle_extra_msrs_access(struct kvm_vcpu *vcpu,
+				     struct msr_data *msr_info, bool read)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	int i;
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		if (kvm_pmu_cap.extra_msrs[i] == msr_info->index) {
+			if (read)
+				msr_info->data = pmu->extra_msrs[i];
+			else
+				pmu->extra_msrs[i] = msr_info->data;
+			return true;
+		}
+
+	return false;
+}
+
 static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
@@ -328,7 +354,10 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			break;
 		} else if (intel_pmu_handle_lbr_msrs_access(vcpu, msr_info, true)) {
 			break;
+		} else if (intel_pmu_handle_extra_msrs_access(vcpu, msr_info, true)) {
+			break;
 		}
+
 		return 1;
 	}
 
@@ -407,6 +436,8 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			}
 			break;
 		} else if (intel_pmu_handle_lbr_msrs_access(vcpu, msr_info, false)) {
+			break;
+		} else if (intel_pmu_handle_extra_msrs_access(vcpu, msr_info, false)) {
 			break;
 		}
 		/* Not a known PMU MSR. */
