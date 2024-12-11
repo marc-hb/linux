@@ -1233,69 +1233,6 @@ static inline bool pt_output_base_valid(struct kvm_vcpu *vcpu, u64 base)
 	return kvm_vcpu_is_legal_aligned_gpa(vcpu, base, 128);
 }
 
-static inline void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
-{
-	u32 i;
-
-	wrmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
-	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
-	for (i = 0; i < addr_range; i++) {
-		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
-		wrmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
-	}
-}
-
-static inline void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
-{
-	u32 i;
-
-	rdmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
-	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
-	for (i = 0; i < addr_range; i++) {
-		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
-		rdmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
-	}
-}
-
-static void pt_guest_enter(struct vcpu_vmx *vmx)
-{
-	if (vmx_pt_mode_is_system())
-		return;
-
-	/*
-	 * GUEST_IA32_RTIT_CTL is already set in the VMCS.
-	 * Save host state before VM entry.
-	 */
-	rdmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
-	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
-		wrmsrl(MSR_IA32_RTIT_CTL, 0);
-		pt_save_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
-		pt_load_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
-	}
-}
-
-static void pt_guest_exit(struct vcpu_vmx *vmx)
-{
-	if (vmx_pt_mode_is_system())
-		return;
-
-	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
-		pt_save_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
-		pt_load_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
-	}
-
-	/*
-	 * KVM requires VM_EXIT_CLEAR_IA32_RTIT_CTL to expose PT to the guest,
-	 * i.e. RTIT_CTL is always cleared on VM-Exit.  Restore it if necessary.
-	 */
-	if (vmx->pt_desc.host.ctl)
-		wrmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
-}
-
 void vmx_set_host_fs_gs(struct vmcs_host_state *host, u16 fs_sel, u16 gs_sel,
 			unsigned long fs_base, unsigned long gs_base)
 {
@@ -7512,8 +7449,6 @@ fastpath_t vmx_vcpu_run(struct kvm_vcpu *vcpu, bool force_immediate_exit)
 
 	kvm_load_guest_xsave_state(vcpu);
 
-	pt_guest_enter(vmx);
-
 	atomic_switch_perf_msrs(vmx);
 	if (intel_pmu_lbr_is_enabled(vcpu))
 		vmx_passthrough_lbr_msrs(vcpu);
@@ -7552,8 +7487,6 @@ fastpath_t vmx_vcpu_run(struct kvm_vcpu *vcpu, bool force_immediate_exit)
 	loadsegment(ds, __USER_DS);
 	loadsegment(es, __USER_DS);
 #endif
-
-	pt_guest_exit(vmx);
 
 	kvm_load_host_xsave_state(vcpu);
 

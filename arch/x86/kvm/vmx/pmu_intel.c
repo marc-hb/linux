@@ -1307,6 +1307,71 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 	}
 }
 
+static inline void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
+{
+	u32 i;
+
+	wrmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
+	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
+	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
+	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
+
+	for (i = 0; i < addr_range; i++) {
+		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
+		wrmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
+	}
+}
+
+static inline void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
+{
+	u32 i;
+
+	rdmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
+	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
+	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
+	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
+
+	for (i = 0; i < addr_range; i++) {
+		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
+		rdmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
+	}
+}
+
+static void pt_guest_exit(struct vcpu_vmx *vmx)
+{
+	if (vmx_pt_mode_is_system())
+		return;
+
+	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
+		pt_save_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
+		pt_load_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
+	}
+
+	/*
+	 * KVM requires VM_EXIT_CLEAR_IA32_RTIT_CTL to expose PT to the guest,
+	 * i.e. RTIT_CTL is always cleared on VM-Exit.  Restore it if necessary.
+	 */
+	if (vmx->pt_desc.host.ctl)
+		wrmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
+}
+
+static void pt_guest_enter(struct vcpu_vmx *vmx)
+{
+	if (vmx_pt_mode_is_system())
+		return;
+
+	/*
+	 * GUEST_IA32_RTIT_CTL is already set in the VMCS.
+	 * Save host state before VM entry.
+	 */
+	rdmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
+	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
+		wrmsrl(MSR_IA32_RTIT_CTL, 0);
+		pt_save_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
+		pt_load_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
+	}
+}
+
 static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 {
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
@@ -1393,6 +1458,8 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 		/* Reset LBR records to avoid guest LBRs leak to host. */
 		wrmsrl(MSR_ARCH_LBR_DEPTH, vcpu_to_lbr_records(vcpu)->nr);
 	}
+
+	pt_guest_exit(to_vmx(vcpu));
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
@@ -1464,6 +1531,8 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 		 */
 		xrstors(&vcpu_to_lbr_desc(vcpu)->state->xsave,
 			XFEATURE_MASK_LBR);
+
+	pt_guest_enter(to_vmx(vcpu));
 }
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
