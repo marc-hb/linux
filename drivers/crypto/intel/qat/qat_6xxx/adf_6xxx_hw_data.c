@@ -926,6 +926,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->clock_frequency = ADF_6XXX_AE_FREQ;
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
+	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);

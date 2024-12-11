@@ -181,5 +181,7 @@ u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 				  enum adf_base_services svc_type);
 u32 adf_rl_get_num_used_slas(struct adf_accel_dev *accel_dev,
 			     enum rl_node_type node_type);
+int adf_rl_get_sla_val(struct adf_accel_dev *accel_dev, u32 bank_num,
+		       u32 *sla_val, u32 msg_type);
 
 #endif /* ADF_RL_H_ */

@@ -1229,3 +1229,10 @@ void adf_rl_exit(struct adf_accel_dev *accel_dev)
 	kfree(accel_dev->rate_limiting);
 	accel_dev->rate_limiting = NULL;
 }
+
+int adf_rl_get_sla_val(struct adf_accel_dev *accel_dev, u32 bank_num,
+		       u32 *sla_val, u32 msg_type)
+{
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL_GPL(adf_rl_get_sla_val);
