@@ -715,6 +715,12 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
 		vmx_set_intercept_for_msr(vcpu, kvm_pmu_cap.extra_msrs[i],
 					  MSR_TYPE_RW, intercept);
+
+	if (kvm_host_has_perf_metrics()) {
+		intercept = !vcpu_has_perf_metrics(vcpu);
+		vmx_set_intercept_for_msr(vcpu, MSR_PERF_METRICS,
+					  MSR_TYPE_RW, intercept);
+	}
 }
 
 static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
@@ -943,6 +949,17 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 	if (pmu->fixed_ctr_ctrl)
 		wrmsrl(MSR_CORE_PERF_FIXED_CTR_CTRL, 0);
 
+	if (vcpu_has_perf_metrics(vcpu)) {
+		/*
+		 * PERF_METRICS MSR must be read before clear fixed counter 3
+		 * (the below kvm_pmu_put_guest_pmcs()), otherwise clearing
+		 * fixed counter 3 would clear PERF_METRICS MSR as well.
+		 */
+		rdpmcl(INTEL_PMC_FIXED_RDPMC_METRICS, pmu->perf_metrics);
+		if (pmu->perf_metrics)
+			wrmsrl(MSR_PERF_METRICS, 0);
+	}
+
 	kvm_pmu_put_guest_pmcs(vcpu);
 
 	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++) {
@@ -972,6 +989,12 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 	wrmsrl(MSR_CORE_PERF_FIXED_CTR_CTRL, pmu->fixed_ctr_ctrl);
 
 	kvm_pmu_load_guest_pmcs(vcpu);
+
+	/* PERF_METRICS MSR must be restored after fixed counter 3. */
+	if (vcpu_has_perf_metrics(vcpu))
+		wrmsrl(MSR_PERF_METRICS, pmu->perf_metrics);
+	else if (kvm_host_has_perf_metrics())
+		wrmsrl(MSR_PERF_METRICS, 0);
 
 	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
 		wrmsrl(kvm_pmu_cap.extra_msrs[i], pmu->extra_msrs[i]);
