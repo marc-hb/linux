@@ -1072,6 +1072,15 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 		if (pmu->extra_msrs[i])
 			wrmsrl(kvm_pmu_cap.extra_msrs[i], 0);
 	}
+
+	if (legacy_pebs_is_enabled(vcpu)) {
+		/* Legacy PEBS */
+		rdmsrl(MSR_IA32_DS_AREA, pmu->ds_area);
+		if (pebs_baseline_is_enabled(vcpu)) {
+			rdmsrl(MSR_PEBS_DATA_CFG, pmu->pebs_data_cfg);
+			rdmsrl(MSR_IA32_PEBS_ENABLE, pmu->pebs_enable);
+		}
+	}
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
@@ -1102,6 +1111,15 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 
 	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
 		wrmsrl(kvm_pmu_cap.extra_msrs[i], pmu->extra_msrs[i]);
+
+	if (legacy_pebs_is_enabled(vcpu)) {
+		/* Legacy PEBS */
+		wrmsrl(MSR_IA32_DS_AREA, pmu->ds_area);
+		if (pebs_baseline_is_enabled(vcpu)) {
+			wrmsrl(MSR_PEBS_DATA_CFG, pmu->pebs_data_cfg);
+			wrmsrl(MSR_IA32_PEBS_ENABLE, pmu->pebs_enable);
+		}
+	}
 }
 
 struct kvm_pmu_ops intel_pmu_ops __initdata = {
