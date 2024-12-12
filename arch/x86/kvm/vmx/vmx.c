@@ -710,8 +710,19 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_CORE_PERF_GLOBAL_STATUS_SET:
 	case MSR_CORE_PERF_GLOBAL_INUSE:
 	case MSR_PERF_METRICS:
-		/* PMU MSRs. These are handled in intel_passthrough_pmu_msrs() */
+		/* v5 and below PMU MSRs. These are handled in intel_passthrough_pmu_msrs() */
 		return -ENOENT;
+	default:
+		/* v6+ PMU MSRs. These are handled in intel_passthrough_pmu_msrs() */
+		for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
+			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i) ||
+			    msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i))
+				return -ENOENT;
+		}
+		for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++) {
+			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i))
+				return -ENOENT;
+		}
 	}
 
 	for (i = 0; i < ARRAY_SIZE(vmx_possible_passthrough_msrs); i++) {

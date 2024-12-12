@@ -547,11 +547,18 @@ static inline void intel_update_msr_base(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 
-	pmu->gp_eventsel_base = MSR_P6_EVNTSEL0;
-	pmu->gp_counter_base = fw_writes_is_enabled(vcpu) ?
-			       MSR_IA32_PMC0 : MSR_IA32_PERFCTR0;
-	pmu->fixed_base = MSR_CORE_PERF_FIXED_CTR0;
-	pmu->cntr_shift = 1;
+	if (pmu->version < 6) {
+		pmu->gp_eventsel_base = MSR_P6_EVNTSEL0;
+		pmu->gp_counter_base = fw_writes_is_enabled(vcpu) ?
+				MSR_IA32_PMC0 : MSR_IA32_PERFCTR0;
+		pmu->fixed_base = MSR_CORE_PERF_FIXED_CTR0;
+		pmu->cntr_shift = 1;
+	} else {
+		pmu->gp_eventsel_base = MSR_IA32_PMC_V6_GP0_CFG_A;
+		pmu->gp_counter_base = MSR_IA32_PMC_V6_GP0_CTR;
+		pmu->fixed_base = MSR_IA32_PMC_V6_FX0_CTR;
+		pmu->cntr_shift = 4;
+	}
 }
 
 static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
@@ -739,6 +746,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, intercept);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i, MSR_TYPE_RW,
 					  intercept || !fw_writes_is_enabled(vcpu));
+		if (kvm_pmu_cap.version >= 6)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
+						  MSR_TYPE_RW, intercept || !fw_writes_is_enabled(vcpu));
 	}
 
 	unsupported_gp_bits = kvm_pmu_cap.cntr_mask64 & ~gp_bits;
@@ -747,16 +757,27 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, true);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i,
 					  MSR_TYPE_RW, true);
+		if (kvm_pmu_cap.version >= 6)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
+						  MSR_TYPE_RW, true);
 	}
 
-	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS)
+	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, intercept);
+		if (kvm_pmu_cap.version >= 6)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+						  MSR_TYPE_RW, intercept);
+	}
 
 	unsupported_fixed_bits = kvm_pmu_cap.fixed_cntr_mask64 & ~fixed_bits;
-	for_each_set_bit(i, (unsigned long*)&unsupported_fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS)
+	for_each_set_bit(i, (unsigned long*)&unsupported_fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, true);
+		if (kvm_pmu_cap.version >= 6)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+						  MSR_TYPE_RW, true);
+	}
 
 	if (kvm_mediated_pmu_enabled(vcpu) && kvm_pmu_has_perf_global_ctrl(pmu) &&
 	    vcpu_has_perf_metrics(vcpu) == kvm_host_has_perf_metrics() &&
