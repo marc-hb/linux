@@ -815,6 +815,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 		if (kvm_pmu_cap.version >= 6)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
 						  MSR_TYPE_RW, intercept || !fw_writes_is_enabled(vcpu));
+		if (kvm_pmu_cap.arch_pebs)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
+						  MSR_TYPE_RW, intercept);
 	}
 
 	unsupported_gp_bits = kvm_pmu_cap.cntr_mask64 & ~gp_bits;
@@ -826,6 +829,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 		if (kvm_pmu_cap.version >= 6)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
 						  MSR_TYPE_RW, true);
+		if (kvm_pmu_cap.arch_pebs)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
+						  MSR_TYPE_RW, true);
 	}
 
 	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
@@ -833,6 +839,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, intercept);
 		if (kvm_pmu_cap.version >= 6)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+						  MSR_TYPE_RW, intercept);
+		if (kvm_pmu_cap.arch_pebs)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
 						  MSR_TYPE_RW, intercept);
 	}
 
@@ -842,6 +851,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, true);
 		if (kvm_pmu_cap.version >= 6)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+						  MSR_TYPE_RW, true);
+		if (kvm_pmu_cap.arch_pebs)
+			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
 						  MSR_TYPE_RW, true);
 	}
 
@@ -871,6 +883,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 			vmx_set_intercept_for_msr(vcpu, MSR_PEBS_DATA_CFG, MSR_TYPE_RW, intercept);
 			vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_ENABLE, MSR_TYPE_RW, intercept);
 		}
+	} else if (kvm_pmu_cap.arch_pebs) {
+		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_BASE, MSR_TYPE_RW, intercept);
+		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_INDEX, MSR_TYPE_RW, intercept);
 	}
 
 	/* All extra MSRs are model specific */

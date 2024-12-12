@@ -701,7 +701,10 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_IA32_DS_AREA:
 	case MSR_PEBS_DATA_CFG:
 	case MSR_IA32_PEBS_ENABLE:
-		/* legacy PEBS MSRs. These are handled in intel_passthrough_pmu_msrs() */
+		/* legacy PEBS MSRs. These are handled in intel_pmu_update_msr_intercepts() */
+	case MSR_IA32_PEBS_BASE:
+	case MSR_IA32_PEBS_INDEX:
+		/* arch-PEBS MSRs. These are handled in intel_pmu_update_msr_intercepts() */
 	case MSR_IA32_PMC0 ...
 		MSR_IA32_PMC0 + KVM_MAX_NR_GP_COUNTERS - 1:
 	case MSR_IA32_PERFCTR0 ...
@@ -714,17 +717,19 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_CORE_PERF_GLOBAL_STATUS_SET:
 	case MSR_CORE_PERF_GLOBAL_INUSE:
 	case MSR_PERF_METRICS:
-		/* v5 and below PMU MSRs. These are handled in intel_passthrough_pmu_msrs() */
+		/* v5 and below PMU MSRs. These are handled in intel_pmu_update_msr_intercepts() */
 		return -ENOENT;
 	default:
-		/* v6+ PMU MSRs. These are handled in intel_passthrough_pmu_msrs() */
+		/* v6+ PMU MSRs. These are handled in intel_pmu_update_msr_intercepts() */
 		for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
 			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i) ||
-			    msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i))
+			    msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i) ||
+			    msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i))
 				return -ENOENT;
 		}
 		for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++) {
-			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i))
+			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i) ||
+			    msr == pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i))
 				return -ENOENT;
 		}
 	}
