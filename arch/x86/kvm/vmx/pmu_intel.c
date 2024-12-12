@@ -815,6 +815,15 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_GLOBAL_INUSE,
 				  MSR_TYPE_RW, intercept);
 
+	if (legacy_pebs_is_enabled(vcpu)) {
+		/* legacy PEBS */
+		vmx_set_intercept_for_msr(vcpu, MSR_IA32_DS_AREA, MSR_TYPE_RW, intercept);
+		if (pebs_baseline_is_enabled(vcpu)) {
+			vmx_set_intercept_for_msr(vcpu, MSR_PEBS_DATA_CFG, MSR_TYPE_RW, intercept);
+			vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_ENABLE, MSR_TYPE_RW, intercept);
+		}
+	}
+
 	/* All extra MSRs are model specific */
 	intercept = intercept || !cpuid_model_is_consistent(vcpu);
 	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)

@@ -698,6 +698,10 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_PEBS_FRONTEND:
 	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
 		/* model specific extra PMU MSRs */
+	case MSR_IA32_DS_AREA:
+	case MSR_PEBS_DATA_CFG:
+	case MSR_IA32_PEBS_ENABLE:
+		/* legacy PEBS MSRs. These are handled in intel_passthrough_pmu_msrs() */
 	case MSR_IA32_PMC0 ...
 		MSR_IA32_PMC0 + KVM_MAX_NR_GP_COUNTERS - 1:
 	case MSR_IA32_PERFCTR0 ...
