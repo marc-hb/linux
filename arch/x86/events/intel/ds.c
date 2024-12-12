@@ -3312,6 +3312,21 @@ static void __init intel_ds_pebs_init(void)
 	}
 }
 
+void intel_pmu_switch_pebs(bool enter)
+{
+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+
+	if (!enter && boot_cpu_has(X86_FEATURE_PEBS)) {
+		/* restore host legacy PEBS MSRs */
+		wrmsrl(MSR_IA32_DS_AREA, (unsigned long)cpuc->ds);
+		if (x86_pmu.intel_cap.pebs_baseline) {
+			wrmsrl(MSR_PEBS_DATA_CFG, cpuc->active_pebs_data_cfg);
+			wrmsrl(MSR_IA32_PEBS_ENABLE,
+			       cpuc->pebs_enabled & ~cpuc->intel_ctrl_guest_mask);
+		}
+	}
+}
+
 void __init intel_pebs_init(void)
 {
 	if (x86_pmu.intel_cap.pebs_format == 0xf)

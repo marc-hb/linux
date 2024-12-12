@@ -5913,6 +5913,8 @@ static __initconst const struct x86_pmu core_pmu = {
 	.lbr_read		= intel_pmu_lbr_read_64,
 	.lbr_save		= intel_pmu_lbr_save,
 	.lbr_restore		= intel_pmu_lbr_restore,
+
+	.switch_pebs		= intel_pmu_switch_pebs,
 };
 
 static __initconst const struct x86_pmu intel_pmu = {
@@ -5966,6 +5968,8 @@ static __initconst const struct x86_pmu intel_pmu = {
 	.lbr_read		= intel_pmu_lbr_read_64,
 	.lbr_save		= intel_pmu_lbr_save,
 	.lbr_restore		= intel_pmu_lbr_restore,
+
+	.switch_pebs		= intel_pmu_switch_pebs,
 
 	/*
 	 * SMM has access to all 4 rings and while traditionally SMM code only

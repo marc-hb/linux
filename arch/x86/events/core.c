@@ -2823,9 +2823,17 @@ static bool x86_pmu_filter(struct pmu *pmu, int cpu)
 	return ret;
 }
 
+static void x86_pmu_switch_pebs(bool enter)
+{
+	if (x86_pmu.switch_pebs)
+		x86_pmu.switch_pebs(enter);
+}
+
 static void x86_pmu_switch_guest_ctx(bool enter, void *data)
 {
 	u32 guest_lvtpc = *(u32 *)data;
+
+	x86_pmu_switch_pebs(enter);
 
 	if (enter) {
 		apic_write(APIC_LVTPC, guest_lvtpc);
