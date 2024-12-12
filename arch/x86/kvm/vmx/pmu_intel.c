@@ -1092,6 +1092,10 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	struct kvm_pmc *pmc;
+	u64 fixed_bits;
+	u64 gp_bits;
+	u32 msr;
 	int i;
 
 	/* Global ctrl register is already saved at VM-exit. */
@@ -1139,12 +1143,38 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 			rdmsrl(MSR_IA32_PEBS_ENABLE, pmu->pebs_enable);
 		}
 	}
+
+	if (pmu->arch_pebs) {
+		rdmsrl(MSR_IA32_PEBS_BASE, pmu->arch_pebs_base);
+		rdmsrl(MSR_IA32_PEBS_INDEX, pmu->arch_pebs_index);
+
+		gp_bits = gp_ctrs_bitmap(pmu);
+		for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_INTEL_GP_COUNTERS) {
+			pmc = &pmu->gp_counters[i];
+			msr = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i);
+			rdmsrl(msr, pmc->arch_pebs_cfg_c);
+			if (pmc->arch_pebs_cfg_c)
+				wrmsrl(msr, 0);
+		}
+
+		fixed_bits = fixed_ctrs_bitmap(pmu);
+		for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
+			pmc = &pmu->fixed_counters[i];
+			msr = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i);
+			rdmsrl(msr, pmc->arch_pebs_cfg_c);
+			if (pmc->arch_pebs_cfg_c)
+				wrmsrl(msr, 0);
+		}
+	}
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u64 global_status, toggle;
+	struct kvm_pmc *pmc;
+	u64 fixed_bits;
+	u64 gp_bits;
 	int i;
 
 	/* Clear host global_ctrl MSR if non-zero. */
@@ -1176,6 +1206,25 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 		if (pebs_baseline_is_enabled(vcpu)) {
 			wrmsrl(MSR_PEBS_DATA_CFG, pmu->pebs_data_cfg);
 			wrmsrl(MSR_IA32_PEBS_ENABLE, pmu->pebs_enable);
+		}
+	}
+
+	if (pmu->arch_pebs) {
+		wrmsrl(MSR_IA32_PEBS_BASE, pmu->arch_pebs_base);
+		wrmsrl(MSR_IA32_PEBS_INDEX, pmu->arch_pebs_index);
+
+		gp_bits = gp_ctrs_bitmap(pmu);
+		for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_INTEL_GP_COUNTERS) {
+			pmc = &pmu->gp_counters[i];
+			wrmsrl(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
+			       pmc->arch_pebs_cfg_c);
+		}
+
+		fixed_bits = fixed_ctrs_bitmap(pmu);
+		for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
+			pmc = &pmu->fixed_counters[i];
+			wrmsrl(pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
+			       pmc->arch_pebs_cfg_c);
 		}
 	}
 }
