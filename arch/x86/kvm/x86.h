@@ -506,11 +506,6 @@ static __always_inline void kvm_after_interrupt(struct kvm_vcpu *vcpu)
 	WRITE_ONCE(vcpu->arch.handling_intr_from_guest, 0);
 }
 
-static inline bool kvm_handling_nmi_from_guest(struct kvm_vcpu *vcpu)
-{
-	return vcpu->arch.handling_intr_from_guest == KVM_HANDLING_NMI;
-}
-
 static inline bool kvm_pat_valid(u64 data)
 {
 	if (data & 0xF8F8F8F8F8F8F8F8ull)

@@ -8392,20 +8392,6 @@ gva_t vmx_get_untagged_addr(struct kvm_vcpu *vcpu, gva_t gva, unsigned int flags
 	return (sign_extend64(gva, lam_bit) & ~BIT_ULL(63)) | (gva & BIT_ULL(63));
 }
 
-static unsigned int vmx_handle_intel_pt_intr(void)
-{
-	struct kvm_vcpu *vcpu = kvm_get_running_vcpu();
-
-	/* '0' on failure so that the !PT case can use a RET0 static call. */
-	if (!vcpu || !kvm_handling_nmi_from_guest(vcpu))
-		return 0;
-
-	kvm_make_request(KVM_REQ_PMI, vcpu);
-	__set_bit(MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI_BIT,
-		  (unsigned long *)&vcpu->arch.pmu.global_status);
-	return 1;
-}
-
 static __init void vmx_setup_user_return_msrs(void)
 {
 
@@ -8625,10 +8611,6 @@ __init int vmx_hardware_setup(void)
 		return -EINVAL;
 	if (!enable_ept || !cpu_has_vmx_intel_pt() || !enable_mediated_pmu)
 		pt_mode = PT_MODE_SYSTEM;
-	if (pt_mode == PT_MODE_HOST_GUEST)
-		vt_init_ops.handle_intel_pt_intr = vmx_handle_intel_pt_intr;
-	else
-		vt_init_ops.handle_intel_pt_intr = NULL;
 
 	if (enable_mediated_pmu)
 		intel_pt_passthrough(vmx_pt_mode_is_host_guest());
