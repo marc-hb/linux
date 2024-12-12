@@ -365,8 +365,8 @@ static const u32 msrs_to_save_pmu_base[] = {
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR,
 };
 
-static u32 msrs_to_save_pmu_cntrs[KVM_MAX_NR_FIXED_COUNTERS +
-				  2 * KVM_MAX_NR_GP_COUNTERS];
+static u32 msrs_to_save_pmu_cntrs[2 * KVM_MAX_NR_FIXED_COUNTERS +
+				  4 * KVM_MAX_NR_GP_COUNTERS];
 
 static u32 msrs_to_save[ARRAY_SIZE(msrs_to_save_base) +
 			ARRAY_SIZE(msrs_to_save_pmu_base) +
@@ -7397,6 +7397,7 @@ static void kvm_probe_feature_msr(u32 msr_index)
 static void kvm_probe_msr_to_save(u32 msr_index)
 {
 	u32 dummy[2];
+	int idx;
 
 	if (rdmsr_safe(msr_index, &dummy[0], &dummy[1]))
 		return;
@@ -7477,6 +7478,21 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		if (!kvm_pmu_is_possible_extra_msr(msr_index))
 			return;
 		break;
+	case MSR_IA32_PMC_V6_GP_MSR_STRAT ... MSR_IA32_PMC_V6_GP_MSR_END:
+		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CTR,
+				      KVM_MAX_NR_GP_COUNTERS - 1);
+		if (idx < 0)
+			idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CFG_A,
+					      KVM_MAX_NR_GP_COUNTERS -1);
+		if (idx < 0 || !(BIT_ULL(idx) & kvm_pmu_cap.cntr_mask64))
+			return;
+		break;
+	case MSR_IA32_PMC_V6_FX_MSR_STRAT ... MSR_IA32_PMC_V6_FX_MSR_END:
+		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_FX0_CTR,
+				      KVM_MAX_NR_FIXED_COUNTERS - 1);
+		if (idx < 0 || !(BIT_ULL(idx) & kvm_pmu_cap.fixed_cntr_mask64))
+			return;
+		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_CTL:
 	case MSR_AMD64_PERF_CNTR_GLOBAL_STATUS:
 	case MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR:
@@ -7504,11 +7520,15 @@ static void kvm_init_save_pmu_cntrs_msr_array(void)
 	int idx = 0;
 	int i;
 
-	for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++)
+	for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++) {
 		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_FIXED_CTR0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i);
+	}
 	for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
 		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_PERFCTR0 + i;
 		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_EVENTSEL0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i);
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i);
 	}
 }
 

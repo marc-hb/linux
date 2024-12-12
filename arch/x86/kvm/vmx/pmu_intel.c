@@ -49,7 +49,7 @@ static void reprogram_fixed_counters(struct kvm_pmu *pmu, u64 data)
 		if (old_ctrl == new_ctrl)
 			continue;
 
-		pmc = get_fixed_pmc(pmu, MSR_CORE_PERF_FIXED_CTR0 + i);
+		pmc = get_fixed_pmc_from_idx(pmu, i);
 
 		__set_bit(KVM_FIXED_PMC_BASE_IDX + i, pmu->pmc_in_use);
 		kvm_pmu_request_counter_reprogram(pmc);
@@ -184,7 +184,11 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 	default:
 		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0) ||
 			get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0) ||
-			get_fixed_pmc(pmu, msr) || get_fw_gp_pmc(pmu, msr) ||
+			get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CTR) ||
+			get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A) ||
+			get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0) ||
+			get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR) ||
+			get_fw_gp_pmc(pmu, msr) ||
 			intel_pmu_is_valid_lbr_msr(vcpu, msr) ||
 			intel_pmu_is_valid_extra_msr(vcpu, msr);
 		break;
@@ -196,11 +200,17 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 static struct kvm_pmc *intel_msr_idx_to_pmc(struct kvm_vcpu *vcpu, u32 msr)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
-	struct kvm_pmc *pmc;
+	struct kvm_pmc *pmc = NULL;
 
-	pmc = get_fixed_pmc(pmu, msr);
-	pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0);
-	pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0);
+	if (msr < MSR_IA32_PMC_V6_GP0_CTR) {
+		pmc = get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0);
+		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0);
+		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0);
+	} else {
+		pmc = pmc ? pmc : get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR);
+		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A);
+		pmc = pmc ? pmc : get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CTR);
+	}
 
 	return pmc;
 }
@@ -364,17 +374,20 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
-		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0))) {
+		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0)) ||
+		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CTR))) {
 			u64 val = pmc_read_counter(pmc);
 			msr_info->data =
 				val & pmu->counter_bitmask[KVM_PMC_GP];
 			break;
-		} else if ((pmc = get_fixed_pmc(pmu, msr))) {
+		} else if ((pmc = get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0)) ||
+			   (pmc = get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR))) {
 			u64 val = pmc_read_counter(pmc);
 			msr_info->data =
 				val & pmu->counter_bitmask[KVM_PMC_FIXED];
 			break;
-		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0))) {
+		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)) ||
+			   (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A))) {
 			msr_info->data = pmc->eventsel;
 			break;
 		} else if (intel_pmu_handle_lbr_msrs_access(vcpu, msr_info, true)) {
@@ -450,20 +463,25 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
-		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0))) {
-			if ((msr & MSR_PMC_FULL_WIDTH_BIT) &&
+		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0)) ||
+		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CTR))) {
+			if (((msr & MSR_PMC_FULL_WIDTH_BIT) ||
+			      msr >= MSR_IA32_PMC_V6_GP0_CTR) &&
 			    (data & ~pmu->counter_bitmask[KVM_PMC_GP]))
 				return 1;
 
 			if (!msr_info->host_initiated &&
+			    msr < MSR_IA32_PMC_V6_GP0_CTR &&
 			    !(msr & MSR_PMC_FULL_WIDTH_BIT))
 				data = (s64)(s32)data;
 			pmc_write_counter(pmc, data);
 			break;
-		} else if ((pmc = get_fixed_pmc(pmu, msr))) {
+		} else if ((pmc = get_fixed_pmc(pmu, msr, MSR_CORE_PERF_FIXED_CTR0)) ||
+			   (pmc = get_fixed_pmc(pmu, msr, MSR_IA32_PMC_V6_FX0_CTR))) {
 			pmc_write_counter(pmc, data);
 			break;
-		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0))) {
+		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)) ||
+			   (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A))) {
 			reserved_bits = pmu->reserved_bits;
 			if ((pmc->idx == 2) &&
 			    (pmu->raw_event_mask & HSW_IN_TX_CHECKPOINTED))

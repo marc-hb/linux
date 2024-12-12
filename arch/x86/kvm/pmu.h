@@ -168,16 +168,41 @@ static inline bool kvm_valid_perf_global_ctrl(struct kvm_pmu *pmu,
 	return !(pmu->global_ctrl_rsvd & data);
 }
 
-/* returns general purpose PMC with the specified MSR. Note that it can be
- * used for both PERFCTRn and EVNTSELn; that is why it accepts base as a
- * parameter to tell them apart.
- */
-static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
-					 u32 base)
+static inline u32 pmu_v6_msr(u32 base, int idx)
 {
-	if (msr >= base && msr < base + KVM_MAX_NR_GP_COUNTERS) {
-		u32 index = array_index_nospec(msr - base,
-					       KVM_MAX_NR_GP_COUNTERS);
+	return base + MSR_IA32_PMC_V6_STEP * idx;
+}
+
+static inline int get_v6_cntr_idx(u32 msr, u32 base, int max)
+{
+	int idx = -1;
+
+	if (msr >= base &&
+	    msr < base + max * MSR_IA32_PMC_V6_STEP &&
+	    !((msr - base) & (MSR_IA32_PMC_V6_STEP - 1)))
+		idx = (msr - base) / MSR_IA32_PMC_V6_STEP;
+
+	return idx;
+}
+
+static inline int get_cntr_idx(struct kvm_pmu *pmu, u32 msr, u32 base, int max)
+{
+	int idx = -1;
+
+	if (msr < MSR_IA32_PMC_V6_GP0_CTR) {
+		if (msr >= base && msr < base + max)
+			idx = msr - base;
+	} else {
+		idx = get_v6_cntr_idx(msr, base, max);
+	}
+
+	return idx;
+}
+
+static inline struct kvm_pmc *get_gp_pmc_from_idx(struct kvm_pmu *pmu, int idx)
+{
+	if (idx >= 0) {
+		u32 index = array_index_nospec(idx, KVM_MAX_NR_GP_COUNTERS);
 
 		if (!gp_ctr_is_supported(pmu, index))
 			return NULL;
@@ -188,14 +213,10 @@ static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
 	return NULL;
 }
 
-/* returns fixed PMC with the specified MSR */
-static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr)
+static inline struct kvm_pmc *get_fixed_pmc_from_idx(struct kvm_pmu *pmu, int idx)
 {
-	int base = MSR_CORE_PERF_FIXED_CTR0;
-
-	if (msr >= base && msr < base + KVM_MAX_NR_FIXED_COUNTERS) {
-		u32 index = array_index_nospec(msr - base,
-					       KVM_MAX_NR_FIXED_COUNTERS);
+	if (idx >= 0) {
+		u32 index = array_index_nospec(idx, KVM_MAX_NR_FIXED_COUNTERS);
 
 		if (!fixed_ctr_is_supported(pmu, index))
 			return NULL;
@@ -204,6 +225,27 @@ static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr)
 	}
 
 	return NULL;
+}
+
+/*
+ * returns general purpose PMC with the specified MSR. Note that it can be
+ * used for both PERFCTRn and EVNTSELn; that is why it accepts base as a
+ * parameter to tell them apart.
+ */
+static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
+					 u32 base)
+{
+	int idx = get_cntr_idx(pmu, msr, base, KVM_MAX_NR_GP_COUNTERS);
+
+	return get_gp_pmc_from_idx(pmu, idx);
+}
+
+/* returns fixed PMC with the specified MSR */
+static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr, u32 base)
+{
+	int idx = get_cntr_idx(pmu, msr, base, KVM_MAX_NR_FIXED_COUNTERS);
+
+	return get_fixed_pmc_from_idx(pmu, idx);
 }
 
 static inline bool pmc_speculative_in_use(struct kvm_pmc *pmc)
