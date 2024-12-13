@@ -1307,7 +1307,7 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 	}
 }
 
-static inline void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
+static void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
 {
 	u32 i;
 
@@ -1322,7 +1322,7 @@ static inline void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
 	}
 }
 
-static inline void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
+static void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
 {
 	u32 i;
 
@@ -1337,7 +1337,7 @@ static inline void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
 	}
 }
 
-static void pt_guest_exit(struct vcpu_vmx *vmx)
+static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 {
 	if (vmx_pt_mode_is_system())
 		return;
@@ -1355,18 +1355,28 @@ static void pt_guest_exit(struct vcpu_vmx *vmx)
 		wrmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
 }
 
-static void pt_guest_enter(struct vcpu_vmx *vmx)
+static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
 {
 	if (vmx_pt_mode_is_system())
 		return;
 
 	/*
-	 * GUEST_IA32_RTIT_CTL is already set in the VMCS.
-	 * Save host state before VM entry.
+	 * In host/guest mode, "load IA32_RTIT_CTL” VM-entry control is always
+	 * on, which requires IA32_RTIT_CTL.TraceEn = 0 at the time of VM entry.
+	 *
+	 * Writing this bit to 0 to satisfy the VM entry check requirement, and
+	 * the actual guest RTIT_CTL value will be loaded by "load IA32_RTIT_CTL”
+	 * VM-entry control.
+	 *
+	 * Additionally, now perf_guest_enter() has been called, all exclude_guest
+	 * perf events have been scheduled out, and LVTPC vector has been
+	 * configured to the KVM dedicated vector.  Thus the host PMI handler
+	 * doesn't have a chance to overwrite TraceEn bit as it possbily does in
+	 * the legacy non-mediated vPMU implementation.
 	 */
-	rdmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
+	wrmsrl(MSR_IA32_RTIT_CTL, 0);
+
 	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
-		wrmsrl(MSR_IA32_RTIT_CTL, 0);
 		pt_save_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
 		pt_load_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
 	}
@@ -1459,7 +1469,7 @@ static void intel_put_guest_context(struct kvm_vcpu *vcpu)
 		wrmsrl(MSR_ARCH_LBR_DEPTH, vcpu_to_lbr_records(vcpu)->nr);
 	}
 
-	pt_guest_exit(to_vmx(vcpu));
+	intel_pmu_put_guest_pt(to_vmx(vcpu));
 }
 
 static void intel_load_guest_context(struct kvm_vcpu *vcpu)
@@ -1532,7 +1542,7 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 		xrstors(&vcpu_to_lbr_desc(vcpu)->state->xsave,
 			XFEATURE_MASK_LBR);
 
-	pt_guest_enter(to_vmx(vcpu));
+	intel_pmu_load_guest_pt(to_vmx(vcpu));
 }
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
