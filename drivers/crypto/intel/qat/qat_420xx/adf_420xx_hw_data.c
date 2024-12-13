@@ -104,9 +104,13 @@ static u32 get_ae_mask(struct adf_hw_device_data *self)
 
 static u32 uof_get_num_objs(struct adf_accel_dev *accel_dev)
 {
-	switch (adf_get_service_enabled(accel_dev)) {
-	case SVC_CY:
-	case SVC_CY2:
+	u32 svc_mask = 0;
+
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return 0;
+
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		return ARRAY_SIZE(adf_fw_cy_config);
 	case SVC_DC:
 		return ARRAY_SIZE(adf_fw_dc_config);
@@ -116,11 +120,9 @@ static u32 uof_get_num_objs(struct adf_accel_dev *accel_dev)
 		return ARRAY_SIZE(adf_fw_sym_config);
 	case SVC_ASYM:
 		return ARRAY_SIZE(adf_fw_asym_config);
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
+	case SVC_ASYM | SVC_DC:
 		return ARRAY_SIZE(adf_fw_asym_dc_config);
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
+	case SVC_SYM | SVC_DC:
 		return ARRAY_SIZE(adf_fw_sym_dc_config);
 	default:
 		return 0;
@@ -129,9 +131,13 @@ static u32 uof_get_num_objs(struct adf_accel_dev *accel_dev)
 
 static const struct adf_fw_config *get_fw_config(struct adf_accel_dev *accel_dev)
 {
-	switch (adf_get_service_enabled(accel_dev)) {
-	case SVC_CY:
-	case SVC_CY2:
+	u32 svc_mask = 0;
+
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return NULL;
+
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		return adf_fw_cy_config;
 	case SVC_DC:
 		return adf_fw_dc_config;
@@ -141,11 +147,9 @@ static const struct adf_fw_config *get_fw_config(struct adf_accel_dev *accel_dev
 		return adf_fw_sym_config;
 	case SVC_ASYM:
 		return adf_fw_asym_config;
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
+	case SVC_ASYM | SVC_DC:
 		return adf_fw_asym_dc_config;
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
+	case SVC_SYM | SVC_DC:
 		return adf_fw_sym_dc_config;
 	default:
 		return NULL;
@@ -179,6 +183,7 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 	struct pci_dev *pdev = accel_dev->accel_pci_dev.pci_dev;
 	u32 capabilities_dcc;
 	u32 fusectl1;
+	u32 svc_mask;
 
 	/* As a side effect, update ae_mask based on configuration */
 	update_ae_mask(accel_dev);
@@ -264,9 +269,11 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		capabilities_dc &= ~ICP_ACCEL_CAPABILITIES_CNV_INTEGRITY64;
 	}
 
-	switch (adf_get_service_enabled(accel_dev)) {
-	case SVC_CY:
-	case SVC_CY2:
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return 0;
+
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		return capabilities_sym | capabilities_asym;
 	case SVC_DC:
 		return capabilities_dc;
@@ -282,11 +289,9 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		return capabilities_sym;
 	case SVC_ASYM:
 		return capabilities_asym;
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
+	case SVC_ASYM | SVC_DC:
 		return capabilities_asym | capabilities_dc;
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
+	case SVC_SYM | SVC_DC:
 		return capabilities_sym | capabilities_dc;
 	default:
 		return 0;
@@ -483,6 +488,7 @@ void adf_init_hw_data_420xx(struct adf_hw_device_data *hw_data, u32 dev_id)
 	hw_data->clock_frequency = ADF_420XX_AE_FREQ;
 	hw_data->get_num_svc_aes = adf_gen4_get_num_svc_aes;
 	hw_data->get_rl_svc_slice_cnt = adf_gen4_get_rl_svc_slice_cnt;
+	hw_data->service_supported = adf_gen4_service_supported;
 
 	adf_gen4_set_err_mask(&hw_data->dev_err_mask);
 	adf_gen4_init_hw_csr_ops(&hw_data->csr_ops);

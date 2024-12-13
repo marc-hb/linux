@@ -55,6 +55,10 @@
 #define ADF_GEN4_ADMINMSGLR_OFFSET	0x500578
 #define ADF_GEN4_MAILBOX_BASE_OFFSET	0x600970
 
+/* Service configuration count */
+#define SINGLE_SVC 1
+#define DOUBLE_SVC 2
+
 /* Default ring mapping */
 #define ADF_GEN4_DEFAULT_RING_TO_SRV_MAP \
 	(ASYM << ADF_CFG_SERV_RING_PAIR_0_SHIFT | \
@@ -182,4 +186,6 @@ u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
 			     enum adf_cfg_service_type svc_type);
 u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 				  struct rl_slice_cnt *slices);
+int adf_gen4_service_supported(u32 service_mask);
+
 #endif

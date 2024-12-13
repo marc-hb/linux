@@ -11,12 +11,18 @@
 #include "qat_compression.h"
 #include "qat_crypto.h"
 
+#define RING_PAIR_0_1_MASK 0x3F
+#define RING_PAIR_2_3_MASK 0xFC0
+
 static int adf_crypto_dev_config(struct adf_accel_dev *accel_dev)
 {
+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
+	unsigned long bank, sym_bank, asym_bank, val;
 	char key[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
 	int banks = GET_MAX_BANKS(accel_dev);
 	int cpus = num_online_cpus();
-	unsigned long bank, val;
+	u16 ring_to_svc_map;
+	u16 bank_map = 0;
 	int instances;
 	int ret;
 	int i;
@@ -26,19 +32,45 @@ static int adf_crypto_dev_config(struct adf_accel_dev *accel_dev)
 	else
 		instances = 0;
 
+	if (hw_data->get_ring_to_svc_map) {
+		ring_to_svc_map = hw_data->get_ring_to_svc_map(accel_dev);
+	} else {
+		ret = -EFAULT;
+		goto err;
+	}
+
 	for (i = 0; i < instances; i++) {
 		val = i;
 		bank = i * 2;
+
+		if ((bank % hw_data->num_banks_per_vf) == 0)
+			bank_map = ring_to_svc_map & RING_PAIR_0_1_MASK;
+		else
+			bank_map = (ring_to_svc_map & RING_PAIR_2_3_MASK) >>
+					 ADF_CFG_SERV_RING_PAIR_2_SHIFT;
+
+		switch (bank_map) {
+		case (ASYM << ADF_CFG_SERV_RING_PAIR_1_SHIFT) | SYM:
+			sym_bank = bank;
+			asym_bank = bank + 1;
+			break;
+		case (SYM << ADF_CFG_SERV_RING_PAIR_1_SHIFT) | ASYM:
+			asym_bank = bank;
+			sym_bank = bank + 1;
+			break;
+		default:
+			goto err;
+		}
+
 		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_ASYM_BANK_NUM, i);
 		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
-						  key, &bank, ADF_DEC);
+						  key, &asym_bank, ADF_DEC);
 		if (ret)
 			goto err;
 
-		bank += 1;
 		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_BANK_NUM, i);
 		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
-						  key, &bank, ADF_DEC);
+						  key, &sym_bank, ADF_DEC);
 		if (ret)
 			goto err;
 
@@ -213,7 +245,7 @@ static int adf_no_dev_config(struct adf_accel_dev *accel_dev)
  */
 int adf_gen4_dev_config(struct adf_accel_dev *accel_dev)
 {
-	char services[ADF_CFG_MAX_VAL_LEN_IN_BYTES] = {0};
+	u32 svc_mask = 0;
 	int ret;
 
 	ret = adf_cfg_section_add(accel_dev, ADF_KERNEL_SEC);
@@ -224,18 +256,12 @@ int adf_gen4_dev_config(struct adf_accel_dev *accel_dev)
 	if (ret)
 		goto err;
 
-	ret = adf_cfg_get_param_value(accel_dev, ADF_GENERAL_SEC,
-				      ADF_SERVICES_ENABLED, services);
+	ret = adf_get_service_enabled(accel_dev, &svc_mask);
 	if (ret)
 		goto err;
 
-	ret = sysfs_match_string(adf_cfg_services, services);
-	if (ret < 0)
-		goto err;
-
-	switch (ret) {
-	case SVC_CY:
-	case SVC_CY2:
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		ret = adf_crypto_dev_config(accel_dev);
 		break;
 	case SVC_DC:

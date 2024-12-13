@@ -114,20 +114,38 @@ static int adf_sysfs_update_dev_config(struct adf_accel_dev *accel_dev,
 					   ADF_STR);
 }
 
+static int get_service_string(struct adf_accel_dev *accel_dev, const char *in,
+			      size_t in_len, char *out, size_t out_len)
+{
+	u32 mask;
+	int ret;
+
+	ret = adf_service_string_to_mask(accel_dev, in, in_len, &mask);
+	if (ret)
+		return ret;
+
+	if (!mask)
+		return -EINVAL;
+
+	return adf_service_mask_to_string(mask, out, out_len);
+}
+
 static ssize_t cfg_services_store(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
+	char services[ADF_CFG_MAX_VAL_LEN_IN_BYTES] = {'\0'};
 	struct adf_hw_device_data *hw_data;
 	struct adf_accel_dev *accel_dev;
 	int ret;
 
-	ret = sysfs_match_string(adf_cfg_services, buf);
-	if (ret < 0)
-		return ret;
-
 	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
 	if (!accel_dev)
 		return -EINVAL;
+
+	ret = get_service_string(accel_dev, buf, count, services,
+				 ADF_CFG_MAX_VAL_LEN_IN_BYTES);
+	if (ret)
+		return ret;
 
 	if (adf_dev_started(accel_dev)) {
 		dev_info(dev, "Device qat_dev%d must be down to reconfigure the service.\n",
@@ -135,7 +153,7 @@ static ssize_t cfg_services_store(struct device *dev, struct device_attribute *a
 		return -EINVAL;
 	}
 
-	ret = adf_sysfs_update_dev_config(accel_dev, adf_cfg_services[ret]);
+	ret = adf_sysfs_update_dev_config(accel_dev, services);
 	if (ret < 0)
 		return ret;
 

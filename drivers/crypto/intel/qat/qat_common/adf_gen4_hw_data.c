@@ -260,24 +260,37 @@ static const u16 rp_group_to_arb_mask[] = {
 	[RP_GROUP_1] = 0xA,
 };
 
-static bool is_single_service(int service_id)
+static bool is_single_service(u32 service_msk)
 {
-	switch (service_id) {
-	case SVC_DC:
-	case SVC_SYM:
-	case SVC_ASYM:
-		return true;
-	case SVC_CY:
-	case SVC_CY2:
-	case SVC_DCC:
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
-	default:
+	int num_svc = 0;
+
+	num_svc = hweight32(service_msk);
+
+	if (num_svc > 1 || service_msk == SVC_DCC)
 		return false;
+
+	return true;
+}
+
+int adf_gen4_service_supported(u32 service_mask)
+{
+	int num_svc = hweight32(service_mask);
+
+	if (service_mask >= BIT(SVC_ID_COUNT))
+		return -EINVAL;
+
+	switch (num_svc) {
+	case SINGLE_SVC:
+		return 0;
+	case DOUBLE_SVC:
+		if (service_mask & SVC_DCC)
+			return -EINVAL;
+		return 0;
+	default:
+		return -EINVAL;
 	}
 }
+EXPORT_SYMBOL_GPL(adf_gen4_service_supported);
 
 int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 {
@@ -285,8 +298,8 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 	u32 *thd2arb_map = hw_data->thd_to_arb_map;
 	unsigned int ae_cnt, worker_obj_cnt, i, j;
 	unsigned long ae_mask, thds_mask;
-	int srv_id, rp_group;
-	u32 thd2arb_map_base;
+	u32 thd2arb_map_base, svc_mask;
+	int rp_group, ret;
 	u16 arb_mask;
 
 	if (!hw_data->get_rp_group || !hw_data->get_ena_thd_mask ||
@@ -294,15 +307,15 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 	    !hw_data->uof_get_ae_mask)
 		return -EFAULT;
 
-	srv_id = adf_get_service_enabled(accel_dev);
-	if (srv_id < 0)
-		return srv_id;
+	ret = adf_get_service_enabled(accel_dev, &svc_mask);
+	if (ret)
+		return ret;
 
 	ae_cnt = hw_data->get_num_aes(hw_data);
 	worker_obj_cnt = hw_data->uof_get_num_objs(accel_dev) -
 			 ADF_GEN4_ADMIN_ACCELENGINES;
 
-	if (srv_id == SVC_DCC) {
+	if (svc_mask == SVC_DCC) {
 		if (ae_cnt > ICP_QAT_HW_AE_DELIMITER)
 			return -EINVAL;
 
@@ -323,7 +336,7 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 		if (thds_mask == ADF_GEN4_ENA_THD_MASK_ERROR)
 			return -EINVAL;
 
-		if (is_single_service(srv_id))
+		if (is_single_service(svc_mask))
 			arb_mask = rp_group_to_arb_mask[RP_GROUP_0] |
 				   rp_group_to_arb_mask[RP_GROUP_1];
 		else
@@ -345,6 +358,7 @@ u16 adf_gen4_get_ring_to_svc_map(struct adf_accel_dev *accel_dev)
 	enum adf_cfg_service_type rps[RP_GROUP_COUNT] = { };
 	unsigned int ae_mask, start_id, worker_obj_cnt, i;
 	u16 ring_to_svc_map;
+	u32 svc_mask;
 	int rp_group;
 
 	if (!hw_data->get_rp_group || !hw_data->uof_get_ae_mask ||
@@ -352,7 +366,9 @@ u16 adf_gen4_get_ring_to_svc_map(struct adf_accel_dev *accel_dev)
 		return 0;
 
 	/* If dcc, all rings handle compression requests */
-	if (adf_get_service_enabled(accel_dev) == SVC_DCC) {
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return 0;
+	if (svc_mask == SVC_DCC) {
 		for (i = 0; i < RP_GROUP_COUNT; i++)
 			rps[i] = COMP;
 		goto set_mask;
