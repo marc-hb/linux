@@ -1150,6 +1150,30 @@ cleanup:
 	return r;
 }
 
+void kvm_pmu_init_lbr_msr_to_save(void)
+{
+	struct x86_pmu_lbr lbr_cap;
+	int i;
+
+	if (!kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+		return;
+
+	x86_perf_get_lbr(&lbr_cap);
+	if (lbr_cap.nr == 0)
+		return;
+
+	kvm_probe_msr_to_save(MSR_ARCH_LBR_CTL);
+	kvm_probe_msr_to_save(MSR_ARCH_LBR_DEPTH);
+
+	for (i = 0; i < lbr_cap.nr; i++) {
+		kvm_probe_msr_to_save(lbr_cap.from + i);
+		kvm_probe_msr_to_save(lbr_cap.to + i);
+
+		if (lbr_cap.info)
+			kvm_probe_msr_to_save(lbr_cap.info + i);
+	}
+}
+
 void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);

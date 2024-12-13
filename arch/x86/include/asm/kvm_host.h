@@ -555,6 +555,14 @@ struct kvm_pmc {
 #define MSR_IA32_PMC_V6_FX_MSR_END	\
 	(MSR_IA32_PMC_V6_FX0_CFG_C + (KVM_MAX_NR_FIXED_COUNTERS - 1) * MSR_IA32_PMC_V6_STEP)
 
+/*
+ * Maximum LBR stack size is 32, each entry may have up to 3 MSRs:
+ * LBR_x_FROM_IP, LBR_x_TO_IP, LBR_x_INFO.
+ * Plus LBR_CTL and LBR_DEPTH.
+ */
+#define KVM_MAX_NR_ARCH_DEPTH		32
+#define KVM_MAX_NR_ARCH_LBR_MSRS	(KVM_MAX_NR_ARCH_DEPTH * 3 + 2)
+
 struct kvm_pmu {
 	u8 version;
 	unsigned nr_arch_gp_counters;

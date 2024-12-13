@@ -374,7 +374,8 @@ static u32 msrs_to_save_pmu_cntrs[3 * KVM_MAX_NR_FIXED_COUNTERS +
 
 static u32 msrs_to_save[ARRAY_SIZE(msrs_to_save_base) +
 			ARRAY_SIZE(msrs_to_save_pmu_base) +
-			ARRAY_SIZE(msrs_to_save_pmu_cntrs)];
+			ARRAY_SIZE(msrs_to_save_pmu_cntrs) +
+			KVM_MAX_NR_ARCH_LBR_MSRS];
 static unsigned num_msrs_to_save;
 
 static const u32 emulated_msrs_all[] = {
@@ -7400,7 +7401,7 @@ static void kvm_probe_feature_msr(u32 msr_index)
 	msr_based_features[num_msr_based_features++] = msr_index;
 }
 
-static void kvm_probe_msr_to_save(u32 msr_index)
+void kvm_probe_msr_to_save(u32 msr_index)
 {
 	int pebs_format;
 	u32 dummy[2];
@@ -7546,6 +7547,9 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		break;
 	}
 
+	if (WARN_ON(num_msrs_to_save >= (ARRAY_SIZE(msrs_to_save) - 1)))
+		return;
+
 	msrs_to_save[num_msrs_to_save++] = msr_index;
 }
 
@@ -7586,6 +7590,7 @@ static void kvm_init_msr_lists(void)
 			kvm_probe_msr_to_save(msrs_to_save_pmu_base[i]);
 		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu_cntrs); i++)
 			kvm_probe_msr_to_save(msrs_to_save_pmu_cntrs[i]);
+		kvm_pmu_init_lbr_msr_to_save();
 	}
 
 	for (i = 0; i < ARRAY_SIZE(emulated_msrs_all); i++) {

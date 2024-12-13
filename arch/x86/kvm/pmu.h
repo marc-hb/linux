@@ -408,6 +408,7 @@ void kvm_pmu_destroy(struct kvm_vcpu *vcpu);
 int kvm_vm_ioctl_set_pmu_event_filter(struct kvm *kvm, void __user *argp);
 void kvm_pmu_trigger_event(struct kvm_vcpu *vcpu, u64 eventsel);
 bool vcpu_pmu_can_enable(struct kvm_vcpu *vcpu);
+void kvm_pmu_init_lbr_msr_to_save(void);
 void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu);
 void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu);
 void kvm_pmu_put_guest_context(struct kvm_vcpu *vcpu);
