@@ -1223,7 +1223,7 @@ static unsigned long segment_base(u16 selector)
 
 static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
 {
-	return vmx_pt_mode_is_host_guest() &&
+	return guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT) &&
 	       !(vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN);
 }
 
@@ -2095,24 +2095,24 @@ int vmx_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 #endif
 		break;
 	case MSR_IA32_RTIT_CTL:
-		if (!vmx_pt_mode_is_host_guest())
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
 			return 1;
 		msr_info->data = vmx->pt_desc.guest.ctl;
 		break;
 	case MSR_IA32_RTIT_STATUS:
-		if (!vmx_pt_mode_is_host_guest())
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
 			return 1;
 		msr_info->data = vmx->pt_desc.guest.status;
 		break;
 	case MSR_IA32_RTIT_CR3_MATCH:
-		if (!vmx_pt_mode_is_host_guest() ||
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT) ||
 			!intel_pt_validate_cap(vmx->pt_desc.caps,
 						PT_CAP_cr3_filtering))
 			return 1;
 		msr_info->data = vmx->pt_desc.guest.cr3_match;
 		break;
 	case MSR_IA32_RTIT_OUTPUT_BASE:
-		if (!vmx_pt_mode_is_host_guest() ||
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT) ||
 			(!intel_pt_validate_cap(vmx->pt_desc.caps,
 					PT_CAP_topa_output) &&
 			 !intel_pt_validate_cap(vmx->pt_desc.caps,
@@ -2121,7 +2121,7 @@ int vmx_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		msr_info->data = vmx->pt_desc.guest.output_base;
 		break;
 	case MSR_IA32_RTIT_OUTPUT_MASK:
-		if (!vmx_pt_mode_is_host_guest() ||
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT) ||
 			(!intel_pt_validate_cap(vmx->pt_desc.caps,
 					PT_CAP_topa_output) &&
 			 !intel_pt_validate_cap(vmx->pt_desc.caps,
@@ -2131,7 +2131,7 @@ int vmx_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		break;
 	case MSR_IA32_RTIT_ADDR0_A ... MSR_IA32_RTIT_ADDR3_B:
 		index = msr_info->index - MSR_IA32_RTIT_ADDR0_A;
-		if (!vmx_pt_mode_is_host_guest() ||
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT) ||
 		    (index >= 2 * vmx->pt_desc.num_address_ranges))
 			return 1;
 		if (index % 2)
@@ -2402,7 +2402,7 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			return 1;
 		return vmx_set_vmx_msr(vcpu, msr_index, data);
 	case MSR_IA32_RTIT_CTL:
-		if (!vmx_pt_mode_is_host_guest() ||
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT) ||
 			vmx_rtit_ctl_check(vcpu, data))
 			return 1;
 		vmcs_write64(GUEST_IA32_RTIT_CTL, data);
@@ -4179,7 +4179,7 @@ void vmx_msr_filter_changed(struct kvm_vcpu *vcpu)
 	}
 
 	/* PT MSRs can be passed through iff PT is exposed to the guest. */
-	if (vmx_pt_mode_is_host_guest())
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
 		pt_update_intercept_for_msr(vcpu);
 }
 
@@ -7846,6 +7846,7 @@ static void update_intel_pt_cfg(struct kvm_vcpu *vcpu)
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+	bool guest_has_pt;
 
 	/*
 	 * XSAVES is effectively enabled if and only if XSAVE is also exposed
@@ -7873,8 +7874,10 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
 		nested_vmx_cr_fixed1_bits_update(vcpu);
 
-	if (boot_cpu_has(X86_FEATURE_INTEL_PT) &&
-			guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
+	guest_has_pt = kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+		       guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT);
+	guest_cpu_cap_change(vcpu, X86_FEATURE_INTEL_PT, guest_has_pt);
+	if (guest_has_pt)
 		update_intel_pt_cfg(vcpu);
 
 	if (boot_cpu_has(X86_FEATURE_RTM)) {

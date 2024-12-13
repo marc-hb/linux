@@ -1339,7 +1339,7 @@ static void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
 
 static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 {
-	if (vmx_pt_mode_is_system())
+	if (!guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT))
 		return;
 
 	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
@@ -1357,7 +1357,7 @@ static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 
 static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
 {
-	if (vmx_pt_mode_is_system())
+	if (!guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT))
 		return;
 
 	/*
