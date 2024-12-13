@@ -4434,9 +4434,6 @@ static u32 vmx_get_initial_vmentry_ctrl(void)
 {
 	u32 vmentry_ctrl = vmcs_config.vmentry_ctrl;
 
-	if (vmx_pt_mode_is_system())
-		vmentry_ctrl &= ~(VM_ENTRY_PT_CONCEAL_PIP |
-				  VM_ENTRY_LOAD_IA32_RTIT_CTL);
 	/*
 	 * IA32e mode, and loading of EFER and PERF_GLOBAL_CTRL and LBR_CTR
 	 * are toggled dynamically.
@@ -4460,9 +4457,6 @@ static u32 vmx_get_initial_vmexit_ctrl(void)
 	vmexit_ctrl &= ~(VM_EXIT_SAVE_IA32_PAT | VM_EXIT_SAVE_IA32_EFER |
 			 VM_EXIT_SAVE_VMX_PREEMPTION_TIMER);
 
-	if (vmx_pt_mode_is_system())
-		vmexit_ctrl &= ~(VM_EXIT_PT_CONCEAL_PIP |
-				 VM_EXIT_CLEAR_IA32_RTIT_CTL);
 	/* Loading of EFER and PERF_GLOBAL_CTRL and LBR_CTL are toggled dynamically */
 	return vmexit_ctrl &
 		~(VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL | VM_EXIT_LOAD_IA32_EFER |
@@ -4623,8 +4617,6 @@ static u32 vmx_secondary_exec_control(struct vcpu_vmx *vmx)
 
 	u32 exec_control = vmcs_config.cpu_based_2nd_exec_ctrl;
 
-	if (vmx_pt_mode_is_system())
-		exec_control &= ~(SECONDARY_EXEC_PT_USE_GPA | SECONDARY_EXEC_PT_CONCEAL_VMX);
 	if (!cpu_need_virtualize_apic_accesses(vcpu))
 		exec_control &= ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
 	if (vmx->vpid == 0)
@@ -7877,8 +7869,16 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 	guest_has_pt = kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
 		       guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT);
 	guest_cpu_cap_change(vcpu, X86_FEATURE_INTEL_PT, guest_has_pt);
-	if (guest_has_pt)
+	if (guest_has_pt) {
 		update_intel_pt_cfg(vcpu);
+	} else {
+		vm_entry_controls_clearbit(vmx, VM_ENTRY_LOAD_IA32_RTIT_CTL |
+					   VM_ENTRY_PT_CONCEAL_PIP);
+		vm_exit_controls_clearbit(vmx, VM_EXIT_PT_CONCEAL_PIP |
+					  VM_EXIT_CLEAR_IA32_RTIT_CTL);
+		secondary_exec_controls_clearbit(vmx, SECONDARY_EXEC_PT_USE_GPA |
+						 SECONDARY_EXEC_PT_CONCEAL_VMX);
+	}
 
 	if (boot_cpu_has(X86_FEATURE_RTM)) {
 		struct vmx_uret_msr *msr;
