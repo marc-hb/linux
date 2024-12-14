@@ -442,6 +442,7 @@ static DEFINE_PER_CPU(bool, perf_in_guest);
 static inline bool is_include_guest_event(struct perf_event *event)
 {
 	if ((event->pmu->capabilities & PERF_PMU_CAP_MEDIATED_VPMU) &&
+	    !(event->pmu->capabilities & PERF_PMU_CAP_MEDIATED_DISABLED_VPMU) &&
 	    !event->attr.exclude_guest)
 		return true;
 

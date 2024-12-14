@@ -8629,6 +8629,9 @@ __init int vmx_hardware_setup(void)
 	else
 		vt_init_ops.handle_intel_pt_intr = NULL;
 
+	if (enable_mediated_pmu)
+		intel_pt_passthrough(vmx_pt_mode_is_host_guest());
+
 	setup_default_sgx_lepubkeyhash();
 
 	if (nested) {

@@ -1826,6 +1826,15 @@ int is_intel_pt_event(struct perf_event *event)
 	return event->pmu == &pt_pmu.pmu;
 }
 
+void intel_pt_passthrough(bool passthru)
+{
+	if (passthru)
+		pt_pmu.pmu.capabilities &= ~PERF_PMU_CAP_MEDIATED_DISABLED_VPMU;
+	else
+		pt_pmu.pmu.capabilities |= PERF_PMU_CAP_MEDIATED_DISABLED_VPMU;
+}
+EXPORT_SYMBOL_GPL(intel_pt_passthrough);
+
 static __init int pt_init(void)
 {
 	int ret, cpu, prior_warn = 0;
@@ -1866,7 +1875,8 @@ static __init int pt_init(void)
 
 	pt_pmu.pmu.capabilities		|= PERF_PMU_CAP_EXCLUSIVE |
 					   PERF_PMU_CAP_ITRACE |
-					   PERF_PMU_CAP_AUX_PAUSE;
+					   PERF_PMU_CAP_AUX_PAUSE |
+					   PERF_PMU_CAP_MEDIATED_VPMU;
 	pt_pmu.pmu.attr_groups		 = pt_attr_groups;
 	pt_pmu.pmu.task_ctx_nr		 = perf_sw_context;
 	pt_pmu.pmu.event_init		 = pt_event_init;

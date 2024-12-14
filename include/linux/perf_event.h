@@ -306,6 +306,7 @@ struct perf_event_pmu_context;
 #define PERF_PMU_CAP_MORE_EXT_REGS		0x0400
 /* Support to passthrough whole PMU resoure to guest */
 #define PERF_PMU_CAP_MEDIATED_VPMU		0x0800
+#define PERF_PMU_CAP_MEDIATED_DISABLED_VPMU	0x1000
 
 /**
  * pmu::scope
