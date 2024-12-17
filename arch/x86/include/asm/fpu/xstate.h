@@ -68,7 +68,7 @@
  * - Don't set the bit corresponding to the independent supervisor feature in
  *   IA32_XSS at run time, since it has been set at boot time.
  */
-#define XFEATURE_MASK_INDEPENDENT (XFEATURE_MASK_LBR)
+#define XFEATURE_MASK_INDEPENDENT (XFEATURE_MASK_LBR | XFEATURE_MASK_PT)
 
 /*
  * Unsupported supervisor features. When a supervisor feature in this mask is
