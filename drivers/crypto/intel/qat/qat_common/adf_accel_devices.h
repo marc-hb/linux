@@ -97,7 +97,7 @@ enum ras_errors {
 	ADF_RAS_ERRORS,
 };
 
-struct adf_error_counters {
+struct adf_errors {
 	atomic_t counter[ADF_RAS_ERRORS];
 	bool sysfs_added;
 	bool enabled;
@@ -489,7 +489,7 @@ struct adf_accel_dev {
 			u8 pf_compat_ver;
 		} vf;
 	};
-	struct adf_error_counters ras_errors;
+	struct adf_errors ras_errors;
 	struct mutex state_lock; /* protect state of the device */
 	bool is_vf;
 	bool autoreset_on_error;
