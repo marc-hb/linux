@@ -2209,6 +2209,10 @@ static u64 vmx_get_supported_debugctl(struct kvm_vcpu *vcpu, bool host_initiated
 	    (host_initiated || intel_pmu_lbr_is_enabled(vcpu)))
 		debugctl |= DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI;
 
+	if (boot_cpu_has(X86_FEATURE_PDCM) &&
+	    (host_initiated || guest_cpu_cap_has(vcpu, X86_FEATURE_PDCM)))
+		debugctl |= DEBUGCTLMSR_FREEZE_PERFMON_ON_PMI;
+
 	return debugctl;
 }
 
