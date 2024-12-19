@@ -682,6 +682,7 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_IA32_RTIT_OUTPUT_MASK:
 	case MSR_IA32_RTIT_CR3_MATCH:
 	case MSR_IA32_RTIT_ADDR0_A ... MSR_IA32_RTIT_ADDR3_B:
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
 		/* PT MSRs. These are handled in pt_update_intercept_for_msr() */
 	case MSR_LBR_SELECT:
 	case MSR_LBR_TOS:
@@ -1218,12 +1219,6 @@ static unsigned long segment_base(u16 selector)
 	return v;
 }
 #endif
-
-static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
-{
-	return guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT) &&
-	       !(vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN);
-}
 
 static inline bool pt_output_base_valid(struct kvm_vcpu *vcpu, u64 base)
 {
@@ -4152,6 +4147,8 @@ void pt_update_intercept_for_msr(struct kvm_vcpu *vcpu)
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_RTIT_ADDR0_A + i * 2, MSR_TYPE_RW, flag);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_RTIT_ADDR0_B + i * 2, MSR_TYPE_RW, flag);
 	}
+	for (i = 0; i < vmx->pt_desc.num_trigger_msrs; i++)
+		vmx_set_intercept_for_msr(vcpu, MSR_IA32_RTIT_TRIGGER0_CFG + i, MSR_TYPE_RW, flag);
 }
 
 void vmx_msr_filter_changed(struct kvm_vcpu *vcpu)
@@ -7857,6 +7854,10 @@ static void update_intel_pt_cfg(struct kvm_vcpu *vcpu)
 	/* unmask address range configure area */
 	for (i = 0; i < vmx->pt_desc.num_address_ranges; i++)
 		vmx->pt_desc.ctl_bitmask &= ~(0xfULL << (32 + i * 4));
+
+	if (intel_pt_validate_cap(vmx->pt_desc.caps, PT_CAP_trigger_tracing))
+		vmx->pt_desc.num_trigger_msrs = intel_pt_validate_cap(
+			vmx->pt_desc.caps, PT_CAP_num_trigger_msrs);
 }
 
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)

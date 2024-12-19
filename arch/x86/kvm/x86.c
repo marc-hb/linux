@@ -338,6 +338,10 @@ static const u32 msrs_to_save_base[] = {
 	MSR_IA32_RTIT_ADDR1_A, MSR_IA32_RTIT_ADDR1_B,
 	MSR_IA32_RTIT_ADDR2_A, MSR_IA32_RTIT_ADDR2_B,
 	MSR_IA32_RTIT_ADDR3_A, MSR_IA32_RTIT_ADDR3_B,
+	MSR_IA32_RTIT_TRIGGER0_CFG, MSR_IA32_RTIT_TRIGGER0_CFG + 1,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 2, MSR_IA32_RTIT_TRIGGER0_CFG + 3,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 4, MSR_IA32_RTIT_TRIGGER0_CFG + 5,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 6,
 	MSR_IA32_UMWAIT_CONTROL,
 
 	MSR_IA32_XFD, MSR_IA32_XFD_ERR,
@@ -7460,6 +7464,13 @@ void kvm_probe_msr_to_save(u32 msr_index)
 		break;
 	case MSR_PERF_METRICS:
 		if (!(kvm_caps.supported_perf_cap & PERF_CAP_PERF_METRICS))
+			return;
+		break;
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
+		/* PT_CAP_num_trigger_msrs implicitly requires Intel PTTT */
+		if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) ||
+		    (msr_index - MSR_IA32_RTIT_TRIGGER0_CFG >=
+		     intel_pt_validate_hw_cap(PT_CAP_num_trigger_msrs)))
 			return;
 		break;
 	case MSR_ARCH_PERFMON_PERFCTR0 ...

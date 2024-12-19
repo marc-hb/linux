@@ -48,6 +48,7 @@ enum segment_cache_field {
 };
 
 #define RTIT_ADDR_RANGE		4
+#define RTIT_TRIGGER_RANGE	7
 
 struct pt_ctx {
 	u64 ctl;
@@ -57,11 +58,13 @@ struct pt_ctx {
 	u64 cr3_match;
 	u64 addr_a[RTIT_ADDR_RANGE];
 	u64 addr_b[RTIT_ADDR_RANGE];
+	u64 trigger[RTIT_TRIGGER_RANGE];
 };
 
 struct pt_desc {
 	u64 ctl_bitmask;
 	u32 num_address_ranges;
+	u32 num_trigger_msrs;
 	u32 caps[PT_CPUID_REGS_NUM * PT_CPUID_LEAVES];
 	struct pt_ctx host;
 	struct pt_ctx guest;
@@ -784,6 +787,18 @@ static inline bool vmx_can_use_ipiv(struct kvm_vcpu *vcpu)
 static inline void vmx_segment_cache_clear(struct vcpu_vmx *vmx)
 {
 	vmx->segment_cache.bitmask = 0;
+}
+
+static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
+{
+	/*
+	 * SDM: A WRMSR to any of the IA32_RTIT_* configuration MSRs while
+	 * packet generation is enabled (IA32_RTIT_CTL.TraceEn=1) will
+	 * generate a #GP exception. Packet generation must be disabled before
+	 * the configuration MSRs can be changed.
+	 */
+	return guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT) &&
+			     !(vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN);
 }
 
 #endif /* __KVM_X86_VMX_H */

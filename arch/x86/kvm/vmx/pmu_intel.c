@@ -209,6 +209,11 @@ static bool intel_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
 	case MSR_IA32_PEBS_INDEX:
 		ret = pmu->arch_pebs;
 		break;
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
+		ret = vmx_guest_has_intel_pttt(vcpu) &&
+		      ((msr - MSR_IA32_RTIT_TRIGGER0_CFG) <
+				to_vmx(vcpu)->pt_desc.num_trigger_msrs);
+		break;
 	default:
 		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0) ||
 			get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0) ||
@@ -486,6 +491,10 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_IA32_PEBS_INDEX:
 		msr_info->data = pmu->arch_pebs_index;
 		break;
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
+		u32 idx = msr - MSR_IA32_RTIT_TRIGGER0_CFG;
+		msr_info->data = to_vmx(vcpu)->pt_desc.guest.trigger[idx];
+		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
 		    (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC0)) ||
@@ -515,6 +524,97 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		}
 
 		return 1;
+	}
+
+	return 0;
+}
+
+static int _intel_pmu_rtit_trigger_check(struct kvm_vcpu *vcpu,
+					 unsigned long input,
+					 unsigned long action,
+					 unsigned long old_input)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u32 *pt_caps = to_vmx(vcpu)->pt_desc.caps;
+
+	if (test_bit(3, &input) || test_bit(4, &input) || (input > 0x43)) {
+		pr_warn("Program reserved input encoding.");
+		return 1;
+	}
+
+	if (input < 0x28 && !gp_ctr_is_supported(pmu, input & GENMASK(2, 0))) {
+		pr_warn("Program unsupported GP counter");
+		return 1;
+	}
+
+	if (!intel_pt_validate_cap(pt_caps, PT_CAP_dr_match) &&
+	    test_bit(6, &input)) {
+		pr_warn("DR Match is not supported.");
+		return 1;
+	}
+
+	if (!intel_pt_validate_cap(pt_caps, PT_CAP_trigger_attribution)
+	    && (action & BIT(14))) {
+		pr_warn("Trigger attribution is not supported.");
+		return 1;
+	}
+
+	if (!intel_pt_validate_cap(pt_caps, PT_CAP_pause_resume)
+	    && (action & (BIT(12) | BIT(13)))) {
+		pr_warn("Pause/Resume is not supported.");
+		return 1;
+	}
+
+	if (action & BIT(15)) {
+		if ((input != old_input)) {
+			pr_warn("Config input before setting EN bit.");
+			return 1;
+		}
+
+		if (input < 0x28) {
+			struct kvm_pmc *pmc;
+
+			pmc = get_gp_pmc_from_idx(pmu, input & GENMASK(2, 0));
+			if (pmc && !(pmc->eventsel & ARCH_PERFMON_EVENTSEL_EN_PT_LOG)) {
+				pr_warn("EVTSELx.EN_PT_LOG not set.");
+				return 1;
+			}
+		} else {
+			unsigned long dr7 = kvm_get_dr(vcpu, 7);
+
+			if (!test_bit(32 + input - 0x40, &dr7)) {
+				pr_warn("DR7.DRx_PT_LOG not set.");
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+/*
+ *  Note: sanity check but doesn't inject #GP, since unsupported encodings in
+ *  IA32_RTIT_TRIGGERx_CFG may not generate a fault.
+ */
+static int intel_pmu_rtit_trigger_check(struct kvm_vcpu *vcpu, u64 data,
+					u64 old)
+{
+	unsigned long input, action, old_input;
+	int i;
+
+	if (data & RTIT_TRIGGER_RESERVED) {
+		pr_warn("Write reserved bits.");
+		return 1;
+	}
+
+	for (i = 0; i < 64; i += 16) {
+		input = (data >> i) & GENMASK(6, 0);
+		action = (data >> i) & GENMASK(15, 12);
+		old_input = (old >> i) & GENMASK(6, 0);
+
+		if (_intel_pmu_rtit_trigger_check(vcpu, input, action,
+						  old_input))
+			return 1;
 	}
 
 	return 0;
@@ -587,6 +687,15 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			return 1;
 
 		pmu->arch_pebs_index = msr_info->data;
+		break;
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
+		struct vcpu_vmx *vmx = to_vmx(vcpu);
+		int idx = msr - MSR_IA32_RTIT_TRIGGER0_CFG;
+
+		if (!pt_can_write_msr(vmx))
+			return 1;
+		intel_pmu_rtit_trigger_check(vcpu, data, vmx->pt_desc.guest.trigger[idx]);
+		vmx->pt_desc.guest.trigger[idx] = data;
 		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
@@ -1323,8 +1432,9 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 	}
 }
 
-static void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
+static void pt_load_msr(struct pt_desc *pt_desc, bool is_host)
 {
+	struct pt_ctx *ctx = is_host ? &pt_desc->host : &pt_desc->guest;
 	u32 i;
 
 	wrmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
@@ -1332,14 +1442,18 @@ static void pt_load_msr(struct pt_ctx *ctx, u32 addr_range)
 	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
 	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
 
-	for (i = 0; i < addr_range; i++) {
+	for (i = 0; i < pt_desc->num_address_ranges; i++) {
 		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
 		wrmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
 	}
+
+	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
+		wrmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, ctx->trigger[i]);
 }
 
-static void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
+static void pt_save_msr(struct pt_desc *pt_desc, bool is_host)
 {
+	struct pt_ctx *ctx = is_host ? &pt_desc->host : &pt_desc->guest;
 	u32 i;
 
 	rdmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
@@ -1347,10 +1461,13 @@ static void pt_save_msr(struct pt_ctx *ctx, u32 addr_range)
 	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
 	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
 
-	for (i = 0; i < addr_range; i++) {
+	for (i = 0; i < pt_desc->num_address_ranges; i++) {
 		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
 		rdmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
 	}
+
+	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
+		rdmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, ctx->trigger[i]);
 }
 
 static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
@@ -1359,8 +1476,8 @@ static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 		return;
 
 	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
-		pt_save_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
-		pt_load_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
+		pt_save_msr(&vmx->pt_desc, false);
+		pt_load_msr(&vmx->pt_desc, true);
 	}
 
 	/*
@@ -1393,8 +1510,8 @@ static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
 	wrmsrl(MSR_IA32_RTIT_CTL, 0);
 
 	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
-		pt_save_msr(&vmx->pt_desc.host, vmx->pt_desc.num_address_ranges);
-		pt_load_msr(&vmx->pt_desc.guest, vmx->pt_desc.num_address_ranges);
+		pt_save_msr(&vmx->pt_desc, true);
+		pt_load_msr(&vmx->pt_desc, false);
 	}
 }
 
