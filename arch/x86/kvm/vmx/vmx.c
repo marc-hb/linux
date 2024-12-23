@@ -160,10 +160,10 @@ module_param(enable_mediated_pmu, bool, 0444);
 
 #define RMODE_GUEST_OWNED_EFLAGS_BITS (~(X86_EFLAGS_IOPL | X86_EFLAGS_VM))
 
-#define MSR_IA32_RTIT_STATUS_MASK (~(RTIT_STATUS_FILTEREN | \
+#define RTIT_STATUS_VOLATILE_BITMASK (RTIT_STATUS_FILTEREN | \
 	RTIT_STATUS_CONTEXTEN | RTIT_STATUS_TRIGGEREN | \
 	RTIT_STATUS_ERROR | RTIT_STATUS_STOPPED | \
-	RTIT_STATUS_BYTECNT))
+	RTIT_STATUS_BYTECNT)
 
 /*
  * List of MSRs that can be directly passed to the guest.
@@ -2408,9 +2408,13 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		pt_update_intercept_for_msr(vcpu);
 		break;
 	case MSR_IA32_RTIT_STATUS:
+		u64 mask = RTIT_STATUS_VOLATILE_BITMASK;
+
 		if (!pt_can_write_msr(vmx))
 			return 1;
-		if (data & MSR_IA32_RTIT_STATUS_MASK)
+		if (vmx_guest_has_intel_pttt(vcpu))
+			mask |= RTIT_STATUS_PAUSED;
+		if (data & ~mask)
 			return 1;
 		vmx->pt_desc.guest.status = data;
 		break;
