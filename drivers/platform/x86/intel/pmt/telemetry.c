@@ -371,14 +371,22 @@ static void pmt_telem_remove(struct auxiliary_device *auxdev)
 		intel_pmt_dev_destroy(entry, &pmt_telem_ns);
 	}
 	mutex_unlock(&ep_lock);
-};
+}
 
 static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxiliary_device_id *id)
 {
 	struct intel_vsec_device *intel_vsec_dev = auxdev_to_ivdev(auxdev);
 	struct pmt_telem_priv *priv;
+	unsigned long needs;
 	size_t size;
 	int i, ret;
+
+	needs = BIT(OOBMSM_SUP_PLAT_INFO) |
+		BIT(OOBMSM_SUP_DISC_INFO);
+
+	ret = intel_vsec_suppliers_ready(intel_vsec_dev, needs);
+	if (ret)
+		return ret;
 
 	size = struct_size(priv, entry, intel_vsec_dev->num_resources);
 	priv = devm_kzalloc(&auxdev->dev, size, GFP_KERNEL);
@@ -438,3 +446,4 @@ MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
 MODULE_DESCRIPTION("Intel PMT Telemetry driver");
 MODULE_LICENSE("GPL v2");
 MODULE_IMPORT_NS("INTEL_PMT");
+MODULE_IMPORT_NS("INTEL_VSEC");
