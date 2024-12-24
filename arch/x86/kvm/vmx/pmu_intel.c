@@ -731,10 +731,66 @@ static inline void intel_update_msr_base(struct kvm_vcpu *vcpu)
 	}
 }
 
-static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
+static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+	u64 perf_capabilities;
+
+	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
+
+	pmu->arch_lbr_ctrl_rsvd = ~(0xfull | 0x7f0000ull);
+
+	/*
+	 * Legacy LBR is only available in legacy vPMU and Arch LBR is only
+	 * available in mediated vPMU
+	 */
+	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
+	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
+	   ((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
+	   (cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
+		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
+	else
+		lbr_desc->records.nr = 0;
+
+	/*
+	 * The LBR depth is determined by host capability and it won't be
+	 * changed by userspace.
+	 */
+	if (lbr_desc->records.nr && kvm_mediated_pmu_enabled(vcpu) &&
+	    !lbr_desc->state) {
+		size_t content_size = sizeof(union arch_lbr_xsave_state) +
+			lbr_desc->records.nr * sizeof(struct lbr_entry);
+
+		lbr_desc->state = (union arch_lbr_xsave_state *)
+				  kzalloc(content_size, GFP_KERNEL);
+		if (!lbr_desc->state)
+			lbr_desc->records.nr = 0;
+		else
+			/*
+			 * For guest LBR context switch, XRSTORS is called
+			 * before first XSAVES is called.  XRSTORS requires
+			 * XCOMP_BV[63] to be set.
+			 *
+			 * We leave XSTATE_BV[15] to zero so that the first
+			 * XRSTORS instruction serves the purpose to set the
+			 * Arch LBR state component to it's initial configuration:
+			 * all MSR to be 0, besides IA32_LBR_DEPTH.
+			 *
+			 * The subsequent XSAVES updates XCOMP_BV and XSTATE_BV
+			 * from RFBM, which set bit 15 to each of them.
+			 **/
+			lbr_desc->state->header.xcomp_bv = XCOMP_BV_COMPACTED_FORMAT;
+	}
+
+	/* Legacy LBR is only enabled on legacy perf-based vPMU. */
+	if (lbr_desc->records.nr && !kvm_mediated_pmu_enabled(vcpu))
+		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
+}
+
+static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct kvm_cpuid_entry2 *entry;
 	struct kvm_cpuid_entry2 *entry23_0 = NULL;
 	struct kvm_cpuid_entry2 *entry23_1 = NULL;
@@ -747,8 +803,6 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	u64 fixed_bits;
 	u64 gp_bits;
 	int i;
-
-	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
 
 	/* CPUID 0xa leaf */
 	entry = kvm_find_cpuid_entry(vcpu, 0xa);
@@ -865,56 +919,11 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
 
-	pmu->arch_lbr_ctrl_rsvd = ~(0xfull | 0x7f0000ull);
-
-	/*
-	 * Legacy LBR is only available in legacy vPMU and Arch LBR is only
-	 * available in mediated vPMU
-	 */
-	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
-	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
-	   ((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
-	   (cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
-		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
-	else
-		lbr_desc->records.nr = 0;
-
-	/*
-	 * The LBR depth is determined by host capability and it won't be
-	 * changed by userspace.
-	 */
-	if (lbr_desc->records.nr && kvm_mediated_pmu_enabled(vcpu) &&
-	    !lbr_desc->state) {
-		size_t content_size = sizeof(union arch_lbr_xsave_state) +
-			lbr_desc->records.nr * sizeof(struct lbr_entry);
-
-		lbr_desc->state = (union arch_lbr_xsave_state *)
-				  kzalloc(content_size, GFP_KERNEL);
-		if (!lbr_desc->state)
-			lbr_desc->records.nr = 0;
-		else
-			/*
-			 * For guest LBR context switch, XRSTORS is called
-			 * before first XSAVES is called.  XRSTORS requires
-			 * XCOMP_BV[63] to be set.
-			 *
-			 * We leave XSTATE_BV[15] to zero so that the first
-			 * XRSTORS instruction serves the purpose to set the
-			 * Arch LBR state component to it's initial configuration:
-			 * all MSR to be 0, besides IA32_LBR_DEPTH.
-			 *
-			 * The subsequent XSAVES updates XCOMP_BV and XSTATE_BV
-			 * from RFBM, which set bit 15 to each of them.
-			 **/
-			lbr_desc->state->header.xcomp_bv = XCOMP_BV_COMPACTED_FORMAT;
-	}
-
-	/* Legacy LBR is only enabled on legacy perf-based vPMU. */
-	if (lbr_desc->records.nr && !kvm_mediated_pmu_enabled(vcpu))
-		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
+	__intel_pmu_refresh_lbr(vcpu);
 
 	fixed_bits = fixed_ctrs_bitmap(pmu);
 	gp_bits = gp_ctrs_bitmap(pmu);
+	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
 	if (perf_capabilities & PERF_CAP_PEBS_FORMAT) {
 		if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
 			pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd;
