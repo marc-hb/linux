@@ -585,6 +585,10 @@ static int pmt_features_probe(struct auxiliary_device *auxdev, const struct auxi
 		pmt_features_add_feat(feature);
 	}
 
+	ret = intel_oobmsm_set_supplier(NULL, ivdev, OOBMSM_SUP_DISC_INFO);
+	if (ret)
+		goto abort_probe;
+
 	return 0;
 
 abort_probe:
@@ -621,3 +625,4 @@ MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
 MODULE_DESCRIPTION("Intel PMT Discovery driver");
 MODULE_LICENSE("GPL");
 MODULE_IMPORT_NS("INTEL_PMT");
+MODULE_IMPORT_NS("INTEL_VSEC");
