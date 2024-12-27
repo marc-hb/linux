@@ -163,15 +163,19 @@ struct oobmsm_mapping_supplier {
 	unsigned long features;
 };
 
-struct pmt_events {
+struct telemetry_region {
 	struct oobmsm_plat_info	plat_info;
-	u32			guid;
 	void __iomem		*addr;
+	size_t			size;
+	u32			guid;
+	u32			num_rmids;
 };
 
-struct pmt_event_group {
+struct pmt_feature_group {
+	enum pmt_feature_id	id;
+	int			count;
 	struct kref		kref;
-	struct pmt_events	events[];
+	struct telemetry_region	regions[];
 };
 
 int intel_vsec_add_aux(struct pci_dev *pdev, struct device *parent,
