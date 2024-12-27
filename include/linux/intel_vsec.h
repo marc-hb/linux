@@ -4,6 +4,7 @@
 
 #include <linux/auxiliary_bus.h>
 #include <linux/bits.h>
+#include <linux/intel_pmt_features.h>
 
 #define VSEC_CAP_TELEMETRY	BIT(0)
 #define VSEC_CAP_WATCHER	BIT(1)
@@ -212,4 +213,19 @@ static inline int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
 	return -ENODEV;
 }
 #endif
+
+#if IS_ENABLED(CONFIG_INTEL_PMT_TELEMETRY)
+struct pmt_feature_group *
+intel_pmt_get_regions_by_feature(enum pmt_feature_id id);
+
+void intel_pmt_put_feature_group(struct pmt_feature_group *feature_group);
+#else
+static inline struct pmt_feature_group *
+intel_pmt_get_regions_by_feature(enum pmt_feature_id id)
+{ return ERR_PTR(-ENODEV); }
+
+static inline void
+intel_pmt_put_feature_group(struct pmt_feature_group *feature_group) {}
+#endif
+
 #endif

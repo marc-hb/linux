@@ -207,6 +207,93 @@ unlock:
 }
 EXPORT_SYMBOL_NS_GPL(pmt_telem_get_endpoint_info, "INTEL_PMT_TELEMETRY");
 
+static int pmt_copy_region(struct telemetry_region *region,
+			   struct intel_pmt_entry *entry)
+{
+	struct oobmsm_mapping_supplier *mapping_supplier;
+
+	mapping_supplier = dev_get_drvdata(&entry->ep->pcidev->dev);
+	if (!mapping_supplier)
+		return -ENODEV;
+
+	region->plat_info = mapping_supplier->plat_info;
+	region->guid = entry->guid;
+	region->addr = entry->ep->base;
+	region->size = entry->size;
+	region->num_rmids = entry->num_rmids;
+
+	return 0;
+}
+
+static void pmt_feature_group_release(struct kref *kref)
+{
+	struct pmt_feature_group *feature_group;
+
+	feature_group = container_of(kref, struct pmt_feature_group, kref);
+	kfree(feature_group);
+}
+
+struct pmt_feature_group *intel_pmt_get_regions_by_feature(enum pmt_feature_id id)
+{
+	struct pmt_feature_group *feature_group;
+	struct telemetry_region *region;
+	struct intel_pmt_entry *entry;
+	unsigned long idx;
+	int count = 0;
+	size_t size;
+
+	if (!pmt_feature_id_is_valid(id))
+		return ERR_PTR(-EINVAL);
+
+	mutex_lock(&ep_lock);
+	xa_for_each(&telem_array, idx, entry)
+		if (entry->feature_flags & BIT(id))
+			++count;
+
+	if (!count) {
+		mutex_unlock(&ep_lock);
+		return ERR_PTR(-ENOENT);
+	}
+
+	size = struct_size(feature_group, regions, count);
+	feature_group = kmalloc(size, GFP_KERNEL);
+	if (!feature_group) {
+		mutex_unlock(&ep_lock);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	feature_group->count = count;
+
+	region = feature_group->regions;
+	xa_for_each(&telem_array, idx, entry) {
+		int ret;
+
+		if (!(entry->feature_flags & BIT(id)))
+			continue;
+
+		ret = pmt_copy_region(region, entry);
+		if (ret) {
+			kfree(feature_group);
+			mutex_unlock(&ep_lock);
+			return ERR_PTR(ret);
+		}
+		++region;
+	}
+
+	kref_init(&feature_group->kref);
+
+	mutex_unlock(&ep_lock);
+
+	return feature_group;
+}
+EXPORT_SYMBOL(intel_pmt_get_regions_by_feature);
+
+void intel_pmt_put_feature_group(struct pmt_feature_group *feature_group)
+{
+	kref_put(&feature_group->kref, pmt_feature_group_release);
+}
+EXPORT_SYMBOL(intel_pmt_put_feature_group);
+
 int pmt_telem_read(struct telem_endpoint *ep, u32 id, u64 *data, u32 count)
 {
 	u32 offset, size;
