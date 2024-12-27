@@ -67,6 +67,9 @@ enum intel_vsec_quirks {
 
 	/* Platforms requiring quirk in the auxiliary driver */
 	VSEC_QUIRK_EARLY_HW     = BIT(4),
+
+	/* OOBMSM */
+	VSEC_QUIRK_OOBMSM       = BIT(5),
 };
 
 /**
@@ -148,10 +151,35 @@ struct oobmsm_plat_info {
 	u8 function_number;
 };
 
+enum oobmsm_supplier_type {
+	OOBMSM_SUP_PLAT_INFO,
+	OOBMSM_SUP_DISC_INFO,
+	OOBMSM_SUP_TYPE_MAX
+};
+
+struct oobmsm_mapping_supplier {
+	struct device *supplier_dev[OOBMSM_SUP_TYPE_MAX];
+	struct oobmsm_plat_info plat_info;
+	unsigned long features;
+};
+
+struct pmt_events {
+	struct oobmsm_plat_info	plat_info;
+	u32			guid;
+	void __iomem		*addr;
+};
+
+struct pmt_event_group {
+	struct kref		kref;
+	struct pmt_events	events[];
+};
+
 int intel_vsec_add_aux(struct pci_dev *pdev, struct device *parent,
 		       struct intel_vsec_device *intel_vsec_dev,
 		       const char *name);
 
+int intel_vsec_suppliers_ready(struct intel_vsec_device *vsec_dev,
+			       unsigned long needs);
 static inline struct intel_vsec_device *dev_to_ivdev(struct device *dev)
 {
 	return container_of(dev, struct intel_vsec_device, auxdev.dev);
@@ -165,10 +193,19 @@ static inline struct intel_vsec_device *auxdev_to_ivdev(struct auxiliary_device 
 #if IS_ENABLED(CONFIG_INTEL_VSEC)
 void intel_vsec_register(struct pci_dev *pdev,
 			 struct intel_vsec_platform_info *info);
+int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
+			      struct intel_vsec_device *vsec_dev,
+			      enum oobmsm_supplier_type type);
 #else
 static inline void intel_vsec_register(struct pci_dev *pdev,
 				       struct intel_vsec_platform_info *info)
 {
+}
+static inline int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
+					    struct intel_vsec_device *vsec_dev,
+					    enum oobmsm_supplier_type type)
+{
+	return -ENODEV;
 }
 #endif
 #endif
