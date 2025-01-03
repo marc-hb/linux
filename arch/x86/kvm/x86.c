@@ -89,7 +89,6 @@
 #define CREATE_TRACE_POINTS
 #include "trace.h"
 
-#define MAX_IO_MSRS 256
 #define KVM_MAX_MCE_BANKS 32
 
 /*
@@ -4544,7 +4543,7 @@ static int msr_io(struct kvm_vcpu *vcpu, struct kvm_msrs __user *user_msrs,
 		goto out;
 
 	r = -E2BIG;
-	if (msrs.nmsrs >= MAX_IO_MSRS)
+	if (msrs.nmsrs > KVM_MAX_IO_MSRS)
 		goto out;
 
 	size = sizeof(struct kvm_msr_entry) * msrs.nmsrs;
