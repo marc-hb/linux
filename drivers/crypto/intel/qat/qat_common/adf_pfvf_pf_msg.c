@@ -88,14 +88,20 @@ int adf_pf_capabilities_msg_provider(struct adf_accel_dev *accel_dev,
 				     u8 *buffer, u8 compat)
 {
 	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-	struct capabilities_v2 caps_msg;
+	struct capabilities_v4 caps_msg;
 
 	caps_msg.ext_dc_caps = hw_data->extended_dc_capabilities;
 	caps_msg.capabilities = hw_data->accel_capabilities_mask;
+	caps_msg.comp_algos = hw_data->fw_dc_caps.comp_algos;
+	caps_msg.cksum_algos = hw_data->fw_dc_caps.cksum_algos;
+	caps_msg.deflate_caps = hw_data->fw_dc_caps.deflate_caps;
+	caps_msg.lz4_caps = hw_data->fw_dc_caps.lz4_caps;
+	caps_msg.lz4s_caps = hw_data->fw_dc_caps.lz4s_caps;
+	caps_msg.zstd_caps = hw_data->fw_dc_caps.zstd_caps;
 
-	caps_msg.hdr.version = ADF_PFVF_CAPABILITIES_V2_VERSION;
+	caps_msg.hdr.version = ADF_PFVF_CAPABILITIES_V4_VERSION;
 	caps_msg.hdr.payload_size =
-			ADF_PFVF_BLKMSG_PAYLOAD_SIZE(struct capabilities_v2);
+			ADF_PFVF_BLKMSG_PAYLOAD_SIZE(struct capabilities_v4);
 
 	memcpy(buffer, &caps_msg, sizeof(caps_msg));
 

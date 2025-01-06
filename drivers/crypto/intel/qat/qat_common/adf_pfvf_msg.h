@@ -235,6 +235,7 @@ enum blkmsg_capabilities_versions {
 	ADF_PFVF_CAPABILITIES_V1_VERSION	= 0x01,
 	ADF_PFVF_CAPABILITIES_V2_VERSION	= 0x02,
 	ADF_PFVF_CAPABILITIES_V3_VERSION	= 0x03,
+	ADF_PFVF_CAPABILITIES_V4_VERSION	= 0x04,
 };
 
 struct capabilities_v1 {
@@ -253,6 +254,19 @@ struct capabilities_v3 {
 	u32 ext_dc_caps;
 	u32 capabilities;
 	u32 frequency;
+} __packed;
+
+struct capabilities_v4 {
+	struct pfvf_blkmsg_header hdr;
+	u32 ext_dc_caps;
+	u32 capabilities;
+	u32 frequency;
+	u16 comp_algos;
+	u16 cksum_algos;
+	u32 deflate_caps;
+	u16 lz4_caps;
+	u16 lz4s_caps;
+	u16 zstd_caps;
 } __packed;
 
 /* PF/VF Ring to service mapping values */

@@ -233,6 +233,7 @@ static int adf_get_dc_capabilities(struct adf_accel_dev *accel_dev,
 	struct adf_hw_device_data *hw_device = accel_dev->hw_device;
 	struct icp_qat_fw_init_admin_resp resp;
 	struct icp_qat_fw_init_admin_req req;
+	struct adf_fw_dc_caps fw_comp_caps = {0};
 	unsigned long ae_mask;
 	unsigned long ae;
 	int ret;
@@ -251,7 +252,14 @@ static int adf_get_dc_capabilities(struct adf_accel_dev *accel_dev,
 			return ret;
 
 		*capabilities |= resp.extended_features;
+		fw_comp_caps.comp_algos |= resp.compression_algos;
+		fw_comp_caps.cksum_algos |= resp.checksum_algos;
+		fw_comp_caps.deflate_caps |= resp.deflate_capabilities;
+		fw_comp_caps.lz4_caps |= resp.lz4_capabilities;
+		fw_comp_caps.lz4s_caps |= resp.lz4s_capabilities;
+		fw_comp_caps.zstd_caps |= resp.zstd_capabilities;
 	}
+	hw_device->fw_dc_caps = fw_comp_caps;
 
 	return 0;
 }

@@ -144,8 +144,10 @@ struct icp_qat_fw_init_admin_resp {
 			__u16 compression_algos;
 			__u16 checksum_algos;
 			__u32 deflate_capabilities;
-			__u32 resrvd6;
-			__u32 lzs_capabilities;
+			__u16 lz4_capabilities;
+			__u16 resrvd6;
+			__u16 lz4s_capabilities;
+			__u16 zstd_capabilities;
 		};
 		struct {
 			__u32 cipher_algos;

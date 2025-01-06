@@ -304,6 +304,15 @@ struct adf_dev_err_mask {
 	u32 ssmfeatren_mask;
 };
 
+struct adf_fw_dc_caps {
+	u16 comp_algos;
+	u16 cksum_algos;
+	u32 deflate_caps;
+	u16 lz4_caps;
+	u16 lz4s_caps;
+	u16 zstd_caps;
+};
+
 struct adf_hw_device_data {
 	struct adf_hw_device_class *dev_class;
 	u32 (*get_accel_mask)(struct adf_hw_device_data *self);
@@ -376,6 +385,7 @@ struct adf_hw_device_data {
 	struct adf_anti_rb_hw_data anti_rb_data;
 	struct adf_kpt_hw_data kpt_data;
 	struct qat_migdev_ops vfmig_ops;
+	struct adf_fw_dc_caps fw_dc_caps;
 	const char *fw_name;
 	const char *fw_mmp_name;
 	u32 fuses[ADF_MAX_FUSES];
