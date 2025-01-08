@@ -178,4 +178,8 @@ int adf_gen4_bank_state_save(struct adf_accel_dev *accel_dev, u32 bank_number,
 int adf_gen4_bank_state_restore(struct adf_accel_dev *accel_dev,
 				u32 bank_number, struct bank_state *state);
 void adf_gen4_init_dc_ops(struct adf_dc_ops *dc_ops);
+u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
+			     enum adf_cfg_service_type svc_type);
+u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				  struct rl_slice_cnt *slices);
 #endif

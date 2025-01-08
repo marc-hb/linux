@@ -544,3 +544,33 @@ void adf_gen4_init_dc_ops(struct adf_dc_ops *dc_ops)
 	dc_ops->build_decomp_dc_hw_block = adf_gen4_build_decomp_dc_hw_block;
 }
 EXPORT_SYMBOL_GPL(adf_gen4_init_dc_ops);
+
+u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
+			     enum adf_cfg_service_type svc_type)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+	u32 ae_cnt;
+
+	ae_cnt = hw_data->get_num_aes(hw_data);
+	if (!ae_cnt)
+		return 0;
+
+	return ae_cnt - 1;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_get_num_svc_aes);
+
+u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				  struct rl_slice_cnt *slices)
+{
+	switch (svc) {
+	case SYM:
+		return slices->cph_cnt;
+	case ASYM:
+		return slices->pke_cnt;
+	case COMP:
+		return slices->dcpr_cnt;
+	default:
+		return 0;
+	}
+}
+EXPORT_SYMBOL_GPL(adf_gen4_get_rl_svc_slice_cnt);
