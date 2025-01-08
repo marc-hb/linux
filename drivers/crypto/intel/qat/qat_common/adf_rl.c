@@ -552,27 +552,17 @@ u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 				  enum adf_base_services svc_type)
 {
 	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
+	enum adf_cfg_service_type cfg_svc_type = srv_to_cfg_svc_type(svc_type);
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 	u64 avail_slice_cycles, allocated_tokens;
 
 	if (!sla_val)
 		return 0;
 
+	/* Handle generation specific slice count adjustment */
 	avail_slice_cycles = hw_data->clock_frequency;
-
-	switch (svc_type) {
-	case ADF_SVC_ASYM:
-		avail_slice_cycles *= device_data->slices.pke_cnt;
-		break;
-	case ADF_SVC_SYM:
-		avail_slice_cycles *= device_data->slices.cph_cnt;
-		break;
-	case ADF_SVC_DC:
-		avail_slice_cycles *= device_data->slices.dcpr_cnt;
-		break;
-	default:
-		break;
-	}
+	avail_slice_cycles *=
+		hw_data->get_rl_svc_slice_cnt(cfg_svc_type, &device_data->slices);
 
 	do_div(avail_slice_cycles, device_data->scan_interval);
 	allocated_tokens = avail_slice_cycles * sla_val;
@@ -584,6 +574,7 @@ u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 u32 adf_rl_calculate_ae_cycles(struct adf_accel_dev *accel_dev, u32 sla_val,
 			       enum adf_base_services svc_type)
 {
+	enum adf_cfg_service_type arb_srv = srv_to_cfg_svc_type(svc_type);
 	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 	u64 allocated_ae_cycles, avail_ae_cycles;
@@ -592,7 +583,7 @@ u32 adf_rl_calculate_ae_cycles(struct adf_accel_dev *accel_dev, u32 sla_val,
 		return 0;
 
 	avail_ae_cycles = hw_data->clock_frequency;
-	avail_ae_cycles *= hw_data->get_num_aes(hw_data) - 1;
+	avail_ae_cycles *= hw_data->get_num_svc_aes(accel_dev, arb_srv);
 	do_div(avail_ae_cycles, device_data->scan_interval);
 
 	sla_val *= device_data->max_tp[svc_type];

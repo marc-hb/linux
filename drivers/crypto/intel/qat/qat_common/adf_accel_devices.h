@@ -356,6 +356,10 @@ struct adf_hw_device_data {
 	int (*dev_config)(struct adf_accel_dev *accel_dev);
 	bool (*services_supported)(unsigned long mask);
 	void (*set_cmdq_cnt)(struct adf_accel_dev *accel_dev);
+	u32 (*get_num_svc_aes)(struct adf_accel_dev *accel_dev,
+			       enum adf_cfg_service_type svc_type);
+	u32 (*get_rl_svc_slice_cnt)(enum adf_cfg_service_type svc,
+				    struct rl_slice_cnt *slices);
 	struct adf_pfvf_ops pfvf_ops;
 	struct adf_hw_csr_ops csr_ops;
 	struct adf_dc_ops dc_ops;
