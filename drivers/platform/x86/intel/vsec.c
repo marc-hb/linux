@@ -725,6 +725,11 @@ static const struct vsec_feature_dependency oobmsm_deps[] = {
 		.feature = VSEC_CAP_TELEMETRY,
 		.supplier_bitmap = VSEC_CAP_DISCOVERY | VSEC_CAP_TPMI,
 	},
+	{
+		.feature = VSEC_CAP_S3M,
+		.supplier_bitmap = VSEC_CAP_DISCOVERY | VSEC_CAP_TPMI |
+				   VSEC_CAP_TELEMETRY,
+	},
 };
 
 /* OOBMSM info */
