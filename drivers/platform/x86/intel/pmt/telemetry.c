@@ -389,6 +389,7 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 	if (ret)
 		return ret;
 
+	dev_info(&auxdev->dev, "starting probe\n");
 	size = struct_size(priv, entry, intel_vsec_dev->num_resources);
 	priv = devm_kzalloc(&auxdev->dev, size, GFP_KERNEL);
 	if (!priv)
@@ -398,6 +399,9 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 
 	for (i = 0; i < intel_vsec_dev->num_resources; i++) {
 		struct intel_pmt_entry *entry = &priv->entry[priv->num_entries];
+
+		dev_info(&auxdev->dev, "getting resource %d of %d\n", i + 1,
+			 intel_vsec_dev->num_resources);
 
 		mutex_lock(&ep_lock);
 		ret = intel_pmt_dev_create(entry, &pmt_telem_ns, intel_vsec_dev, i);
@@ -412,9 +416,11 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 		intel_pmt_get_features(entry);
 	}
 
+	dev_info(&auxdev->dev, "probe success\n");
 	return 0;
 abort_probe:
 	pmt_telem_remove(auxdev);
+	dev_info(&auxdev->dev, "probe returning %d\n", ret);
 	return ret;
 }
 
