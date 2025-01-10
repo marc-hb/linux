@@ -450,6 +450,9 @@ intel_vsec_prewalk(struct pci_dev *pdev, struct intel_vsec_platform_info *info)
 			case VSEC_ID_TPMI:
 				supplier->features |= BIT(OOBMSM_SUP_PLAT_INFO);
 				break;
+			case VSEC_ID_S3M:
+				supplier->features |= BIT(OOBMSM_SUP_S3M_SIMICS);
+				break;
 			default:
 				break;
 		}

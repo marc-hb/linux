@@ -325,7 +325,14 @@ static int s3m_probe(struct auxiliary_device *auxdev, const struct auxiliary_dev
 	struct s3m_if_cmd *resp __free(kfree) = NULL;
 	struct s3m_if_cmd *req __free(kfree) = NULL;
 	struct s3m_priv *priv;
+	unsigned long needs;
 	int ret;
+
+	needs = BIT(OOBMSM_SUP_PLAT_INFO);
+
+	ret = intel_vsec_suppliers_ready(intel_vsec_dev, needs);
+	if (ret)
+		return ret;
 
 	priv = devm_kzalloc(&auxdev->dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -385,8 +392,14 @@ static int s3m_probe(struct auxiliary_device *auxdev, const struct auxiliary_dev
 
 	auxiliary_set_drvdata(auxdev, priv);
 
-	return ret;
+	ret = intel_oobmsm_set_supplier(NULL, intel_vsec_dev, OOBMSM_SUP_S3M_SIMICS);
+	if (ret)
+		goto unregister_misc;
 
+	return 0;
+
+unregister_misc:
+	misc_deregister(&priv->miscdev);
 erase_xarray:
 	xa_erase(&s3m_array, priv->id);
 
@@ -420,3 +433,4 @@ module_exit(s3m_driver_exit);
 MODULE_AUTHOR("Will Skrydlak <will.j.skrydlak@linux.intel.com>");
 MODULE_DESCRIPTION("Intel S3M bridge driver.");
 MODULE_LICENSE("GPL");
+MODULE_IMPORT_NS("INTEL_VSEC");

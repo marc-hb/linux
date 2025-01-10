@@ -157,6 +157,7 @@ struct oobmsm_plat_info {
 enum oobmsm_supplier_type {
 	OOBMSM_SUP_PLAT_INFO,
 	OOBMSM_SUP_DISC_INFO,
+	OOBMSM_SUP_S3M_SIMICS,
 	OOBMSM_SUP_TYPE_MAX
 };
 

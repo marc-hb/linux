@@ -382,7 +382,8 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 	int i, ret;
 
 	needs = BIT(OOBMSM_SUP_PLAT_INFO) |
-		BIT(OOBMSM_SUP_DISC_INFO);
+		BIT(OOBMSM_SUP_DISC_INFO) |
+		BIT(OOBMSM_SUP_S3M_SIMICS);
 
 	ret = intel_vsec_suppliers_ready(intel_vsec_dev, needs);
 	if (ret)
