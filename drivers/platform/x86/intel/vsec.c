@@ -369,6 +369,9 @@ int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
 
 	supplier->supplier_dev[type] = &vsec_dev->auxdev.dev;
 
+	dev_dbg(&vsec_dev->pcidev->dev, "%s: supplier set for %s\n",
+		__func__, dev_name(&vsec_dev->auxdev.dev));
+
 	return 0;
 }
 EXPORT_SYMBOL_NS_GPL(intel_oobmsm_set_supplier, "INTEL_VSEC");
@@ -381,8 +384,10 @@ int intel_vsec_suppliers_ready(struct intel_vsec_device *ivdev,
 	int i;
 
 	mapping = pci_get_drvdata(ivdev->pcidev);
-	if (!mapping)
+	if (!mapping) {
+		dev_dbg(&ivdev->auxdev.dev, "No mapping\n");
 		return 0;
+	}
 
 	oobmsm_features = mapping->features;
 	if (oobmsm_features == 0)
@@ -395,8 +400,10 @@ int intel_vsec_suppliers_ready(struct intel_vsec_device *ivdev,
 		 * Check to see that the device we need is present.
 		 * If not, ignore it.
 		 */
-		if (!((BIT(i) & needs) && ((BIT(i) & oobmsm_features))))
+		if (!((BIT(i) & needs) && ((BIT(i) & oobmsm_features)))) {
+			dev_dbg(&ivdev->auxdev.dev, "Ignoring feature %d\n", i);
 			continue;
+		}
 
 		if (!supplier_dev || !device_is_bound(supplier_dev)) {
 #if !IS_ENABLED(CONFIG_INTEL_TPMI)
@@ -407,9 +414,21 @@ int intel_vsec_suppliers_ready(struct intel_vsec_device *ivdev,
 			if (i == OOBMSM_SUP_DISC_INFO)
 				continue;
 #endif
+			if (!supplier_dev)
+				dev_dbg(&ivdev->auxdev.dev,
+					"Supplier device %d exists but is not bound\n", i);
+			else
+				dev_dbg(&ivdev->auxdev.dev,
+					"Supplier device %s on %s is not yet bound\n",
+					dev_name(supplier_dev), dev_name(&ivdev->pcidev->dev));
 			return -EPROBE_DEFER;
 		}
+
+		dev_dbg(&ivdev->auxdev.dev, "Found supplier device %s on %s\n",
+			dev_name(supplier_dev), dev_name(&ivdev->pcidev->dev));
 	}
+
+	dev_dbg(&ivdev->auxdev.dev, "Found all suppliers ... continuing probe\n");
 
 	return 0;
 }
@@ -445,9 +464,11 @@ intel_vsec_prewalk(struct pci_dev *pdev, struct intel_vsec_platform_info *info)
 
 		switch (header.id) {
 			case VSEC_ID_DISCOVERY:
+				pci_dbg(pdev, "%s: Found discovery\n", __func__);
 				supplier->features |= BIT(OOBMSM_SUP_DISC_INFO);
 				break;
 			case VSEC_ID_TPMI:
+				pci_dbg(pdev, "%s: Found tpmi\n", __func__);
 				supplier->features |= BIT(OOBMSM_SUP_PLAT_INFO);
 				break;
 			case VSEC_ID_S3M:
