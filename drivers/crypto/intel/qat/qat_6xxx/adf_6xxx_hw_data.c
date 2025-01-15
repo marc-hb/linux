@@ -12,6 +12,7 @@
 #include <adf_gen6_pm.h>
 #include <adf_gen6_ras.h>
 #include <adf_gen6_shared.h>
+#include <adf_gen6_tl.h>
 #include <adf_ras.h>
 #include <adf_timer.h>
 #include "adf_6xxx_hw_data.h"
@@ -844,6 +845,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->service_supported = adf_gen6_service_supported;
 	hw_data->start_ras_timer = adf_ras_uncorrectable_timer_start;
 	hw_data->stop_ras_timer = adf_ras_uncorrectable_timer_stop;
+	hw_data->num_rps = ADF_GEN6_ETR_MAX_BANKS;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);
@@ -851,6 +853,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	adf_gen6_init_vf_mig_ops(&hw_data->vfmig_ops);
 	adf_gen6_init_ras_ops(&hw_data->ras_ops);
 	adf_gen6_set_err_mask(&hw_data->dev_err_mask);
+	adf_gen6_init_tl_data(&hw_data->tl_data);
 }
 
 void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)

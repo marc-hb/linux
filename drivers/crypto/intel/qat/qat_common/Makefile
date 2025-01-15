@@ -53,6 +53,7 @@ intel_qat-$(CONFIG_DEBUG_FS) += adf_transport_debug.o \
 				adf_gen4_pm_debugfs.o \
 				adf_gen4_tl.o \
 				adf_gen6_pm_dbgfs.o \
+				adf_gen6_tl.o \
 				adf_heartbeat.o \
 				adf_heartbeat_dbgfs.o \
 				adf_pm_dbgfs.o \
