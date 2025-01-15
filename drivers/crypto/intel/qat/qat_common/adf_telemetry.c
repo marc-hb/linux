@@ -235,6 +235,9 @@ int adf_tl_run(struct adf_accel_dev *accel_dev, int state)
 		return ret;
 	}
 
+	if (accel_dev->hw_device->set_cmdq_cnt)
+		accel_dev->hw_device->set_cmdq_cnt(accel_dev);
+
 	telemetry->hbuffs = state;
 	atomic_set(&telemetry->state, state);
 
