@@ -906,9 +906,15 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 					  MSR_CORE_PERF_GLOBAL_STATUS_CTR_FREEZE |
 					  MSR_CORE_PERF_GLOBAL_STATUS_ASCI |
 					  MSR_CORE_PERF_GLOBAL_OVF_CTRL_OVF_UNCORE);
+	}
 
-		if (vmx_pt_mode_is_host_guest())
-			pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
+	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
+		pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
+
+		entry = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
+		if (entry && entry->ebx & BIT(9))
+			pmu->reserved_bits &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
 	}
 
 	entry = kvm_find_cpuid_entry_index(vcpu, 7, 0);
