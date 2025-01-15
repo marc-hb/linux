@@ -57,6 +57,8 @@ struct icp_qat_fw_init_admin_slice_cnt {
 	__u8 ath_cnt;
 };
 
+#define SLICE_IDX(sl) offsetof(struct icp_qat_fw_init_admin_slice_cnt, sl##_cnt)
+
 struct icp_qat_fw_init_admin_sla_config_params {
 	__u32 pcie_in_cir;
 	__u32 pcie_in_pir;
