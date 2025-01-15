@@ -784,6 +784,22 @@ static void adf_gen6_set_err_mask(struct adf_dev_err_mask *err_mask)
 	err_mask->cppagentcmdpar_mask = ADF_6XXX_HICPPAGENTCMDPARERRLOG_MASK;
 }
 
+static void adf_gen6_set_cmdq_cnt(struct adf_accel_dev *accel_dev)
+{
+	struct icp_qat_fw_init_admin_slice_cnt *slice_cnt =
+		&accel_dev->telemetry->slice_cnt;
+	struct icp_qat_fw_init_admin_slice_cnt *cmdq_cnt =
+		&accel_dev->telemetry->cmdq_cnt;
+
+	cmdq_cnt->cpr_cnt = slice_cnt->cpr_cnt * 5;
+	cmdq_cnt->dcpr_cnt = slice_cnt->dcpr_cnt * 3;
+	cmdq_cnt->pke_cnt = slice_cnt->pke_cnt;
+	cmdq_cnt->wat_cnt = slice_cnt->wat_cnt * 7;
+	cmdq_cnt->wcp_cnt = slice_cnt->wcp_cnt * 7;
+	cmdq_cnt->ucs_cnt = slice_cnt->ucs_cnt * 3;
+	cmdq_cnt->ath_cnt = slice_cnt->ath_cnt * 2;
+}
+
 void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 {
 	hw_data->dev_class = &adf_6xxx_class;
@@ -846,6 +862,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	hw_data->start_ras_timer = adf_ras_uncorrectable_timer_start;
 	hw_data->stop_ras_timer = adf_ras_uncorrectable_timer_stop;
 	hw_data->num_rps = ADF_GEN6_ETR_MAX_BANKS;
+	hw_data->set_cmdq_cnt = adf_gen6_set_cmdq_cnt;
 
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);
