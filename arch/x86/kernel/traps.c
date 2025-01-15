@@ -335,12 +335,6 @@ DEFINE_IDTENTRY_ERRORCODE(exc_segment_not_present)
 		      SIGBUS, 0, NULL);
 }
 
-DEFINE_IDTENTRY_ERRORCODE(exc_stack_segment)
-{
-	do_error_trap(regs, error_code, "stack segment", X86_TRAP_SS, SIGBUS,
-		      0, NULL);
-}
-
 DEFINE_IDTENTRY_ERRORCODE(exc_alignment_check)
 {
 	char *str = "alignment check";
@@ -541,6 +535,12 @@ enum kernel_gp_hint {
 	GP_LASS_VIOLATION
 };
 
+static char *kernel_gp_hint_help[] = {
+	[GP_NON_CANONICAL]	= "probably for non-canonical address",
+	[GP_CANONICAL]		= "maybe for address",
+	[GP_LASS_VIOLATION]	= "LASS prevented access to address"
+};
+
 /*
  * When an uncaught #GP occurs, try to determine the memory address accessed by
  * the instruction and return that address to the caller. Also, try to figure
@@ -699,11 +699,6 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 	char desc[sizeof(GPFSTR) + 50 + 2*sizeof(unsigned long) + 1] = GPFSTR;
 	enum kernel_gp_hint hint = GP_NO_HINT;
 	unsigned long gp_addr;
-	static char *help[] = {
-		[GP_NON_CANONICAL]	= "probably for non-canonical address",
-		[GP_CANONICAL]		= "maybe for address",
-		[GP_LASS_VIOLATION]	= "LASS prevented access to address"
-	};
 
 	if (user_mode(regs) && try_fixup_enqcmd_gp())
 		return;
@@ -743,8 +738,8 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 		hint = get_kernel_gp_address(regs, &gp_addr);
 
 	if (hint != GP_NO_HINT)
-		snprintf(desc, sizeof(desc), GPFSTR ", %s 0x%lx", help[hint],
-			 gp_addr);
+		snprintf(desc, sizeof(desc), GPFSTR ", %s 0x%lx",
+			 kernel_gp_hint_help[hint], gp_addr);
 
 	/*
 	 * KASAN is interested only in the non-canonical case, clear it
@@ -757,6 +752,33 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 
 exit:
 	cond_local_irq_disable(regs);
+}
+
+DEFINE_IDTENTRY_ERRORCODE(exc_stack_segment)
+{
+	if (cpu_feature_enabled(X86_FEATURE_LASS)) {
+		enum kernel_gp_hint hint = GP_NO_HINT;
+		unsigned long gp_addr;
+
+		if (user_mode(regs)) {
+			gp_user_force_sig_segv(regs, X86_TRAP_GP, error_code, GPFSTR);
+			return;
+		}
+
+		hint = get_kernel_gp_address(regs, &gp_addr);
+		if (hint != GP_NO_HINT)
+			printk(GPFSTR ", %s 0x%lx", kernel_gp_hint_help[hint],
+				gp_addr);
+
+		if (hint != GP_NON_CANONICAL)
+			gp_addr = 0;
+
+		die_addr(GPFSTR, regs, error_code, gp_addr);
+		return;
+	}
+
+	do_error_trap(regs, error_code, "stack segment", X86_TRAP_SS, SIGBUS,
+		0, NULL);
 }
 
 static bool do_int3(struct pt_regs *regs)
