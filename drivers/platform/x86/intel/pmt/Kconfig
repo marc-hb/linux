@@ -50,3 +50,9 @@ config INTEL_PMT_DISCOVERY
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called pmt_discovery.
+
+config INTEL_PMT_KUNIT_TEST
+	tristate "KUnit tests for Intel PMT driver"
+	depends on KUNIT
+	help
+	  Enables KUnit tests for the Intel Platform Monitoring Technology (PMT) driver.
