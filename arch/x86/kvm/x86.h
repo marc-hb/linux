@@ -514,11 +514,7 @@ static inline bool kvm_pat_valid(u64 data)
 	return (data | ((data & 0x0202020202020202ull) << 1)) == data;
 }
 
-static inline bool kvm_dr7_valid(u64 data)
-{
-	/* Bits [63:32] are reserved */
-	return !(data >> 32);
-}
+bool kvm_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated);
 static inline bool kvm_dr6_valid(u64 data)
 {
 	/* Bits [63:32] are reserved */

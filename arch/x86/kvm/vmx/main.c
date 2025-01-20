@@ -63,6 +63,7 @@ struct kvm_x86_ops vt_x86_ops __initdata = {
 	.set_gdt = vmx_set_gdt,
 	.set_dr6 = vmx_set_dr6,
 	.set_dr7 = vmx_set_dr7,
+	.dr7_valid = vmx_dr7_valid,
 	.sync_dirty_debug_regs = vmx_sync_dirty_debug_regs,
 	.cache_reg = vmx_cache_reg,
 	.get_rflags = vmx_get_rflags,

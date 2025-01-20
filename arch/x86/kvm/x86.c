@@ -1493,6 +1493,12 @@ static void kvm_update_dr0123(struct kvm_vcpu *vcpu)
 	}
 }
 
+bool kvm_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated)
+{
+	return kvm_x86_call(dr7_valid)(vcpu, data, validated);
+}
+EXPORT_SYMBOL_GPL(kvm_dr7_valid);
+
 void kvm_update_dr7(struct kvm_vcpu *vcpu)
 {
 	unsigned long dr7;
@@ -1523,6 +1529,7 @@ static u64 kvm_dr6_fixed(struct kvm_vcpu *vcpu)
 int kvm_set_dr(struct kvm_vcpu *vcpu, int dr, unsigned long val)
 {
 	size_t size = ARRAY_SIZE(vcpu->arch.db);
+	u64 validated;
 
 	switch (dr) {
 	case 0 ... 3:
@@ -1538,9 +1545,9 @@ int kvm_set_dr(struct kvm_vcpu *vcpu, int dr, unsigned long val)
 		break;
 	case 5:
 	default: /* 7 */
-		if (!kvm_dr7_valid(val))
+		if (!kvm_dr7_valid(vcpu, val, &validated))
 			return 1; /* #GP */
-		vcpu->arch.dr7 = (val & DR7_VOLATILE) | DR7_FIXED_1;
+		vcpu->arch.dr7 = validated;
 		kvm_update_dr7(vcpu);
 		break;
 	}
@@ -5571,7 +5578,7 @@ static int kvm_vcpu_ioctl_x86_set_debugregs(struct kvm_vcpu *vcpu,
 
 	if (!kvm_dr6_valid(dbgregs->dr6))
 		return -EINVAL;
-	if (!kvm_dr7_valid(dbgregs->dr7))
+	if (!kvm_dr7_valid(vcpu, dbgregs->dr7, NULL))
 		return -EINVAL;
 
 	for (i = 0; i < ARRAY_SIZE(vcpu->arch.db); i++)

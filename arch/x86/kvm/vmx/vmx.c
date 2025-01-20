@@ -5663,6 +5663,19 @@ void vmx_set_dr7(struct kvm_vcpu *vcpu, unsigned long val)
 	vmcs_writel(GUEST_DR7, val);
 }
 
+bool vmx_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated)
+{
+	/* Writing 1 to any of the upper 32 bits results in #GP(0) */
+	if (data >> 32)
+		 return false;
+
+	/* Writing 1 to the non-volatile bits won't cause #GP */
+	if (validated)
+		*validated = data & DR7_VOLATILE;
+
+	return true;
+}
+
 static int handle_tpr_below_threshold(struct kvm_vcpu *vcpu)
 {
 	kvm_apic_update_ppr(vcpu);

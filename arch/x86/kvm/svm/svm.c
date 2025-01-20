@@ -2062,6 +2062,19 @@ static void svm_set_dr7(struct kvm_vcpu *vcpu, unsigned long value)
 	vmcb_mark_dirty(svm->vmcb, VMCB_DR);
 }
 
+static bool svm_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated)
+{
+	/* Writing 1 to any of the upper 32 bits results in #GP */
+	if (data >> 32)
+		 return false;
+
+	/* Writing 1 to the non-volatile bits won't cause #GP */
+	if (validated)
+		*validated = data & DR7_VOLATILE;
+
+	return true;
+}
+
 static int pf_interception(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_svm *svm = to_svm(vcpu);
@@ -5069,6 +5082,7 @@ static struct kvm_x86_ops svm_x86_ops __initdata = {
 	.set_gdt = svm_set_gdt,
 	.set_dr6 = svm_set_dr6,
 	.set_dr7 = svm_set_dr7,
+	.dr7_valid = svm_dr7_valid,
 	.sync_dirty_debug_regs = svm_sync_dirty_debug_regs,
 	.cache_reg = svm_cache_reg,
 	.get_rflags = svm_get_rflags,
