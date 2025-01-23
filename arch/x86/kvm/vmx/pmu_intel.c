@@ -493,7 +493,7 @@ static int intel_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		break;
 	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
 		u32 idx = msr - MSR_IA32_RTIT_TRIGGER0_CFG;
-		msr_info->data = to_vmx(vcpu)->pt_desc.guest.trigger[idx];
+		msr_info->data = to_vmx(vcpu)->pt_desc.guest.pt.trigger[idx];
 		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
@@ -703,8 +703,9 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 
 		if (!pt_can_write_msr(vmx))
 			return 1;
-		intel_pmu_rtit_trigger_check(vcpu, data, vmx->pt_desc.guest.trigger[idx]);
-		vmx->pt_desc.guest.trigger[idx] = data;
+		intel_pmu_rtit_trigger_check(vcpu, data,
+			vmx->pt_desc.guest.pt.trigger[idx]);
+		vmx->pt_desc.guest.pt.trigger[idx] = data;
 		break;
 	default:
 		if ((pmc = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)) ||
@@ -1443,40 +1444,40 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 
 static void pt_load_msr(struct pt_desc *pt_desc, bool is_host)
 {
-	struct pt_ctx *ctx = is_host ? &pt_desc->host : &pt_desc->guest;
+	union intel_pt_xsave_state *state;
 	u32 i;
 
-	wrmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
-	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
+	state = is_host ? &pt_desc->host : &pt_desc->guest;
 
-	for (i = 0; i < pt_desc->num_address_ranges; i++) {
-		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
-		wrmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
-	}
+	wrmsrl(MSR_IA32_RTIT_STATUS, state->pt.status);
+	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, state->pt.output_base);
+	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, state->pt.output_mask);
+	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, state->pt.cr3_match);
+
+	for (i = 0; i < pt_desc->num_address_ranges * 2; i++)
+		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i, state->pt.addr_ab[i]);
 
 	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
-		wrmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, ctx->trigger[i]);
+		wrmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, state->pt.trigger[i]);
 }
 
 static void pt_save_msr(struct pt_desc *pt_desc, bool is_host)
 {
-	struct pt_ctx *ctx = is_host ? &pt_desc->host : &pt_desc->guest;
+	union intel_pt_xsave_state *state;
 	u32 i;
 
-	rdmsrl(MSR_IA32_RTIT_STATUS, ctx->status);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, ctx->output_base);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, ctx->output_mask);
-	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, ctx->cr3_match);
+	state = is_host ? &pt_desc->host : &pt_desc->guest;
 
-	for (i = 0; i < pt_desc->num_address_ranges; i++) {
-		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i * 2, ctx->addr_a[i]);
-		rdmsrl(MSR_IA32_RTIT_ADDR0_B + i * 2, ctx->addr_b[i]);
-	}
+	rdmsrl(MSR_IA32_RTIT_STATUS, state->pt.status);
+	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, state->pt.output_base);
+	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, state->pt.output_mask);
+	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, state->pt.cr3_match);
+
+	for (i = 0; i < pt_desc->num_address_ranges * 2; i++)
+		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i, state->pt.addr_ab[i]);
 
 	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
-		rdmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, ctx->trigger[i]);
+		rdmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, state->pt.trigger[i]);
 }
 
 static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
@@ -1484,7 +1485,7 @@ static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 	if (!guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT))
 		return;
 
-	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
+	if (vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN) {
 		pt_save_msr(&vmx->pt_desc, false);
 		pt_load_msr(&vmx->pt_desc, true);
 	}
@@ -1493,8 +1494,8 @@ static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 	 * KVM requires VM_EXIT_CLEAR_IA32_RTIT_CTL to expose PT to the guest,
 	 * i.e. RTIT_CTL is always cleared on VM-Exit.  Restore it if necessary.
 	 */
-	if (vmx->pt_desc.host.ctl)
-		wrmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.ctl);
+	if (vmx->pt_desc.host.pt.ctl)
+		wrmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.pt.ctl);
 }
 
 static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
@@ -1518,7 +1519,7 @@ static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
 	 */
 	wrmsrl(MSR_IA32_RTIT_CTL, 0);
 
-	if (vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN) {
+	if (vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN) {
 		pt_save_msr(&vmx->pt_desc, true);
 		pt_load_msr(&vmx->pt_desc, false);
 	}

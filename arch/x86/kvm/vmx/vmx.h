@@ -47,27 +47,42 @@ enum segment_cache_field {
 	SEG_FIELD_NR = 4
 };
 
-#define RTIT_ADDR_RANGE		4
+/* The theoritical maximum number of IA32_RTIT_ADDRx_A/B MSRs */
+#define RTIT_ADDR_RANGE		(2 * 7)
 #define RTIT_TRIGGER_RANGE	7
 
-struct pt_ctx {
-	u64 ctl;
-	u64 status;
+/*
+ * PT state comprises 9 MSRs only and any locations in the state component at
+ * or beyond byte offset 72 are ignored by the xsaves and xrstors instructions.
+ * These MSRs need to be saved and restored with RDMSR/WRMSR.
+ */
+struct pt_state {
+	u64 ctl;	/* value is ignored in guest context */
 	u64 output_base;
 	u64 output_mask;
+	u64 status;
 	u64 cr3_match;
-	u64 addr_a[RTIT_ADDR_RANGE];
-	u64 addr_b[RTIT_ADDR_RANGE];
+	u64 addr_ab[RTIT_ADDR_RANGE];
 	u64 trigger[RTIT_TRIGGER_RANGE];
 };
 
+union intel_pt_xsave_state {
+	struct xregs_state		xsave;
+	struct {
+		struct fxregs_state	i387;
+		struct xstate_header	header;
+		struct pt_state		pt;
+	} __packed __aligned(XSAVE_ALIGNMENT);
+};
+
 struct pt_desc {
+	u64 guest_rtit_ctl;
 	u64 ctl_bitmask;
 	u32 num_address_ranges;
 	u32 num_trigger_msrs;
 	u32 caps[PT_CPUID_REGS_NUM * PT_CPUID_LEAVES];
-	struct pt_ctx host;
-	struct pt_ctx guest;
+	union intel_pt_xsave_state host;
+	union intel_pt_xsave_state guest;
 };
 
 union vmx_exit_reason {
@@ -798,7 +813,7 @@ static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
 	 * the configuration MSRs can be changed.
 	 */
 	return guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT) &&
-			     !(vmx->pt_desc.guest.ctl & RTIT_CTL_TRACEEN);
+			     !(vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN);
 }
 
 #endif /* __KVM_X86_VMX_H */
