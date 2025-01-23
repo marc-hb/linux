@@ -813,8 +813,7 @@ static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
 	 * generate a #GP exception. Packet generation must be disabled before
 	 * the configuration MSRs can be changed.
 	 */
-	return guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT) &&
-			     !(vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN);
+	return !(vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN);
 }
 
 #endif /* __KVM_X86_VMX_H */
