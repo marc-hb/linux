@@ -832,6 +832,25 @@ bool guest_can_use_arch_lbr(void)
 	return true;
 }
 
+bool guest_can_use_intel_pt(void)
+{
+	u32 eax, ebx, ecx, edx;
+
+	if (!cpu_feature_enabled(X86_FEATURE_INTEL_PT))
+		return false;
+
+	if (!boot_cpu_has(X86_FEATURE_XSAVES) ||
+	    !(kvm_caps.supported_xss & XFEATURE_MASK_PT))
+		return false;
+
+	cpuid_count(0xd, XFEATURE_PT, &eax, &ebx, &ecx, &edx);
+
+	if (!eax || WARN_ON(eax != 72))
+		return false;
+
+	return true;
+}
+
 static inline void intel_update_msr_base(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
@@ -1029,11 +1048,18 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 
 	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
 	    guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
+		struct xstate_header *header;
+
 		pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
 
 		entry = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
 		if (entry && entry->ebx & BIT(9))
 			pmu->reserved_bits &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
+
+		/* Make sure the first xrstors loads from the PT state area. */
+		header = &to_vmx(vcpu)->pt_desc.guest.header;
+		header->xcomp_bv = XCOMP_BV_COMPACTED_FORMAT | XFEATURE_MASK_PT;
+		header->xfeatures = XFEATURE_MASK_PT;
 	}
 
 	entry = kvm_find_cpuid_entry_index(vcpu, 7, 0);
@@ -1442,38 +1468,40 @@ void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu)
 	}
 }
 
-static void pt_load_msr(struct pt_desc *pt_desc, bool is_host)
+static void pt_restore_state(struct pt_desc *pt_desc, bool is_host)
 {
 	union intel_pt_xsave_state *state;
 	u32 i;
 
 	state = is_host ? &pt_desc->host : &pt_desc->guest;
 
-	wrmsrl(MSR_IA32_RTIT_STATUS, state->pt.status);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, state->pt.output_base);
-	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, state->pt.output_mask);
-	wrmsrl(MSR_IA32_RTIT_CR3_MATCH, state->pt.cr3_match);
+	/*
+	 * If IA32_RTIT_CTL.TraceEn = 1, the XRSTORS instruction causes a #GP,
+	 * but XSAVES clears IA32_RTIT_CTL.TraceEn after saving the value of the
+	 * IA32_RTIT_CTL, thus need to make sure pt_save_state() is placed
+	 * before pt_restore_state().
+	 */
+	xrstors(&state->xsave, XFEATURE_MASK_PT);
 
-	for (i = 0; i < pt_desc->num_address_ranges * 2; i++)
+	/* PT state doesn't includes IA32_RTIT_ADDR2_A/B and beyond */
+	for (i = 4; i < pt_desc->num_address_ranges * 2; i++)
 		wrmsrl(MSR_IA32_RTIT_ADDR0_A + i, state->pt.addr_ab[i]);
 
 	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
 		wrmsrl(MSR_IA32_RTIT_TRIGGER0_CFG + i, state->pt.trigger[i]);
 }
 
-static void pt_save_msr(struct pt_desc *pt_desc, bool is_host)
+static void pt_save_state(struct pt_desc *pt_desc, bool is_host)
 {
 	union intel_pt_xsave_state *state;
 	u32 i;
 
 	state = is_host ? &pt_desc->host : &pt_desc->guest;
 
-	rdmsrl(MSR_IA32_RTIT_STATUS, state->pt.status);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, state->pt.output_base);
-	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, state->pt.output_mask);
-	rdmsrl(MSR_IA32_RTIT_CR3_MATCH, state->pt.cr3_match);
+	xsaves(&state->xsave, XFEATURE_MASK_PT);
 
-	for (i = 0; i < pt_desc->num_address_ranges * 2; i++)
+	/* PT state doesn't includes IA32_RTIT_ADDR2_A/B and beyond */
+	for (i = 4; i < pt_desc->num_address_ranges * 2; i++)
 		rdmsrl(MSR_IA32_RTIT_ADDR0_A + i, state->pt.addr_ab[i]);
 
 	for (i = 0; i < pt_desc->num_trigger_msrs; i++)
@@ -1486,8 +1514,8 @@ static void intel_pmu_put_guest_pt(struct vcpu_vmx *vmx)
 		return;
 
 	if (vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN) {
-		pt_save_msr(&vmx->pt_desc, false);
-		pt_load_msr(&vmx->pt_desc, true);
+		pt_save_state(&vmx->pt_desc, false);
+		pt_restore_state(&vmx->pt_desc, true);
 	}
 
 	/*
@@ -1503,25 +1531,24 @@ static void intel_pmu_load_guest_pt(struct vcpu_vmx *vmx)
 	if (!guest_cpu_cap_has(&vmx->vcpu, X86_FEATURE_INTEL_PT))
 		return;
 
-	/*
-	 * In host/guest mode, "load IA32_RTIT_CTL” VM-entry control is always
-	 * on, which requires IA32_RTIT_CTL.TraceEn = 0 at the time of VM entry.
-	 *
-	 * Writing this bit to 0 to satisfy the VM entry check requirement, and
-	 * the actual guest RTIT_CTL value will be loaded by "load IA32_RTIT_CTL”
-	 * VM-entry control.
-	 *
-	 * Additionally, now perf_guest_enter() has been called, all exclude_guest
-	 * perf events have been scheduled out, and LVTPC vector has been
-	 * configured to the KVM dedicated vector.  Thus the host PMI handler
-	 * doesn't have a chance to overwrite TraceEn bit as it possbily does in
-	 * the legacy non-mediated vPMU implementation.
-	 */
-	wrmsrl(MSR_IA32_RTIT_CTL, 0);
-
 	if (vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN) {
-		pt_save_msr(&vmx->pt_desc, true);
-		pt_load_msr(&vmx->pt_desc, false);
+		pt_save_state(&vmx->pt_desc, true);
+
+		/* MSR_IA32_RTIT_CTL is loaded with 0 always. */
+		pt_restore_state(&vmx->pt_desc, false);
+	} else {
+		/*
+		 * "load IA32_RTIT_CTL” requires IA32_RTIT_CTL.TraceEn = 0 at
+		 * the time of VM entry.
+		 *
+		 * Now all exclude_guest perf events have been scheduled out,
+		 * and the host PMI handler doesn't have a chance to overwrite
+		 * TraceEn bit as it possbily does in the legacy non-mediated
+		 * vPMU implementation.
+		 */
+		rdmsrl(MSR_IA32_RTIT_CTL, vmx->pt_desc.host.pt.ctl);
+		if (vmx->pt_desc.host.pt.ctl & RTIT_CTL_TRACEEN)
+			wrmsrl(MSR_IA32_RTIT_CTL, 0);
 	}
 }
 

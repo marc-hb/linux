@@ -8015,8 +8015,12 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_check_and_set(X86_FEATURE_MPX);
 	if (!cpu_has_vmx_invpcid())
 		kvm_cpu_cap_clear(X86_FEATURE_INVPCID);
-	if (vmx_pt_mode_is_host_guest())
-		kvm_cpu_cap_check_and_set(X86_FEATURE_INTEL_PT);
+	if (vmx_pt_mode_is_host_guest() && guest_can_use_intel_pt())
+		kvm_cpu_cap_set(X86_FEATURE_INTEL_PT);
+	else {
+		kvm_cpu_cap_clear(X86_FEATURE_INTEL_PT);
+		kvm_caps.supported_xss &= ~XFEATURE_MASK_PT;
+	}
 	if (vmx_pebs_supported()) {
 		kvm_cpu_cap_check_and_set(X86_FEATURE_DS);
 		kvm_cpu_cap_check_and_set(X86_FEATURE_DTES64);
