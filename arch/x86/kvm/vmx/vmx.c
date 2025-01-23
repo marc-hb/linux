@@ -160,10 +160,13 @@ module_param(enable_mediated_pmu, bool, 0444);
 
 #define RMODE_GUEST_OWNED_EFLAGS_BITS (~(X86_EFLAGS_IOPL | X86_EFLAGS_VM))
 
-#define RTIT_STATUS_VOLATILE_BITMASK (RTIT_STATUS_FILTEREN | \
-	RTIT_STATUS_CONTEXTEN | RTIT_STATUS_TRIGGEREN | \
-	RTIT_STATUS_ERROR | RTIT_STATUS_STOPPED | \
-	RTIT_STATUS_BYTECNT)
+#define RTIT_STATUS_SW_RW_BITS (RTIT_STATUS_ERROR | RTIT_STATUS_STOPPED | \
+				RTIT_STATUS_PAUSED | RTIT_STATUS_BYTECNT)
+#define RTIT_STATUS_SW_IGNORED_BITS (RTIT_STATUS_FILTEREN  | \
+				     RTIT_STATUS_CONTEXTEN | \
+				     RTIT_STATUS_TRIGGEREN)
+#define RTIT_STATUS_RESERVED_BITS ~(RTIT_STATUS_SW_RW_BITS | \
+				    RTIT_STATUS_SW_IGNORED_BITS)
 
 /*
  * List of MSRs that can be directly passed to the guest.
@@ -2397,15 +2400,23 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		pt_update_intercept_for_msr(vcpu);
 		break;
 	case MSR_IA32_RTIT_STATUS:
-		u64 mask = RTIT_STATUS_VOLATILE_BITMASK;
-
 		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
 			return KVM_MSR_RET_UNSUPPORTED;
 		if (!pt_can_write_msr(vmx))
 			return 1;
-		if (vmx_guest_has_intel_pttt(vcpu))
-			mask |= RTIT_STATUS_PAUSED;
-		if (data & ~mask)
+		if (data & RTIT_STATUS_RESERVED_BITS)
+			return 1;
+		/* Software write ignored bits */
+		data &= ~RTIT_STATUS_SW_IGNORED_BITS;
+		data |= (vmx->pt_desc.guest.pt.status &
+			 RTIT_STATUS_SW_IGNORED_BITS);
+
+		/* Software writable bits */
+		if (!vmx_guest_has_intel_pttt(vcpu) &&
+		    (data & RTIT_STATUS_PAUSED))
+			return 1;
+		if (!intel_pt_validate_hw_cap(PT_CAP_psb_cyc) &&
+		    (data & RTIT_STATUS_BYTECNT))
 			return 1;
 		vmx->pt_desc.guest.pt.status = data;
 		break;
