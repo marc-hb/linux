@@ -85,6 +85,24 @@ struct memory_block {
 #endif
 };
 
+struct acpi_mrrm_mem_range_entry {
+	u64 base;
+	u64 length;
+	u8  local_region_id;
+	u8  remote_region_id;
+	u32 proximity_domain;
+	bool enabled;
+	bool hotplugable;
+	bool volatile_mem;
+	bool cfmws;
+	int type;
+	struct device dev;
+	unsigned long state;		/* serialized by the dev->lock */
+};
+
+extern u32 mrrm_mem_entry_num;
+extern struct acpi_mrrm_mem_range_entry *mrrm_mem_range_entry;
+
 int arch_get_memory_phys_device(unsigned long start_pfn);
 unsigned long memory_block_size_bytes(void);
 int set_memory_block_size_order(unsigned int order);
