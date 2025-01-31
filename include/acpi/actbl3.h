@@ -43,6 +43,7 @@
 #define ACPI_SIG_XENV           "XENV"	/* Xen Environment table */
 #define ACPI_SIG_XXXX           "XXXX"	/* Intermediate AML header for ASL/ASL+ converter */
 #define ACPI_SIG_MRRM		"MRRM"	/* Memory Range and Region Mapping table */
+#define ACPI_SIG_ERDT		"ERDT"	/* Enhanced Resource Director Technology Description table */
 
 /*
  * All tables must be byte-packed to match the ACPI specification, since
@@ -827,6 +828,83 @@ struct acpi_table_mrrm_mem_range_entry {
 	u8  remote_region_id;	/* Platform-assigned static remote Region-ID */
 	u32 reserved1;		/* Reserved */
 	/* Region-ID Programming Registers[] */
+};
+
+/*******************************************************************************
+ *
+ * ERDT - Enhanced Resource Director Technology (ERDT) description table
+ *
+ ******************************************************************************/
+
+struct acpi_table_erdt {
+	struct acpi_table_header header;
+	u32 max_clos;		/* Max number of Classes Of Service supported */
+	u8 reserved[24];
+	/* Sub-structures */
+};
+
+struct acpi_table_erdt_sub_structure {
+	u16 type;
+	u16 length;
+	/* Rest of sub-structures */
+};
+
+struct acpi_table_erdt_rmdd {
+	struct acpi_table_erdt_sub_structure header;
+	u16 flags;
+	u16 io_l3_slices;
+	u8 io_l3_sets;
+	u8 io_l3_ways;
+	u64 reserved;
+	u16 domain_id;
+	u32 max_rmids;
+	u64 ctrl_reg_base;
+	u16 ctrl_reg_size;
+	/* Register Description Entries [] */
+};
+
+struct acpi_table_erdt_rmdd_reg {
+	u8 type;
+};
+
+/*******************************************************************************
+ *
+ * MMRC - Memory Bandwidth Monitoring Registers for CPU Agents description
+ *	structure
+ *
+ ******************************************************************************/
+
+struct acpi_table_erdt_mmrc {
+	struct acpi_table_erdt_sub_structure header;
+	u32 reserved1;
+	u32 flags;
+	u32 reserved2;
+	u64 base;
+	u32 size;
+	u8 width;
+	u64 upscaling_factor;
+	u8 reserved3[7];
+	u32 correction_factor_list_length;
+	/* MBM correction factor [] */
+};
+
+/*******************************************************************************
+ *
+ * MARC - Memory Bandwidth Allocation Registers for CPU Agents description
+ *	structure
+ *
+ ******************************************************************************/
+
+struct acpi_table_erdt_marc {
+	struct acpi_table_erdt_sub_structure header;
+	u16 reserved1;
+	u16 flags;
+	u64 reserved2;
+	u64 opt_bw_base;
+	u64 min_bw_base;
+	u64 max_bw_base;
+	u32 size;
+	u32 range;
 };
 
 /* Reset to default packing */

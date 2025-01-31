@@ -36,6 +36,30 @@ struct resctrl_pqr_state {
 	u32			default_closid;
 };
 
+struct mmrc_para {
+	void *base;
+	unsigned int size;
+	unsigned char width;
+	unsigned long upscaling_factor;
+	unsigned int correction_factor_list_length;
+	/* Fixed point 32-bit correction factor array */
+};
+
+struct marc_para {
+	u16 flags;
+	u64 opt_bw_base;
+	u64 min_bw_base;
+	u64 max_bw_base;
+	u32 size;
+	u32 range;
+};
+
+struct enhanced_rdt_para {
+	u64 *rdt_ctrl;
+	struct mmrc_para mmrc;
+	struct marc_para marc;
+};
+
 DECLARE_PER_CPU(struct resctrl_pqr_state, pqr_state);
 
 extern bool rdt_alloc_capable;
