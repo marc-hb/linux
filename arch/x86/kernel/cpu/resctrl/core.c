@@ -906,6 +906,7 @@ enum {
 	RDT_FLAG_MBA,
 	RDT_FLAG_SMBA,
 	RDT_FLAG_BMEC,
+	RDT_FLAG_ERDT,
 };
 
 #define RDT_OPT(idx, n, f)	\
@@ -920,6 +921,10 @@ struct rdt_options {
 	bool	force_off, force_on;
 };
 
+/* features that are not defined in cpufeatures.h and are specific to RDT */
+#define RDT_FEATURE		((NCAPINTS + NBUGINTS) * 32)
+#define RDT_FEATURE_ERDT	RDT_FEATURE
+
 static struct rdt_options rdt_options[]  __initdata = {
 	RDT_OPT(RDT_FLAG_CMT,	    "cmt",	X86_FEATURE_CQM_OCCUP_LLC),
 	RDT_OPT(RDT_FLAG_MBM_TOTAL, "mbmtotal", X86_FEATURE_CQM_MBM_TOTAL),
@@ -931,6 +936,7 @@ static struct rdt_options rdt_options[]  __initdata = {
 	RDT_OPT(RDT_FLAG_MBA,	    "mba",	X86_FEATURE_MBA),
 	RDT_OPT(RDT_FLAG_SMBA,	    "smba",	X86_FEATURE_SMBA),
 	RDT_OPT(RDT_FLAG_BMEC,	    "bmec",	X86_FEATURE_BMEC),
+	RDT_OPT(RDT_FLAG_ERDT,	    "erdt",	RDT_FEATURE_ERDT),
 };
 #define NUM_RDT_OPTIONS ARRAY_SIZE(rdt_options)
 
@@ -960,9 +966,19 @@ static int __init set_rdt_options(char *str)
 }
 __setup("rdt", set_rdt_options);
 
+static bool rdt_has(int flag)
+{
+	switch (flag) {
+	case RDT_FEATURE_ERDT:
+		return true;
+	}
+
+	return false;
+}
+
 bool __init rdt_cpu_has(int flag)
 {
-	bool ret = boot_cpu_has(flag);
+	bool ret = boot_cpu_has(flag) || rdt_has(flag);
 	struct rdt_options *o;
 
 	if (!ret)
@@ -983,6 +999,9 @@ bool __init rdt_cpu_has(int flag)
 static __init bool get_mem_config(void)
 {
 	struct rdt_hw_resource *hw_res;
+
+	if (!rdt_cpu_has(RDT_FEATURE_ERDT))
+		enhanced_rdt.valid = false;
 
 	if (is_enhanced_rdt()) {
 		hw_res = &rdt_resources_all[RDT_RESOURCE_RMBA];

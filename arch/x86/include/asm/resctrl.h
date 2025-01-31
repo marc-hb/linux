@@ -55,6 +55,8 @@ struct marc_para {
 };
 
 struct enhanced_rdt_para {
+	/* if erdt is valid */
+	bool valid;
 	u64 *rdt_ctrl;
 	struct mmrc_para mmrc;
 	struct marc_para marc;
@@ -66,7 +68,7 @@ extern struct enhanced_rdt_para enhanced_rdt;
 
 static inline bool is_enhanced_rdt(void)
 {
-	return enhanced_rdt.rdt_ctrl && ((*enhanced_rdt.rdt_ctrl & 0x4) == 0);
+	return enhanced_rdt.valid;
 }
 
 DECLARE_PER_CPU(struct resctrl_pqr_state, pqr_state);

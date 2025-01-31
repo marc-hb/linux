@@ -259,6 +259,8 @@ static __init int acpi_parse_erdt(struct acpi_table_header *table)
 //	erdt_enumerate(erdt, false);
 
 	*enhanced_rdt.rdt_ctrl &= ~0x4;
+	enhanced_rdt.valid = true;
+
 	pr_info("rdt_ctrl: 0x%lx\n", (unsigned long)*enhanced_rdt.rdt_ctrl);
 
 	return 0;
