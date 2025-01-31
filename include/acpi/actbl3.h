@@ -42,6 +42,7 @@
 #define ACPI_SIG_WSMT           "WSMT"	/* Windows SMM Security Mitigations Table */
 #define ACPI_SIG_XENV           "XENV"	/* Xen Environment table */
 #define ACPI_SIG_XXXX           "XXXX"	/* Intermediate AML header for ASL/ASL+ converter */
+#define ACPI_SIG_MRRM		"MRRM"	/* Memory Range and Region Mapping table */
 
 /*
  * All tables must be byte-packed to match the ACPI specification, since
