@@ -987,6 +987,8 @@ static const struct bus_type memory_range_subsys = {
 	.offline = memory_range_subsys_offline,
 };
 
+#ifdef CONFIG_X86_CPU_RESCTRL
+
 /*
  * Memory entries are cached in a local radix tree to avoid
  * a costly linear search for the corresponding device on
@@ -1129,6 +1131,8 @@ static __init int add_boot_memory_ranges(void)
 	return ret;
 }
 late_initcall(add_boot_memory_ranges);
+
+#endif /* CONFIG_X86_CPU_RESCTRL */
 
 /*
  * Initialize the sysfs support for memory devices. At the time this function
