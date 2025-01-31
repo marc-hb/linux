@@ -324,6 +324,10 @@ int resctrl_arch_update_domains(struct rdt_resource *r, u32 closid)
 				continue;
 			hw_dom->ctrl_val[idx] = cfg->new_ctrl;
 
+			// Fixme: write to mmio regs
+			if (is_enhanced_rdt() && r->rid == RDT_RESOURCE_RMBA)
+				continue;
+
 			if (!msr_param.res) {
 				msr_param.low = idx;
 				msr_param.high = msr_param.low + 1;

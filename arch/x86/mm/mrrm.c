@@ -54,6 +54,7 @@ static __init int mem_range_enumerate(struct acpi_table_mrrm *acpi_mrrm)
 	mrrm_end = (void *)acpi_mrrm + acpi_mrrm->header.length - 1;
 
 	pr_info("max memory region: %d\n", acpi_mrrm->max_mem_region);
+	enhanced_rdt.max_mem_region = acpi_mrrm->max_mem_region;
 	pr_info("flags: %d\n", acpi_mrrm->flags);
 	while ((mrrm_end + 1) > (void *)mem_range_entry) {
 		struct acpi_table_mrrm_mem_range_entry *p2;

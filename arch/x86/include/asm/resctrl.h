@@ -58,7 +58,16 @@ struct enhanced_rdt_para {
 	u64 *rdt_ctrl;
 	struct mmrc_para mmrc;
 	struct marc_para marc;
+	u32 max_clos;
+	u8 max_mem_region;
 };
+
+extern struct enhanced_rdt_para enhanced_rdt;
+
+static inline bool is_enhanced_rdt(void)
+{
+	return enhanced_rdt.rdt_ctrl && ((*enhanced_rdt.rdt_ctrl & 0x4) == 0);
+}
 
 DECLARE_PER_CPU(struct resctrl_pqr_state, pqr_state);
 
