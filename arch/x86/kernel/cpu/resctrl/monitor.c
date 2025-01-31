@@ -1060,10 +1060,14 @@ static struct mon_evt llc_occupancy_event = {
 	.evtid		= QOS_L3_OCCUP_EVENT_ID,
 };
 
+static struct mon_evt rmbm_total_event[4];
+
 static struct mon_evt mbm_total_event = {
 	.name		= "mbm_total_bytes",
 	.evtid		= QOS_L3_MBM_TOTAL_EVENT_ID,
 };
+
+static struct mon_evt rmbm_local_event[4];
 
 static struct mon_evt mbm_local_event = {
 	.name		= "mbm_local_bytes",
@@ -1083,10 +1087,38 @@ static void l3_mon_evt_init(struct rdt_resource *r)
 
 	if (is_llc_occupancy_enabled())
 		list_add_tail(&llc_occupancy_event.list, &r->evt_list);
-	if (is_mbm_total_enabled())
-		list_add_tail(&mbm_total_event.list, &r->evt_list);
-	if (is_mbm_local_enabled())
-		list_add_tail(&mbm_local_event.list, &r->evt_list);
+	if (is_mbm_total_enabled()) {
+		if (is_enhanced_rdt()) {
+			int i;
+
+			for (i = 0; i < enhanced_rdt.max_mem_region; i++) {
+				struct mon_evt *evt = &rmbm_total_event[i];
+
+				sprintf(evt->name, "%s_%d", "mbm_total_bytes",
+					i);
+				evt->evtid = QOS_L3_MBM_TOTAL_EVENT_ID;
+				list_add_tail(&evt->list, &r->evt_list);
+			}
+		} else {
+			list_add_tail(&mbm_total_event.list, &r->evt_list);
+		}
+	}
+	if (is_mbm_local_enabled()) {
+		if (is_enhanced_rdt()) {
+			int i;
+
+			for (i = 0; i < enhanced_rdt.max_mem_region; i++) {
+				struct mon_evt *evt = &rmbm_local_event[i];
+
+				sprintf(evt->name, "%s_%d", "mbm_local_bytes",
+					i);
+				evt->evtid = QOS_L3_MBM_LOCAL_EVENT_ID;
+				list_add_tail(&evt->list, &r->evt_list);
+			}
+		} else {
+			list_add_tail(&mbm_local_event.list, &r->evt_list);
+		}
+	}
 }
 
 /*
