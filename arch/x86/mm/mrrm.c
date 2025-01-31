@@ -92,6 +92,7 @@ static __init int acpi_parse_mrrm(struct acpi_table_header *table)
 }
 
 #define ERDT_TYPE_RMDD	0
+#define ERDT_TYPE_CACD	1
 #define ERDT_TYPE_MMRC	4
 #define ERDT_TYPE_MARC	5
 
@@ -155,6 +156,8 @@ static __init int rmdd_enumerate(struct acpi_table_erdt_rmdd *rmdd)
 	pr_info("max rmids: %d\n", (unsigned int)rmdd->max_rmids);
 	pr_info("base: 0x%lx\n", (unsigned long)rmdd->ctrl_reg_base);
 	pr_info("size: %d\n", (unsigned int)rmdd->ctrl_reg_size);
+	pr_info("flags: %d\n", rmdd->flags);
+	pr_info("domain id: %d\n", rmdd->domain_id);
 
 	rdt_ctrl = ioremap(rmdd->ctrl_reg_base, rmdd->ctrl_reg_size);
 	if (!rdt_ctrl) {
@@ -187,11 +190,30 @@ static __init int rmdd_enumerate(struct acpi_table_erdt_rmdd *rmdd)
 	return 0;
 }
 
+static int cacd_enumerate(struct acpi_table_erdt_cacd *cacd)
+{
+	u32 *enumeration_id;
+	int i = 0;
+
+	pr_info("%s: %d\n", __func__, __LINE__);
+	pr_info("cacd=%lx\n", (unsigned long)cacd);
+	pr_info("length=%d\n", cacd->header.length);
+	pr_info("domainid=%d\n", cacd->domainid);
+	enumeration_id = (void *)cacd + 8;
+	while (enumeration_id < ((u32 *)cacd + cacd->header.length)) {
+		pr_info("enumeration_id[%d]=%x, %lx\n", i++, *enumeration_id, (unsigned long)enumeration_id);
+		enumeration_id++;
+	}
+
+	return 0;
+}
+
 static __init int erdt_enumerate(struct acpi_table_erdt *erdt,
 				 bool enumerate_rmdd_only)
 {
 	struct acpi_table_erdt_sub_structure *erdt_sub;
 	void *erdt_end;
+	int sub_strucutres = 0;
 
 	enhanced_rdt.max_clos = erdt->max_clos;
 	erdt_sub = (struct acpi_table_erdt_sub_structure *)((void *)erdt +
@@ -200,20 +222,22 @@ static __init int erdt_enumerate(struct acpi_table_erdt *erdt,
 	while (((void *)erdt_sub < erdt_end) && erdt_sub->length) {
 		switch (erdt_sub->type) {
 		case ERDT_TYPE_RMDD:
-			if (enumerate_rmdd_only)
-				rmdd_enumerate((void *)erdt_sub);
+			rmdd_enumerate((void *)erdt_sub);
+			break;
+		case ERDT_TYPE_CACD:
+			cacd_enumerate((void *)erdt_sub);
 			break;
 		case ERDT_TYPE_MMRC:
-			if (enumerate_mmrc)
-				mmrc_enumerate((void *)erdt_sub);
+			mmrc_enumerate((void *)erdt_sub);
 			break;
 		case ERDT_TYPE_MARC:
-			if (enumerate_marc)
-				marc_enumerate((void *)erdt_sub);
+			marc_enumerate((void *)erdt_sub);
 			break;
 		default:
 		}
+		pr_info("erdt sub_structures[%d]: type=%d\n", sub_strucutres, erdt_sub->type);
 		erdt_sub = (void *)erdt_sub + erdt_sub->length;
+		sub_strucutres++;
 	}
 
 	return 0;
@@ -232,7 +256,7 @@ static __init int acpi_parse_erdt(struct acpi_table_header *table)
 	/* Enumerate RMDD */
 	erdt_enumerate(erdt, true);
 	/* Enumerate MMRC and MARC */
-	erdt_enumerate(erdt, false);
+//	erdt_enumerate(erdt, false);
 
 	*enhanced_rdt.rdt_ctrl &= ~0x4;
 	pr_info("rdt_ctrl: 0x%lx\n", (unsigned long)*enhanced_rdt.rdt_ctrl);

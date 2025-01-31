@@ -867,6 +867,14 @@ struct acpi_table_erdt_rmdd_reg {
 	u8 type;
 };
 
+struct acpi_table_erdt_cacd {
+	struct acpi_table_erdt_sub_structure header;
+	u16 reserved;
+	u16 domainid;
+	/* Enumeration IDs[] */
+
+};
+
 /*******************************************************************************
  *
  * MMRC - Memory Bandwidth Monitoring Registers for CPU Agents description
