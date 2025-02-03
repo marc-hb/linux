@@ -358,8 +358,6 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 	if (hw_data->stop_ras_timer)
 		hw_data->stop_ras_timer(accel_dev);
 
-	adf_disable_kpt(accel_dev);
-
 	if (wait)
 		msleep(100);
 

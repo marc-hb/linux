@@ -88,9 +88,3 @@ ret_err:
 	return ret;
 }
 EXPORT_SYMBOL_GPL(adf_enable_kpt);
-
-void adf_disable_kpt(struct adf_accel_dev *accel_dev)
-{
-	adf_sysfs_kpt_rm(accel_dev);
-}
-EXPORT_SYMBOL_GPL(adf_disable_kpt);

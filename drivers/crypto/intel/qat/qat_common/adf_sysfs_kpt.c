@@ -310,20 +310,3 @@ int adf_sysfs_kpt_add(struct adf_accel_dev *accel_dev)
 
 	return ret;
 }
-
-void adf_sysfs_kpt_rm(struct adf_accel_dev *accel_dev)
-{
-	struct adf_kpt_hw_data *kpt_data;
-
-	if (!accel_dev)
-		return;
-
-	kpt_data = GET_KPT_CFG_DATA(accel_dev);
-	if (!kpt_data || !kpt_data->sysfs_added)
-		return;
-
-	device_remove_group(&GET_DEV(accel_dev), &qat_kpt_group);
-
-	kpt_data->sysfs_added = false;
-}
-EXPORT_SYMBOL_GPL(adf_sysfs_kpt_rm);
