@@ -301,7 +301,7 @@ int adf_sysfs_kpt_add(struct adf_accel_dev *accel_dev)
 	if (kpt_data->sysfs_added)
 		return 0;
 
-	ret = device_add_group(&GET_DEV(accel_dev), &qat_kpt_group);
+	ret = devm_device_add_group(&GET_DEV(accel_dev), &qat_kpt_group);
 	if (ret)
 		dev_err(&GET_DEV(accel_dev),
 			"Failed to create qat_kpt attribute group\n");
