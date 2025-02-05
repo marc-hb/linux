@@ -73,10 +73,14 @@
 #define ADF_SSMWDTATHH_OFFSET		0x520C
 #define ADF_SSMWDTCNVL_OFFSET		0x5408
 #define ADF_SSMWDTCNVH_OFFSET		0x540C
+#define ADF_SSMWDTWCPL_OFFSET		0x5608
+#define ADF_SSMWDTWCPH_OFFSET		0x560C
 #define ADF_SSMWDTUCSL_OFFSET		0x5808
 #define ADF_SSMWDTUCSH_OFFSET		0x580C
 #define ADF_SSMWDTDCPRL_OFFSET		0x5A08
 #define ADF_SSMWDTDCPRH_OFFSET		0x5A0C
+#define ADF_SSMWDTWATL_OFFSET		0x5C08
+#define ADF_SSMWDTWATH_OFFSET		0x5C0C
 #define ADF_SSMWDTPKEL_OFFSET		0x5E08
 #define ADF_SSMWDTPKEH_OFFSET		0x5E0C
 
@@ -152,6 +156,7 @@
 #define ADF_6XXX_CY_OBJ		"qat_6xxx_cy.bin"
 #define ADF_6XXX_DC_OBJ		"qat_6xxx_dc.bin"
 #define ADF_6XXX_ADMIN_OBJ	"qat_6xxx_admin.bin"
+#define ADF_6XXX_WCY_OBJ	"qat_6xxx_wcy.bin"
 
 /* RL constants */
 #define ADF_6XXX_RL_PCIE_SCALE_FACTOR_DIV	100
@@ -176,16 +181,23 @@
 #define ADF_6XXX_KPT_DEFAULT_SWK_CNT_PER_PASID	0
 #define ADF_6XXX_FUSE_KPT			BIT(16)
 
+/* Wireless mode */
+#define ADF_6XXX_WCY_MODE(accel_dev) \
+	(GET_CAP_MASK(accel_dev) & ICP_ACCEL_CAPABILITIES_WIRELESS_CRYPTO_EXT)
+
 enum icp_qat_gen6_slice_mask {
 	ICP_ACCEL_GEN6_MASK_UCS_SLICE = BIT(0),
 	ICP_ACCEL_GEN6_MASK_AUTH_SLICE = BIT(1),
 	ICP_ACCEL_GEN6_MASK_PKE_SLICE = BIT(2),
 	ICP_ACCEL_GEN6_MASK_CPR_SLICE = BIT(3),
 	ICP_ACCEL_GEN6_MASK_DCPRZ_SLICE = BIT(4),
+	ICP_ACCEL_GEN6_MASK_EIA3_SLICE = BIT(5),
 	ICP_ACCEL_GEN6_MASK_WCP_WAT_SLICE = BIT(6),
+	ICP_ACCEL_GEN6_MASK_ZUC_256_SLICE = BIT(7),
+	ICP_ACCEL_GEN6_MASK_5G_SLICE = BIT(8),
 };
 
-void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data);
+void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data, bool wcy_mode);
 void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data);
 
 #endif /* ADF_6XXX_HW_DATA_H_ */

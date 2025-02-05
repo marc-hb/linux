@@ -385,6 +385,7 @@ struct adf_hw_device_data {
 	int (*get_ring_base_addr)(struct adf_accel_dev *accel_dev,
 				  resource_size_t *uq_base_addr, u32 bank_number,
 				  enum adf_ring_queue_mode queue_mode);
+	const char *(*get_default_service)(struct adf_accel_dev *accel_dev);
 	struct adf_pfvf_ops pfvf_ops;
 	struct adf_hw_csr_ops csr_ops;
 	struct adf_dc_ops dc_ops;
@@ -469,6 +470,7 @@ do {										\
 #define GET_VFMIG_OPS(accel_dev) (&(accel_dev)->hw_device->vfmig_ops)
 #define GET_TL_DATA(accel_dev) GET_HW_DATA(accel_dev)->tl_data
 #define accel_to_pci_dev(accel_ptr) accel_ptr->accel_pci_dev.pci_dev
+#define GET_CAP_MASK(accel_dev) GET_HW_DATA(accel_dev)->accel_capabilities_mask
 
 struct adf_admin_comms;
 struct icp_qat_fw_loader_handle;

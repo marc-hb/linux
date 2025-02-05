@@ -46,6 +46,7 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	struct adf_hw_device_data *hw_data;
 	struct device *dev = &pdev->dev;
 	struct adf_accel_dev *accel_dev;
+	bool wcy_mode = false;
 	struct adf_bar *bar;
 	u8 major_rev_id;
 	unsigned int i;
@@ -80,9 +81,9 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	pci_read_config_dword(pdev, ADF_GEN6_FUSECTL1_OFFSET, &hw_data->fuses[ADF_FUSECTL1]);
 
 	major_rev_id = FIELD_GET(ADF_GEN6_PCI_MAJOR_REVID_MASK, accel_pci_dev->revid);
-	if (major_rev_id != ADF_GEN6_PCI_MAJOR_REVID_A0) {
+	if (major_rev_id > ADF_GEN6_PCI_MAJOR_REVID_A0) {
 		if (!(hw_data->fuses[ADF_FUSECTL1] & ICP_ACCEL_GEN6_MASK_WCP_WAT_SLICE))
-			return dev_err_probe(dev, -EFAULT, "Wireless mode is not supported.\n");
+			wcy_mode = true;
 	}
 
 	/* Enable PCI device */
@@ -95,7 +96,7 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		return dev_err_probe(dev, ret, "Failed to add new accelerator device.\n");
 
 	accel_dev->hw_device = hw_data;
-	adf_init_hw_data_6xxx(accel_dev->hw_device);
+	adf_init_hw_data_6xxx(accel_dev->hw_device, wcy_mode);
 
 	/* Get Accelerators and Accelerator Engine masks */
 	hw_data->accel_mask = hw_data->get_accel_mask(hw_data);

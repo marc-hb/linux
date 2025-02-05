@@ -263,7 +263,10 @@ int adf_gen4_cfg_dev_init(struct adf_accel_dev *accel_dev)
 	const char *config;
 	int ret;
 
-	config = accel_dev->accel_id % 2 ? ADF_CFG_DC : ADF_CFG_CY;
+	if (GET_HW_DATA(accel_dev)->get_default_service)
+		config = GET_HW_DATA(accel_dev)->get_default_service(accel_dev);
+	else
+		config = accel_dev->accel_id % 2 ? ADF_CFG_DC : ADF_CFG_CY;
 
 	ret = adf_cfg_section_add(accel_dev, ADF_GENERAL_SEC);
 	if (ret)
