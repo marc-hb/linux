@@ -8,6 +8,7 @@
 #include <linux/aer.h>
 #include <linux/array_size.h>
 #include <linux/bitfield.h>
+#include <linux/export.h>
 #include <linux/pci.h>
 #include <linux/string.h>
 
@@ -29,6 +30,7 @@ unsigned int aer_tlp_log_len(struct pci_dev *dev, u32 aercc)
 	       ((aercc & PCI_ERR_CAP_PREFIX_LOG_PRESENT) ?
 		dev->eetlp_prefix_max : 0);
 }
+EXPORT_SYMBOL_GPL(aer_tlp_log_len);
 
 #ifdef CONFIG_PCIE_DPC
 /**
@@ -91,6 +93,7 @@ int pcie_read_tlp_log(struct pci_dev *dev, int where, int where2,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(pcie_read_tlp_log);
 
 #define EE_PREFIX_STR " E-E Prefixes:"
 
@@ -133,3 +136,4 @@ void pcie_print_tlp_log(const struct pci_dev *dev,
 	pci_err(dev, "%sTLP Header%s: %s\n", pfx,
 		log->flit ? " (Flit)" : "", buf);
 }
+EXPORT_SYMBOL_GPL(pcie_print_tlp_log);
