@@ -22,12 +22,20 @@
  */
 #define PCIE_STD_NUM_TLP_HEADERLOG     4
 #define PCIE_STD_MAX_TLP_PREFIXLOG     4
+#define PCIE_STD_MAX_TLP_HEADERLOG	(PCIE_STD_NUM_TLP_HEADERLOG + 10)
 
 struct pci_dev;
 
 struct pcie_tlp_log {
-	u32 dw[PCIE_STD_NUM_TLP_HEADERLOG];
-	u32 prefix[PCIE_STD_MAX_TLP_PREFIXLOG];
+	union {
+		u32 dw[PCIE_STD_MAX_TLP_HEADERLOG];
+		struct {
+			u32 _do_not_use[PCIE_STD_NUM_TLP_HEADERLOG];
+			u32 prefix[PCIE_STD_MAX_TLP_PREFIXLOG];
+		};
+	};
+	u8 header_len;		/* Length of the Logged TLP Header in DWORDs */
+	bool flit;		/* TLP was logged when in Flit mode */
 };
 
 struct aer_capability_regs {
@@ -44,6 +52,13 @@ struct aer_capability_regs {
 	u16 cor_err_source;
 	u16 uncor_err_source;
 };
+
+int pcie_read_tlp_log(struct pci_dev *dev, int where, int where2,
+		      unsigned int tlp_len, bool flit,
+		      struct pcie_tlp_log *log);
+unsigned int aer_tlp_log_len(struct pci_dev *dev, u32 aercc);
+void pcie_print_tlp_log(const struct pci_dev *dev,
+			const struct pcie_tlp_log *log, const char *pfx);
 
 #if defined(CONFIG_PCIEAER)
 int pci_aer_clear_nonfatal_status(struct pci_dev *dev);
