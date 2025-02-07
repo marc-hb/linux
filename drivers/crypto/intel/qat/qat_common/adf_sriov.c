@@ -269,10 +269,10 @@ void adf_disable_sriov(struct adf_accel_dev *accel_dev)
 	if (!test_bit(ADF_STATUS_RESTARTING, &accel_dev->status)) {
 		kfree(accel_dev->pf.vf_info);
 		accel_dev->pf.vf_info = NULL;
+		adf_cfg_del_key_value_param(accel_dev, ADF_GENERAL_SEC,
+					    ADF_SRIOV_ENABLED);
 	}
 
-	adf_cfg_del_key_value_param(accel_dev, ADF_GENERAL_SEC,
-				    ADF_SRIOV_ENABLED);
 }
 EXPORT_SYMBOL_GPL(adf_disable_sriov);
 
