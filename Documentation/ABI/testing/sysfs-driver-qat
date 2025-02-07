@@ -23,27 +23,52 @@ Contact:	qat-linux@intel.com
 Description:	(RW) Reports the current configuration of the QAT device.
 		Write to the file to change the configured services.
 
+		Please note that the order of services is unrestricted in
+		configurations including more than one service (i.e.
+		sym;asym is equal to asym;sym).
+
 		The values are:
 
 		* sym;asym: the device is configured for running crypto
 		  services
-		* asym;sym: identical to sym;asym
-		* dc: the device is configured for running compression services
+		* dc: the device is configured for running compression service
 		* dcc: identical to dc but enables the dc chaining feature,
 		  hash then compression. If this is not required chose dc
 		* sym: the device is configured for running symmetric crypto
-		  services
+		  service
 		* asym: the device is configured for running asymmetric crypto
-		  services
+		  service
 		* asym;dc: the device is configured for running asymmetric
-		  crypto services and compression services
-		* dc;asym: identical to asym;dc
+		  crypto and compression services
 		* sym;dc: the device is configured for running symmetric crypto
-		  services and compression services
-		* dc;sym: identical to sym;dc
+		  and compression services
+
+		Additional values available for qat_6xxx devices only:
+		* decomp: the device is configured for running decompression
+		  service
+		* dc;decomp: the device is configured for running compression
+		  and decompression services
+		* sym;decomp: the device is configured for running symmetric
+		  crypto and decompression services
+		* asym;decomp: the device is configured for running
+		  asymmetric crypto and decompression services
+		* sym;asym;dc: the device is configured for running crypto
+		  and compression services
+		* sym;asym;decomp: the device is configured for running crypto
+		  and decompression services
+		* sym;dc;decomp: the device is configured for running
+		  symmetric crypto, compression and decompression services
+		* asym;dc;decomp: the device is configured for running
+		  asymmetric crypto, compression services and
+		  decompression services
 
 		It is possible to set the configuration only if the device
 		is in the `down` state (see /sys/bus/pci/devices/<BDF>/qat/state)
+
+		Crypto kernel instances are created when both sym and asym
+		crypto services are enabled.
+		Compression service will create a kernel instance when enabled
+		as a single service.
 
 		The following example shows how to change the configuration of
 		a device configured for running crypto services in order to
