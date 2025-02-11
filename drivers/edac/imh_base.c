@@ -13,7 +13,7 @@
 #include "edac_module.h"
 #include "skx_common.h"
 
-#define IMH_REVISION	"v0.0.1"
+#define IMH_REVISION	"v0.0.1 (Use the NMCACHING bit of the MODE register to detect 2LM.)"
 #define EDAC_MOD_STR	"imh_edac"
 
 /* Debug macros */

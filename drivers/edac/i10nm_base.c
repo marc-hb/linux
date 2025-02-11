@@ -13,7 +13,7 @@
 #include "edac_module.h"
 #include "skx_common.h"
 
-#define I10NM_REVISION	"v0.0.6"
+#define I10NM_REVISION	"v0.0.6 (Fix missing error reports on some EMR/GNR.)"
 #define EDAC_MOD_STR	"i10nm_edac"
 
 /* Debug macros */

@@ -28,7 +28,7 @@
 #include "edac_module.h"
 #include "igen6_edac.h"
 
-#define IGEN6_REVISION	"v2.5.1"
+#define IGEN6_REVISION	"v2.5.1 (Fix the flood of invalid error reports.)"
 
 #define EDAC_MOD_STR	"igen6_edac"
 #define IGEN6_NMI_NAME	"igen6_ibecc"
