@@ -6795,3 +6795,117 @@ void gnr_uncore_mmio_init(void)
 }
 
 /* end of GNR uncore support */
+
+/* DMR uncore support */
+
+#define UNCORE_PNC_NUM_UNCORE_TYPES	40
+#define PNC_UNCORE_UNIT(x)					\
+	static struct intel_uncore_type pnc_uncore_##x = {	\
+		SPR_UNCORE_MMIO_COMMON_FORMAT(),		\
+		.name			= __stringify(x),	\
+	}
+
+PNC_UNCORE_UNIT(cha); /* BIOS: 0 */
+PNC_UNCORE_UNIT(tc);
+PNC_UNCORE_UNIT(irp);
+PNC_UNCORE_UNIT(m2pcie);
+PNC_UNCORE_UNIT(pcu);
+PNC_UNCORE_UNIT(ubox);
+PNC_UNCORE_UNIT(mc);
+PNC_UNCORE_UNIT(m2m);
+PNC_UNCORE_UNIT(upi_ll);
+PNC_UNCORE_UNIT(m3upi);
+PNC_UNCORE_UNIT(pcie);
+PNC_UNCORE_UNIT(mdf);
+PNC_UNCORE_UNIT(ial_0);
+PNC_UNCORE_UNIT(ial_1);
+PNC_UNCORE_UNIT(b2hot); /* BIOS: 15 */
+PNC_UNCORE_UNIT(b2cmi);
+PNC_UNCORE_UNIT(b2cxl);
+PNC_UNCORE_UNIT(b2upi);
+PNC_UNCORE_UNIT(mse);
+PNC_UNCORE_UNIT(mdfs_sbo);
+PNC_UNCORE_UNIT(pcie_gen5x16);
+PNC_UNCORE_UNIT(pcie_gen5x8);
+PNC_UNCORE_UNIT(sca);
+PNC_UNCORE_UNIT(cxl);
+PNC_UNCORE_UNIT(ula_uio);
+PNC_UNCORE_UNIT(ubr_d2d);
+PNC_UNCORE_UNIT(ubr_sca);
+PNC_UNCORE_UNIT(ubr_uio_type1);
+PNC_UNCORE_UNIT(ubr_uio_type2);
+PNC_UNCORE_UNIT(hamvf);
+PNC_UNCORE_UNIT(cbo);   /* BIOS: 31 */
+PNC_UNCORE_UNIT(santa);
+PNC_UNCORE_UNIT(cncu);
+PNC_UNCORE_UNIT(sncu);
+PNC_UNCORE_UNIT(d2d_ula);
+PNC_UNCORE_UNIT(d2d_dda);
+PNC_UNCORE_UNIT(d2d_sb2ucie);
+PNC_UNCORE_UNIT(sbo);
+PNC_UNCORE_UNIT(cbb);
+
+static struct intel_uncore_type *pnc_uncores[UNCORE_PNC_NUM_UNCORE_TYPES] = {
+	&pnc_uncore_cha,
+	&pnc_uncore_tc,
+	&pnc_uncore_irp,
+	&pnc_uncore_m2pcie,
+	&pnc_uncore_pcu,
+	&pnc_uncore_ubox,
+	&pnc_uncore_mc,
+	&pnc_uncore_m2m,
+	&pnc_uncore_upi_ll,
+	&pnc_uncore_m3upi,
+	&pnc_uncore_pcie,
+	&pnc_uncore_mdf,
+	&pnc_uncore_ial_0,
+	&pnc_uncore_ial_1,
+	[15] = &pnc_uncore_b2hot, /* BIOS */
+	&pnc_uncore_b2cmi,
+	&pnc_uncore_b2cxl,
+	&pnc_uncore_b2upi,
+	&pnc_uncore_mse,
+	&pnc_uncore_mdfs_sbo,
+	&pnc_uncore_pcie_gen5x16,
+	&pnc_uncore_pcie_gen5x8,
+	&pnc_uncore_sca,
+	&pnc_uncore_cxl,
+	&pnc_uncore_ula_uio,
+	&pnc_uncore_ubr_d2d,
+	&pnc_uncore_ubr_sca,
+	&pnc_uncore_ubr_uio_type1,
+	&pnc_uncore_ubr_uio_type2,
+	&pnc_uncore_hamvf,
+	&pnc_uncore_cbo, /* 31: CBB start */
+	&pnc_uncore_santa,
+	&pnc_uncore_cncu,
+	&pnc_uncore_sncu,
+	&pnc_uncore_d2d_ula,
+	&pnc_uncore_d2d_dda,
+	&pnc_uncore_d2d_sb2ucie,
+	&pnc_uncore_sbo,
+	&pnc_uncore_cbb,
+};
+
+int pnc_uncore_units_ignore[] = {
+	0x1f, /* cbo */
+	0x20, /* santa */
+	0x21, /* cncu */
+	UNCORE_IGNORE_END
+};
+
+int pnc_uncore_pci_init(void)
+{
+	uncore_pci_uncores = uncore_get_uncores(UNCORE_ACCESS_PCI, 0, NULL,
+						UNCORE_PNC_NUM_UNCORE_TYPES,
+						pnc_uncores);
+	return 0;
+}
+void pnc_uncore_mmio_init(void)
+{
+	uncore_mmio_uncores = uncore_get_uncores(UNCORE_ACCESS_MMIO, 0, NULL,
+						 UNCORE_PNC_NUM_UNCORE_TYPES,
+						 pnc_uncores);
+}
+
+/* end of DMR uncore support */

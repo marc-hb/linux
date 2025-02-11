@@ -409,6 +409,7 @@ static bool intel_uncore_has_discovery_tables_msr(int *ignore)
 	bool parsed = false;
 	int cpu, die;
 	u64 base;
+	u32 msr = enable_ignore ? 0x710 : UNCORE_DISCOVERY_MSR;
 
 	die_mask = kcalloc(BITS_TO_LONGS(__uncore_max_dies),
 			   sizeof(unsigned long), GFP_KERNEL);
@@ -421,7 +422,7 @@ static bool intel_uncore_has_discovery_tables_msr(int *ignore)
 		if (__test_and_set_bit(die, die_mask))
 			continue;
 
-		if (rdmsrl_safe_on_cpu(cpu, UNCORE_DISCOVERY_MSR, &base))
+		if (rdmsrl_safe_on_cpu(cpu, msr, &base))
 			continue;
 
 		if (!base)
