@@ -71,6 +71,15 @@ static unsigned int preferred_states_mask __read_mostly;
 static bool force_irq_on __read_mostly;
 static bool ibrs_off __read_mostly;
 
+/*
+ * Use below format to describe one cstate,
+ *	"name:mwait:latency_us:residency_us"
+ * Each state may consume ~20 bytes, 10 states supported in maximum.
+ */
+#define MAX_PARAM_LENGTH	256
+
+static char user_defined_cstates_str[MAX_PARAM_LENGTH];
+
 static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
 
 static unsigned long auto_demotion_disable_flags;
@@ -1826,6 +1835,18 @@ static const struct x86_cpu_id intel_mwait_ids[] __initconst = {
 	{}
 };
 
+/* cstates built from intel_idle.table module parameter */
+static struct cpuidle_state user_defined_cstates[CPUIDLE_STATE_MAX] __initdata;
+static const struct idle_cpu idle_cpu_user_defined __initconst = {
+	.state_table = user_defined_cstates,
+	.disable_promotion_to_c1e = true,
+};
+
+static const struct x86_cpu_id user_defined_cstates_ids[] __initconst = {
+	X86_MATCH_VENDOR_FEATURE(INTEL, X86_FEATURE_MWAIT, &idle_cpu_user_defined),
+	{}
+};
+
 static bool __init intel_idle_max_cstate_reached(int cstate)
 {
 	if (cstate + 1 > max_cstate) {
@@ -2456,6 +2477,84 @@ static void __init intel_idle_cpuidle_devices_uninit(void)
 		cpuidle_unregister_device(per_cpu_ptr(intel_idle_cpuidle_devices, i));
 }
 
+static int __init parse_one_param(char **param, int *value, char *sep)
+{
+	char *pos = strsep(param, sep);
+
+	if (!pos)
+		return -EINVAL;
+	return kstrtoint(pos, 0, value);
+}
+
+static const struct x86_cpu_id *__init get_user_defined_cstates(void)
+{
+	const struct x86_cpu_id *id;
+	int idx = 0;
+	char *start, *pos;
+	char *str = user_defined_cstates_str;
+	int ret;
+
+	if (str[0] == '\0')
+		return NULL;
+
+	id = x86_match_cpu(user_defined_cstates_ids);
+	if (!id)
+		return NULL;
+
+	pr_info("Build cstates table from user input string\n");
+
+	for (start = str; start && (start - str) < MAX_PARAM_LENGTH;) {
+		struct cpuidle_state *state;
+		int mwait, latency, residency;
+
+		if (idx >= CPUIDLE_STATE_MAX) {
+			pr_err("Too many states found\n");
+			goto err;
+		}
+
+		state = &user_defined_cstates[idx];
+
+		/* name */
+		pos = strsep(&start, ":");
+		if (!pos)
+			goto err;
+		ret = snprintf(state->name, CPUIDLE_NAME_LEN, "%s", pos);
+		if (ret != strlen(pos))
+			goto err;
+
+		/* mwait value */
+		if (parse_one_param(&start, &mwait, ":"))
+			goto err;
+
+		/* exit latency */
+		if (parse_one_param(&start, &latency, ":"))
+			goto err;
+
+		/* target residency */
+		if (parse_one_param(&start, &residency, " "))
+			goto err;
+
+		snprintf(state->desc, CPUIDLE_DESC_LEN, "MWAIT 0x%x", mwait);
+		/* Set CPUIDLE_FLAG_TLB_FLUSHED for C6 and deeper */
+		state->flags = MWAIT2flg(mwait);
+		if (mwait >= 0x20)
+			state->flags |= CPUIDLE_FLAG_TLB_FLUSHED;
+
+		state->exit_latency = latency;
+		state->target_residency = residency;
+
+		state->enter = &intel_idle;
+		state->enter_s2idle = intel_idle_s2idle;
+
+		idx++;
+	}
+	return id;
+
+err:
+	pr_info("Failed to decode user defined cstates, ignore it\n");
+	return NULL;
+}
+
 static int __init intel_idle_init(void)
 {
 	const struct x86_cpu_id *id;
@@ -2471,6 +2570,10 @@ static int __init intel_idle_init(void)
 		return -EPERM;
 	}
 
+	id = get_user_defined_cstates();
+	if (id)
+		goto cstate_table_available;
+
 	id = x86_match_cpu(intel_idle_ids);
 	if (id) {
 		if (!boot_cpu_has(X86_FEATURE_MWAIT)) {
@@ -2483,6 +2586,7 @@ static int __init intel_idle_init(void)
 			return -ENODEV;
 	}
 
+cstate_table_available:
 	cpuid(CPUID_LEAF_MWAIT, &eax, &ebx, &ecx, &mwait_substates);
 
 	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
@@ -2583,3 +2687,16 @@ module_param(force_irq_on, bool, 0444);
  */
 module_param(ibrs_off, bool, 0444);
 MODULE_PARM_DESC(ibrs_off, "Disable IBRS when idle");
+
+/*
+ * Build cstates from a user input string.
+ * Use "name:mwait:latency:residency" to describe one cstate,
+ * - name	: cstate name
+ * - mwait	: raw mwait value to enter the cstate.
+ * - latency	: latency of the cstate in us.
+ * - residency	: residency of the cstate in us.
+ *
+ * Use space separated string to describe multiple cstates.
+ */
+module_param_string(table, user_defined_cstates_str, MAX_PARAM_LENGTH, 0444);
+MODULE_PARM_DESC(table, "build the cstate table with a string");
