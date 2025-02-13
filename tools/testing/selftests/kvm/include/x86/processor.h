@@ -1086,6 +1086,9 @@ static inline void vcpu_set_cpuid(struct kvm_vcpu *vcpu)
 	vcpu_get_cpuid(vcpu);
 }
 
+void vcpu_update_cpuid_property(struct kvm_cpuid_entry2 *entry,
+				struct kvm_x86_cpu_property property,
+				uint32_t value);
 void vcpu_set_cpuid_property(struct kvm_vcpu *vcpu,
 			     struct kvm_x86_cpu_property property,
 			     uint32_t value);
