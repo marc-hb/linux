@@ -128,7 +128,7 @@
  * The driver does not make use of this, it only tests one core at a time.
  *
  * Structural Based Functional Test at Field (SBAF):
- * -------------------------------------------------
+ * ------------------------------------------------
  *
  * SBAF is a new type of testing that provides comprehensive core test
  * coverage complementing Scan at Field (SAF) testing. SBAF mimics the
