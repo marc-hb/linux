@@ -528,7 +528,6 @@ static int dosbaf(void *data)
 	 */
 	wrmsrl(MSR_ACTIVATE_SBAF, run_params->activate->data);
 	rdmsrl(MSR_SBAF_STATUS, status.data);
-	trace_ifs_sbaf(ifsd->cur_batch, *run_params->activate, status);
 
 	/* Pass back the result of the test */
 	if (cpu == first)
