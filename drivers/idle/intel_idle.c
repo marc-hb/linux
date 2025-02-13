@@ -2477,24 +2477,15 @@ static void __init intel_idle_cpuidle_devices_uninit(void)
 		cpuidle_unregister_device(per_cpu_ptr(intel_idle_cpuidle_devices, i));
 }
 
-static int __init parse_one_param(char **param, int *value, char *sep)
-{
-	char *pos = strsep(param, sep);
-
-	if (!pos)
-		return -EINVAL;
-	return kstrtoint(pos, 0, value);
-}
-
 static const struct x86_cpu_id *__init get_user_defined_cstates(void)
 {
 	const struct x86_cpu_id *id;
 	int idx = 0;
-	char *start, *pos;
-	char *str = user_defined_cstates_str;
+	char *param, *val;
+	char *args = user_defined_cstates_str;
 	int ret;
 
-	if (str[0] == '\0')
+	if (args[0] == '\0')
 		return NULL;
 
 	id = x86_match_cpu(user_defined_cstates_ids);
@@ -2503,7 +2494,7 @@ static const struct x86_cpu_id *__init get_user_defined_cstates(void)
 
 	pr_info("Build cstates table from user input string\n");
 
-	for (start = str; start && (start - str) < MAX_PARAM_LENGTH;) {
+	while (*args) {
 		struct cpuidle_state *state;
 		int mwait, latency, residency;
 
@@ -2511,27 +2502,30 @@ static const struct x86_cpu_id *__init get_user_defined_cstates(void)
 			pr_err("Too many states found\n");
 			goto err;
 		}
-
 		state = &user_defined_cstates[idx];
 
+		args = next_arg(args, &param, &val);
+		if (!param || !val)
+			break;
+
 		/* name */
-		pos = strsep(&start, ":");
-		if (!pos)
-			goto err;
-		ret = snprintf(state->name, CPUIDLE_NAME_LEN, "%s", pos);
-		if (ret != strlen(pos))
+		ret = snprintf(state->name, CPUIDLE_NAME_LEN, "%s", param);
+		if (ret != strlen(param))
 			goto err;
 
-		/* mwait value */
-		if (parse_one_param(&start, &mwait, ":"))
+		/* mwait */
+		ret = get_option(&val, &mwait);
+		if (ret != 2)
 			goto err;
 
-		/* exit latency */
-		if (parse_one_param(&start, &latency, ":"))
+		/* latency */
+		get_option(&val, &latency);
+		if (ret != 2)
 			goto err;
 
-		/* target residency */
-		if (parse_one_param(&start, &residency, " "))
+		/* residency */
+		get_option(&val, &residency);
+		if (ret != 1 || *val)
 			goto err;
 
 		snprintf(state->desc, CPUIDLE_DESC_LEN, "MWAIT 0x%x", mwait);
@@ -2690,7 +2684,7 @@ MODULE_PARM_DESC(ibrs_off, "Disable IBRS when idle");
 
 /*
  * Build cstates from a user input string.
- * Use "name:mwait:latency:residency" to describe one cstate,
+ * Use "name=mwait,latency,residency" to describe one cstate,
  * - name	: cstate name
  * - mwait	: raw mwait value to enter the cstate.
  * - latency	: latency of the cstate in us.
