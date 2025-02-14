@@ -77,6 +77,8 @@ static struct dentry *debugfs;
 static unsigned int pkg_interrupt_cnt;
 static unsigned int pkg_work_cnt;
 
+static bool msr_is_die_scoped;
+
 static void pkg_temp_debugfs_init(void)
 {
 	debugfs = debugfs_create_dir("pkg_temp_thermal", NULL);
@@ -85,6 +87,18 @@ static void pkg_temp_debugfs_init(void)
 			   &pkg_interrupt_cnt);
 	debugfs_create_u32("pkg_thres_work", S_IRUGO, debugfs,
 			   &pkg_work_cnt);
+}
+
+static int pkg_temp_thermal_get_zone_id(unsigned int cpu)
+{
+	int zone_id;
+
+	if (msr_is_die_scoped)
+		zone_id = topology_logical_die_id(cpu);
+	else
+		zone_id = topology_logical_package_id(cpu);
+
+	return zone_id;
 }
 
 /*
@@ -97,7 +111,7 @@ static void pkg_temp_debugfs_init(void)
  */
 static struct zone_device *pkg_temp_thermal_get_dev(unsigned int cpu)
 {
-	int id = topology_logical_die_id(cpu);
+	int id = pkg_temp_thermal_get_zone_id(cpu);
 
 	if (id >= 0 && id < max_id)
 		return zones[id];
@@ -310,7 +324,7 @@ static int pkg_temp_thermal_trips_init(int cpu, int tj_max,
 static int pkg_temp_thermal_device_add(unsigned int cpu)
 {
 	struct thermal_trip trips[MAX_NUMBER_OF_TRIPS] = { 0 };
-	int id = topology_logical_die_id(cpu);
+	int id = pkg_temp_thermal_get_zone_id(cpu);
 	u32 eax, ebx, ecx, edx;
 	struct zone_device *zonedev;
 	int thres_count, err;
@@ -419,7 +433,7 @@ static int pkg_thermal_cpu_offline(unsigned int cpu)
 	 * worker will see the package anymore.
 	 */
 	if (lastcpu) {
-		zones[topology_logical_die_id(cpu)] = NULL;
+		zones[pkg_temp_thermal_get_zone_id(cpu)] = NULL;
 		/* After this point nothing touches the MSR anymore. */
 		wrmsr(MSR_IA32_PACKAGE_THERM_INTERRUPT,
 		      zonedev->msr_pkg_therm_low, zonedev->msr_pkg_therm_high);
@@ -479,6 +493,17 @@ static const struct x86_cpu_id __initconst pkg_temp_thermal_ids[] = {
 };
 MODULE_DEVICE_TABLE(x86cpu, pkg_temp_thermal_ids);
 
+static void check_msr_scope(void)
+{
+	/*
+	 * Thermal MSRs on some multi-die INTEL_SKYLAKE_X platforms
+	 * (Cascade Lake-AP) are die-scoped.
+	 */
+	if ((boot_cpu_data.x86_vfm == INTEL_SKYLAKE_X) &&
+	    (topology_max_dies_per_package() > 1))
+		msr_is_die_scoped = true;
+}
+
 static int __init pkg_temp_thermal_init(void)
 {
 	int ret;
@@ -486,7 +511,13 @@ static int __init pkg_temp_thermal_init(void)
 	if (!x86_match_cpu(pkg_temp_thermal_ids))
 		return -ENODEV;
 
-	max_id = topology_max_packages() * topology_max_dies_per_package();
+	check_msr_scope();
+
+	if (msr_is_die_scoped)
+		max_id = topology_max_packages() * topology_max_dies_per_package();
+	else
+		max_id = topology_max_packages();
+
 	zones = kcalloc(max_id, sizeof(struct zone_device *),
 			   GFP_KERNEL);
 	if (!zones)
