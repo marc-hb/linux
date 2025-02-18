@@ -21,6 +21,7 @@
 #include <adf_ras.h>
 #include <adf_timer.h>
 #include <adf_uacce.h>
+#include <adf_transport_access_macros.h>
 #include "adf_6xxx_hw_data.h"
 #include "icp_qat_fw_comp.h"
 #include "icp_qat_hw_51_comp.h"
@@ -987,6 +988,83 @@ static int enable_pm(struct adf_accel_dev *accel_dev)
 	return 0;
 }
 
+static int sym_dev_config(struct adf_accel_dev *accel_dev)
+{
+	char key[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
+	unsigned long val;
+	int instances;
+	int ret;
+	int i;
+
+	if (adf_hw_dev_has_sym(accel_dev))
+		instances = min(num_online_cpus(), GET_MAX_BANKS(accel_dev));
+	else
+		instances = 0;
+
+	for (i = 0; i < instances; i++) {
+		val = i;
+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_BANK_NUM,
+			 i);
+		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+
+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_ETRMGR_CORE_AFFINITY,
+			 i);
+		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+
+		val = 512;
+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_SIZE, i);
+		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+
+		val = 0;
+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_TX, i);
+		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+
+		val = 1;
+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_RX, i);
+		ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC,
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+
+		val = ADF_COALESCING_DEF_TIME;
+		snprintf(key, sizeof(key), ADF_ETRMGR_COALESCE_TIMER_FORMAT, i);
+		ret = adf_cfg_add_key_value_param(accel_dev, "Accelerator0",
+						  key, &val, ADF_DEC);
+		if (ret)
+			goto err;
+	}
+
+	val = i;
+	ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC, ADF_NUM_CY,
+					  &val, ADF_DEC);
+	if (ret)
+		goto err;
+
+	val = 0;
+	ret = adf_cfg_add_key_value_param(accel_dev, ADF_KERNEL_SEC, ADF_NUM_DC,
+					  &val, ADF_DEC);
+	if (ret)
+		goto err;
+
+	return 0;
+err:
+	dev_err(&GET_DEV(accel_dev),
+		"Failed to add configuration for crypto\n");
+	return ret;
+}
+
 static int dev_config(struct adf_accel_dev *accel_dev)
 {
 	int ret;
@@ -1007,6 +1085,9 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 	switch (adf_get_service_enabled(accel_dev)) {
 	case SVC_SYM_ASYM:
 		ret = adf_gen6_crypto_dev_config(accel_dev);
+		break;
+	case SVC_SYM:
+	    ret = sym_dev_config(accel_dev);
 		break;
 	case SVC_DC:
 	case SVC_DCC:

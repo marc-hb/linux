@@ -1333,9 +1333,13 @@ static struct kpp_alg dh = {
 	},
 };
 
-int qat_asym_algs_register(void)
+int qat_asym_algs_register(struct adf_accel_dev *accel_dev)
 {
+	u32 dev_caps = ~(GET_HW_DATA(accel_dev)->accel_capabilities_mask);
 	int ret = 0;
+
+	if (dev_caps & ICP_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC)
+		return 0;
 
 	mutex_lock(&algs_lock);
 	if (++active_devs == 1) {

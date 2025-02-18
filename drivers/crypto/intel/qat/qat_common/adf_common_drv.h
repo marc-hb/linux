@@ -109,7 +109,7 @@ void qat_alg_callback(void *resp);
 void qat_alg_asym_callback(void *resp);
 int qat_algs_register(struct adf_accel_dev *accel_dev);
 void qat_algs_unregister(void);
-int qat_asym_algs_register(void);
+int qat_asym_algs_register(struct adf_accel_dev *accel_dev);
 void qat_asym_algs_unregister(void);
 
 struct qat_compression_instance *qat_compression_get_instance_node(int node);
