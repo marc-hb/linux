@@ -1351,7 +1351,7 @@ void vmx_prepare_switch_to_guest(struct kvm_vcpu *vcpu)
 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
 
 	if (cpu_feature_enabled(X86_FEATURE_FRED) && guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
-		wrmsrns(MSR_IA32_FRED_RSP0, vmx->msr_guest_fred_rsp0);
+		wrmsrl(MSR_IA32_FRED_RSP0, vmx->msr_guest_fred_rsp0);
 #else
 	savesegment(fs, fs_sel);
 	savesegment(gs, gs_sel);
@@ -1439,7 +1439,7 @@ static void vmx_write_guest_fred_rsp0(struct vcpu_vmx *vmx, u64 data)
 {
 	preempt_disable();
 	if (vmx->guest_state_loaded)
-		wrmsrns(MSR_IA32_FRED_RSP0, data);
+		wrmsrl(MSR_IA32_FRED_RSP0, data);
 	preempt_enable();
 	vmx->msr_guest_fred_rsp0 = data;
 }
