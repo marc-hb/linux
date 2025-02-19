@@ -3,6 +3,7 @@
 #include <linux/cpu.h>
 #include <asm/cpufeature.h>
 #include <asm/fpu/xcr.h>
+#include <asm/fred.h>
 #include <linux/misc_cgroup.h>
 #include <linux/mmu_context.h>
 #include <asm/tdx.h>
@@ -816,6 +817,8 @@ static void tdx_prepare_switch_to_host(struct kvm_vcpu *vcpu)
 		tdx->guest_entered = false;
 	}
 
+	if (cpu_feature_enabled(X86_FEATURE_FRED) && guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+		fred_sync_rsp0(0);
 	vt->guest_state_loaded = false;
 }
 
