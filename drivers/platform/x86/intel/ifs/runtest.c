@@ -29,6 +29,11 @@ struct run_params {
 	union ifs_status status;
 };
 
+struct run_array_params {
+	struct ifs_data *ifsd;
+	union ifs_array *command;
+};
+
 /*
  * Number of TSC cycles that a logical CPU will wait for the other
  * logical CPU on the core in the WRMSR(ACTIVATE_SCAN).
@@ -301,10 +306,12 @@ static void ifs_test_core(int cpu, struct device *dev)
 
 static int do_array_test(void *data)
 {
-	union ifs_array *command = data;
+	struct run_array_params *params = data;
 	int cpu = smp_processor_id();
+	union ifs_array *command;
 	int first;
 
+	command = params->command;
 	wait_for_sibling_cpu(&array_cpus_in, NSEC_PER_SEC);
 
 	/*
@@ -323,12 +330,14 @@ static int do_array_test(void *data)
 
 static void ifs_array_test_core(int cpu, struct device *dev)
 {
+	struct run_array_params params;
 	union ifs_array command = {};
 	bool timed_out = false;
 	struct ifs_data *ifsd;
 	unsigned long timeout;
 
 	ifsd = ifs_get_data(dev);
+	params.ifsd = ifsd;
 
 	command.array_bitmask = ~0U;
 	timeout = jiffies + HZ / 2;
@@ -339,7 +348,8 @@ static void ifs_array_test_core(int cpu, struct device *dev)
 			break;
 		}
 		atomic_set(&array_cpus_in, 0);
-		stop_core_cpuslocked(cpu, do_array_test, &command);
+		params.command = &command;
+		stop_core_cpuslocked(cpu, do_array_test, &params);
 
 		if (command.ctrl_result)
 			break;
