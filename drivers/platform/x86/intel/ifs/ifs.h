@@ -285,6 +285,7 @@ struct ifs_test_msrs {
 
 /**
  * struct ifs_data - attributes related to intel IFS driver
+ * @grp_cpumask: set of cpus being tested simultaneously
  * @loaded_version: stores the currently loaded ifs image version.
  * @loaded: If a valid test binary has been loaded into the memory
  * @loading_error: Error occurred on another CPU while loading image
@@ -298,6 +299,7 @@ struct ifs_test_msrs {
  * @all_lp_join: all logical processors join test
  */
 struct ifs_data {
+	cpumask_t	grp_cpumask;
 	int	loaded_version;
 	bool	loaded;
 	bool	loading_error;

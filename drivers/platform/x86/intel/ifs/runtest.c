@@ -155,11 +155,9 @@ static atomic_t scan_cpus_in;
 /*
  * Simplified cpu sibling rendezvous loop based on microcode loader __wait_for_cpus()
  */
-static void wait_for_sibling_cpu(atomic_t *t, long long timeout)
+static void wait_for_sibling_cpu(struct ifs_data *ifsd, atomic_t *t, long long timeout)
 {
-	int cpu = smp_processor_id();
-	const struct cpumask *smt_mask = cpu_smt_mask(cpu);
-	int all_cpus = cpumask_weight(smt_mask);
+	int all_cpus = cpumask_weight(&ifsd->grp_cpumask);
 
 	atomic_inc(t);
 	while (atomic_read(t) < all_cpus) {
@@ -194,9 +192,9 @@ static int doscan(void *data)
 	}
 
 	/* Only the first logical CPU on a core reports result */
-	first = cpumask_first(cpu_smt_mask(cpu));
+	first = cpumask_first(&ifsd->grp_cpumask);
 
-	wait_for_sibling_cpu(&scan_cpus_in, NSEC_PER_SEC);
+	wait_for_sibling_cpu(ifsd, &scan_cpus_in, NSEC_PER_SEC);
 
 	/*
 	 * This WRMSR will wait for other HT threads to also write
@@ -264,7 +262,11 @@ static void ifs_test_core(int cpu, struct device *dev)
 
 		params.activate = &activate;
 		atomic_set(&scan_cpus_in, 0);
-		stop_core_cpuslocked(cpu, doscan, &params);
+
+		if (ifsd->all_lp_join)
+			stop_cluster_cpuslocked(cpu, doscan, &params);
+		else
+			stop_core_cpuslocked(cpu, doscan, &params);
 
 		status = params.status;
 
@@ -309,15 +311,18 @@ static int do_array_test(void *data)
 	struct run_array_params *params = data;
 	int cpu = smp_processor_id();
 	union ifs_array *command;
+	struct ifs_data *ifsd;
 	int first;
 
+	ifsd = params->ifsd;
+
 	command = params->command;
-	wait_for_sibling_cpu(&array_cpus_in, NSEC_PER_SEC);
+	wait_for_sibling_cpu(ifsd, &array_cpus_in, NSEC_PER_SEC);
 
 	/*
 	 * Only one logical CPU on a core needs to trigger the Array test via MSR write.
 	 */
-	first = cpumask_first(cpu_smt_mask(cpu));
+	first = cpumask_first(&ifsd->grp_cpumask);
 
 	if (cpu == first) {
 		wrmsrl(MSR_ARRAY_BIST, command->data);
@@ -349,7 +354,11 @@ static void ifs_array_test_core(int cpu, struct device *dev)
 		}
 		atomic_set(&array_cpus_in, 0);
 		params.command = &command;
-		stop_core_cpuslocked(cpu, do_array_test, &params);
+
+		if (ifsd->all_lp_join)
+			stop_cluster_cpuslocked(cpu, do_array_test, &params);
+		else
+			stop_core_cpuslocked(cpu, do_array_test, &params);
 
 		if (command.ctrl_result)
 			break;
@@ -397,6 +406,23 @@ static void ifs_array_test_gen1(int cpu, struct device *dev)
 		ifsd->status = SCAN_TEST_PASS;
 }
 
+static void build_cpugroup_mask(struct device *dev, int cpu)
+{
+	struct ifs_data *ifsd = ifs_get_data(dev);
+
+	cpumask_clear(&ifsd->grp_cpumask);
+
+	/*
+	 * In some platforms, more than one core shares the same SCAN
+	 * engine, but doesn't require a rendezvous.
+	 */
+	if (!ifsd->all_lp_join) {
+		cpumask_set_cpu(cpu, &ifsd->grp_cpumask);
+		return;
+	}
+	cpumask_copy(&ifsd->grp_cpumask, topology_cluster_cpumask(cpu));
+}
+
 /*
  * Initiate per core test. It wakes up work queue threads on the target cpu and
  * its sibling cpu. Once all sibling threads wake up, the scan test gets executed and
@@ -410,6 +436,7 @@ int do_core_test(int cpu, struct device *dev)
 
 	/* Prevent CPUs from being taken offline during the scan test */
 	cpus_read_lock();
+	build_cpugroup_mask(dev, cpu);
 
 	if (!cpu_online(cpu)) {
 		dev_info(dev, "cannot test on the offline cpu %d\n", cpu);
