@@ -7,6 +7,9 @@
 #include "adf_gen6_ras.h"
 #include "adf_sysfs_ras_counters.h"
 
+static bool ri_mem_reset_required;
+static bool enable_ras_wa;
+
 static void adf_handle_uerrssmsh(struct adf_accel_dev *accel_dev, void __iomem *csr,
 				 u32 iastatssm)
 {
@@ -256,6 +259,10 @@ static void adf_handle_ri_mem_par_err(struct adf_accel_dev *accel_dev, void __io
 		dev_err(&GET_DEV(accel_dev), "RI memory parity correctable error: %#x\n",
 			rimem_parerr_sts);
 		ADF_RAS_ERR_CTR_INC(accel_dev->ras_errors, ADF_RAS_CORR);
+
+		/* HSD 16026460557 */
+		if (enable_ras_wa)
+			ri_mem_reset_required = true;
 	}
 
 	if (rimem_parerr_sts & ADF_GEN6_RIMEM_PARERR_STS_FATAL_BITMASK) {
@@ -576,6 +583,10 @@ static void adf_gen6_enable_ras(struct adf_accel_dev *accel_dev)
 {
 	void __iomem *csr = adf_get_pmisc_base(accel_dev);
 
+	/* HSD 16026460557 */
+	if (enable_ras_wa)
+		ri_mem_reset_required = false;
+
 	enable_errsou_reporting(csr);
 	enable_ae_error_reporting(accel_dev, csr);
 	enable_cpp_error_reporting(accel_dev, csr);
@@ -608,6 +619,10 @@ static void adf_gen6_is_reset_required(struct adf_accel_dev *accel_dev, void __i
 
 	if (reset_type == ADF_GEN6_GENSTS_COLD_RESET)
 		dev_err(&GET_DEV(accel_dev), "Fatal error, cold reset required\n");
+
+	/* HSD 16026460557 */
+	if (enable_ras_wa && ri_mem_reset_required)
+		*reset_required = true;
 }
 
 static void adf_handle_timiscsts(struct adf_accel_dev *accel_dev, void __iomem *csr,
@@ -820,3 +835,6 @@ void adf_gen6_init_ras_ops(struct adf_ras_ops *ras_ops)
 	ras_ops->handle_interrupt = adf_gen6_handle_interrupt;
 }
 EXPORT_SYMBOL_GPL(adf_gen6_init_ras_ops);
+
+module_param(enable_ras_wa, bool, 0644);
+MODULE_PARM_DESC(enable_ras_wa, "Enable RAS workaround for QAT51 AO HW");
