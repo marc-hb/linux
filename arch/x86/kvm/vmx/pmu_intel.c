@@ -627,6 +627,7 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	u32 msr = msr_info->index;
 	u64 data = msr_info->data;
 	u64 reserved_bits, diff;
+	u64 global_inuse_rsvd;
 
 	switch (msr) {
 	case MSR_CORE_PERF_GLOBAL_CTRL:
@@ -642,8 +643,16 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			reprogram_fixed_counters(pmu, data);
 		break;
 	case MSR_CORE_PERF_GLOBAL_INUSE:
-		/* Read only MSR. */
-		return 1;
+		if (!msr_info->host_initiated)
+			return 1; /* RO MSR */
+
+		global_inuse_rsvd = ~(PERF_GLOBAL_INUSE_PMI_INSUSE |
+				      pmu->all_valid_pmc_idx64);
+		if (data & global_inuse_rsvd)
+			return 1;
+
+		pmu->global_inuse = data;
+		break;
 	case MSR_CORE_PERF_GLOBAL_STATUS_SET:
 		/*
 		 * GLOBAL STATUS_SET, sets bits in GLOBAL_STATUS, so the
