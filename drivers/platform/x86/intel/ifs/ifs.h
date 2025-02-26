@@ -130,6 +130,7 @@
  */
 #include <linux/device.h>
 #include <linux/miscdevice.h>
+#include <linux/percpu-defs.h>
 
 #define MSR_ARRAY_BIST				0x00000105
 #define MSR_COPY_SCAN_HASHES			0x000002c2
@@ -290,6 +291,7 @@ struct ifs_test_msrs {
  * @loaded: If a valid test binary has been loaded into the memory
  * @loading_error: Error occurred on another CPU while loading image
  * @valid_chunks: number of chunks which could be validated.
+ * @cpu: The CPU on which the test was triggered
  * @status: it holds simple status pass/fail/untested
  * @scan_details: opaque scan status code from h/w
  * @cur_batch: number indicating the currently loaded test file
@@ -297,6 +299,7 @@ struct ifs_test_msrs {
  * @chunk_size: size of a test chunk
  * @array_gen: test generation of array test
  * @all_lp_join: all logical processors join test
+ * @result_ptr: points to percpu result
  */
 struct ifs_data {
 	cpumask_t	grp_cpumask;
@@ -304,6 +307,7 @@ struct ifs_data {
 	bool	loaded;
 	bool	loading_error;
 	int	valid_chunks;
+	int	cpu;
 	int	status;
 	u64	scan_details;
 	u32	cur_batch;
@@ -311,6 +315,7 @@ struct ifs_data {
 	u32	chunk_size;
 	u32	array_gen;
 	bool	all_lp_join;
+	void	*result_ptr;
 };
 
 struct ifs_work {
@@ -323,6 +328,11 @@ struct ifs_device {
 	const struct ifs_test_msrs *test_msrs;
 	struct ifs_data rw_data;
 	struct miscdevice misc;
+};
+
+struct ifs_test_output {
+	u64	test_details;
+	int	test_result;
 };
 
 static inline struct ifs_data *ifs_get_data(struct device *dev)
