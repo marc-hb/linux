@@ -1723,7 +1723,7 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 {
-	union vmx_exit_reason exit_reason = to_vmx(vcpu)->exit_reason;
+	union vmx_exit_reason exit_reason = vmx_get_exit_reason(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u32 intr_info = vmx_get_intr_info(vcpu);
 	u64 pebs_overflow = pmu->global_status &
