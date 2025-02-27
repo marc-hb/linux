@@ -21,8 +21,13 @@ struct lbr_desc {
 
 	/* True if LBRs are marked as not intercepted in the MSR bitmap */
 	bool msr_passthrough;
+
+	/* Do not put anything after the LBR state. */
+	union arch_lbr_xsave_state *state;
 };
 
 extern struct x86_pmu_lbr vmx_lbr_caps;
+
+struct lbr_desc *vcpu_to_lbr_desc(struct kvm_vcpu *vcpu);
 
 #endif /* __KVM_X86_VMX_PMU_INTEL_H */
