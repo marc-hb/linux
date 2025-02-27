@@ -7258,7 +7258,8 @@ noinstr void vmx_handle_nmi(struct kvm_vcpu *vcpu)
 
 	kvm_before_interrupt(vcpu, KVM_HANDLING_NMI);
 	if (cpu_feature_enabled(X86_FEATURE_FRED))
-		fred_entry_from_kvm(EVENT_TYPE_NMI, NMI_VECTOR);
+		fred_entry_from_kvm(EVENT_TYPE_NMI, NMI_VECTOR,
+				vmx_get_exit_qual(vcpu));
 	else
 		vmx_do_nmi_irqoff();
 	kvm_after_interrupt(vcpu);
