@@ -886,7 +886,7 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
 	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
 	   ((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
-	   (cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
+	   (intel_pmu_lbr_is_compatible(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
 		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
 	else
 		lbr_desc->records.nr = 0;
