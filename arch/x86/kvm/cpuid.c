@@ -160,38 +160,34 @@ EXPORT_SYMBOL_GPL(kvm_find_cpuid_entry);
 static int kvm_check_intel_pt_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct kvm_cpuid_entry2 *best;
+	u32 eax, ebx, ecx, edx;
 
 	best = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
-	if (best && best->ebx & BIT(9) &&
-	    (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) ||
-	     !intel_pt_validate_hw_cap(PT_CAP_trigger_tracing)))
+	if (!best)
+		return 0;
+
+	if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    (best->ebx || best->ecx))
+		return -EINVAL;
+
+	/* Guest can't have more Intel PT capabilities than host has. */
+	cpuid_count(0x14, 0, &eax, &ebx, &ecx, &edx);
+	if (best->ebx & ~ebx || best->ecx & ~ecx)
 		return -EINVAL;
 
 	best = kvm_find_cpuid_entry_index(vcpu, 0x14, 1);
 	if (!best)
 		return 0;
 
-	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT)) {
-		/* More configurable Address Ranges than host supports? */
-		if (((best->eax & 0x7) > intel_pt_validate_hw_cap(
-					 PT_CAP_num_address_ranges)))
-			return -EINVAL;
+	if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    (best->eax || best->ebx || best->ecx))
+		return -EINVAL;
 
-		if (intel_pt_validate_hw_cap(PT_CAP_trigger_tracing)) {
-			u32 eax, ebx, ecx, edx;
-
-		        cpuid_count(0x14, 1, &eax, &ebx, &ecx, &edx);
-
-			/* More RTIT_TRIGGERx_CFG MSRs than host supports? */
-			if ((best->eax & 0x700) > (eax & 0x700))
-				return -EINVAL;
-
-			/* More capabilities than host supports? */
-			if ((best->ecx ^ ecx) & best->ecx)
-				return -EINVAL;
-		} else if (best->eax & 0x700)
-			return -EINVAL;
-	} else if (best->eax & 0x7)
+	cpuid_count(0x14, 1, &eax, &ebx, &ecx, &edx);
+	if (((best->eax & 0x7) > (eax & 0x7)) ||
+	    ((best->eax & 0x700) > (eax & 0x700)) ||
+	    ((best->eax & ~eax) >> 16) ||
+	    (best->ebx & ~ebx) || (best->ecx & ~ecx))
 		return -EINVAL;
 
 	return 0;
