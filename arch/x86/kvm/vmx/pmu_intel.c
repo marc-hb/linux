@@ -1310,6 +1310,9 @@ static void intel_pmu_destroy(struct kvm_vcpu *vcpu)
 {
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 
+	if (!lbr_desc)
+		return;
+
 	kfree(lbr_desc->state);
 	lbr_desc->state = NULL;
 }
