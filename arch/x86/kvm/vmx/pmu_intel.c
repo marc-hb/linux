@@ -1219,6 +1219,9 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	bool mediated;
 	bool arch_lbr;
 
+	if (is_td_vcpu(vcpu))
+		return;
+
 	/*
 	 * In legacy (non-mediated) vPMU, setting passthrough of LBR MSRs is
 	 * done only in the VM-Entry loop, while in mediated vPMU, LBR MSRs
