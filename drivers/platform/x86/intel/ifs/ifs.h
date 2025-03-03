@@ -139,6 +139,7 @@
 #define MSR_CHUNKS_AUTHENTICATION_STATUS	0x000002c5
 #define MSR_ACTIVATE_SCAN			0x000002c6
 #define MSR_SCAN_STATUS				0x000002c7
+#define MSR_LAST_SAF_WP				0x000002c9
 #define MSR_ARRAY_TRIGGER			0x000002d6
 #define MSR_ARRAY_STATUS			0x000002d7
 #define MSR_SAF_CTRL				0x000004f0
@@ -332,6 +333,7 @@ struct ifs_device {
 
 struct ifs_test_output {
 	u64	test_details;
+	u64	addnl_details;
 	int	test_result;
 };
 

@@ -176,6 +176,7 @@ static int doscan(void *data)
 	struct run_params *params = data;
 	union ifs_status status;
 	struct ifs_data *ifsd;
+	u64 saf_wp = 0;
 
 	ifsd = params->ifsd;
 	pcpu_scan = this_cpu_ptr(ifsd->result_ptr);
@@ -201,6 +202,8 @@ static int doscan(void *data)
 	wrmsrl(MSR_ACTIVATE_SCAN, params->activate->data);
 	rdmsrl(MSR_SCAN_STATUS, status.data);
 
+	if (ifsd->generation)
+		rdmsrl(MSR_LAST_SAF_WP, saf_wp);
 	trace_ifs_status(ifsd->cur_batch, start, stop, status.data);
 
 	/* Pass back the result of the scan */
@@ -208,6 +211,7 @@ static int doscan(void *data)
 		params->status = status;
 
 	pcpu_scan->test_details = status.data;
+	pcpu_scan->addnl_details = saf_wp;
 
 	return 0;
 }
