@@ -441,7 +441,11 @@ static int idxd_submit_user_descriptor(struct idxd_user_context *ctx,
 	 * allow this since there is no good way for us to verify these
 	 * indirect commands.
 	 */
+
+	//NOTE: A bug in SPR(DSA1.0) prevented indirect DSA_opcode_batch submission,
+	//which is now fixed in GNR(DSA2.0)
 	if (is_dsa_dev(idxd_dev) && descriptor.opcode == DSA_OPCODE_BATCH &&
+		wq->idxd->hw.version == DEVICE_VERSION_1 &&
 		!wq->idxd->user_submission_safe)
 		return -EINVAL;
 	/*
