@@ -1123,9 +1123,10 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, intercept);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i, MSR_TYPE_RW,
 					  intercept || !fw_writes_is_enabled(vcpu));
-		if (kvm_pmu_cap.version >= 6)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
-						  MSR_TYPE_RW, intercept || !fw_writes_is_enabled(vcpu));
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
+					  MSR_TYPE_RW,
+					  intercept || !fw_writes_is_enabled(vcpu) ||
+					  pmu->version < 6);
 		if (kvm_pmu_cap.arch_pebs)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
 						  MSR_TYPE_RW, intercept);
@@ -1137,9 +1138,8 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, true);
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PMC0 + i,
 					  MSR_TYPE_RW, true);
-		if (kvm_pmu_cap.version >= 6)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
-						  MSR_TYPE_RW, true);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
+					  MSR_TYPE_RW, true);
 		if (kvm_pmu_cap.arch_pebs)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
 						  MSR_TYPE_RW, true);
@@ -1148,9 +1148,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, intercept);
-		if (kvm_pmu_cap.version >= 6)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
-						  MSR_TYPE_RW, intercept);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+					  MSR_TYPE_RW,
+					  intercept || pmu->version < 6);
 		if (kvm_pmu_cap.arch_pebs)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
 						  MSR_TYPE_RW, intercept);
@@ -1160,9 +1160,8 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	for_each_set_bit(i, (unsigned long*)&unsupported_fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
 		vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_FIXED_CTR0 + i,
 					  MSR_TYPE_RW, true);
-		if (kvm_pmu_cap.version >= 6)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
-						  MSR_TYPE_RW, true);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
+					  MSR_TYPE_RW, true);
 		if (kvm_pmu_cap.arch_pebs)
 			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
 						  MSR_TYPE_RW, true);

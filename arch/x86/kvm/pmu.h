@@ -194,7 +194,7 @@ static inline int get_cntr_idx(struct kvm_pmu *pmu, u32 msr, u32 base, int max)
 	if (msr < MSR_IA32_PMC_V6_GP0_CTR) {
 		if (msr >= base && msr < base + max)
 			idx = msr - base;
-	} else {
+	} else if (pmu->version >= 6) {
 		idx = get_v6_cntr_idx(msr, base, max);
 	}
 
