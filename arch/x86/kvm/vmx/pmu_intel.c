@@ -1127,9 +1127,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW,
 					  intercept || !fw_writes_is_enabled(vcpu) ||
 					  pmu->version < 6);
-		if (kvm_pmu_cap.arch_pebs)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
-						  MSR_TYPE_RW, intercept);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
+					  MSR_TYPE_RW,
+					  intercept || !pmu->arch_pebs);
 	}
 
 	unsupported_gp_bits = kvm_pmu_cap.cntr_mask64 & ~gp_bits;
@@ -1140,9 +1140,8 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, true);
 		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i),
 					  MSR_TYPE_RW, true);
-		if (kvm_pmu_cap.arch_pebs)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
-						  MSR_TYPE_RW, true);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i),
+					  MSR_TYPE_RW, true);
 	}
 
 	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
@@ -1151,9 +1150,9 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
 					  MSR_TYPE_RW,
 					  intercept || pmu->version < 6);
-		if (kvm_pmu_cap.arch_pebs)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
-						  MSR_TYPE_RW, intercept);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
+					  MSR_TYPE_RW,
+					  intercept || !pmu->arch_pebs);
 	}
 
 	unsupported_fixed_bits = kvm_pmu_cap.fixed_cntr_mask64 & ~fixed_bits;
@@ -1162,9 +1161,8 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 					  MSR_TYPE_RW, true);
 		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i),
 					  MSR_TYPE_RW, true);
-		if (kvm_pmu_cap.arch_pebs)
-			vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
-						  MSR_TYPE_RW, true);
+		vmx_set_intercept_for_msr(vcpu, pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i),
+					  MSR_TYPE_RW, true);
 	}
 
 	if (kvm_mediated_pmu_enabled(vcpu) && kvm_pmu_has_perf_global_ctrl(pmu) &&
@@ -1186,17 +1184,19 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 	vmx_set_intercept_for_msr(vcpu, MSR_CORE_PERF_GLOBAL_INUSE,
 				  MSR_TYPE_RW, intercept);
 
-	if (legacy_pebs_is_enabled(vcpu)) {
-		/* legacy PEBS */
-		vmx_set_intercept_for_msr(vcpu, MSR_IA32_DS_AREA, MSR_TYPE_RW, intercept);
-		if (pebs_baseline_is_enabled(vcpu)) {
-			vmx_set_intercept_for_msr(vcpu, MSR_PEBS_DATA_CFG, MSR_TYPE_RW, intercept);
-			vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_ENABLE, MSR_TYPE_RW, intercept);
-		}
-	} else if (kvm_pmu_cap.arch_pebs) {
-		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_BASE, MSR_TYPE_RW, intercept);
-		vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_INDEX, MSR_TYPE_RW, intercept);
-	}
+	/* legacy PEBS */
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_DS_AREA, MSR_TYPE_RW,
+				  intercept || !legacy_pebs_is_enabled(vcpu));
+	vmx_set_intercept_for_msr(vcpu, MSR_PEBS_DATA_CFG, MSR_TYPE_RW,
+				  intercept || !pebs_baseline_is_enabled(vcpu));
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_ENABLE, MSR_TYPE_RW,
+				  intercept || !pebs_baseline_is_enabled(vcpu));
+
+	/* arch PEBS */
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_BASE, MSR_TYPE_RW,
+				  intercept || !pmu->arch_pebs);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_PEBS_INDEX, MSR_TYPE_RW,
+				  intercept || !pmu->arch_pebs);
 
 	/* All extra MSRs are model specific */
 	intercept = intercept || !cpuid_model_is_consistent(vcpu);
@@ -1204,11 +1204,8 @@ static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
 		vmx_set_intercept_for_msr(vcpu, kvm_pmu_cap.extra_msrs[i],
 					  MSR_TYPE_RW, intercept);
 
-	if (kvm_host_has_perf_metrics()) {
-		intercept = !vcpu_has_perf_metrics(vcpu);
-		vmx_set_intercept_for_msr(vcpu, MSR_PERF_METRICS,
-					  MSR_TYPE_RW, intercept);
-	}
+	vmx_set_intercept_for_msr(vcpu, MSR_PERF_METRICS, MSR_TYPE_RW,
+				  !vcpu_has_perf_metrics(vcpu));
 }
 
 static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
