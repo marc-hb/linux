@@ -1070,6 +1070,24 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
 
+	if (pmu->version >= 6) {
+		union cpuid35_ebx ebx;
+
+		ebx.full = entry23_0->ebx;
+		if (ebx.split.umask2)
+			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_UMASK2;
+		if (ebx.split.eq)
+			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_EQ;
+		if (ebx.split.rdpmc_user_disable)
+			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_RDPMC_USER_DISABLE;
+
+		pmu->eventsel_rsvd |= ARCH_PERFMON_EVENTSEL_PIN_CONTROL;
+	}
+
+	entry = kvm_find_cpuid_entry_index(vcpu, 0x1c, 0);
+	if (entry && (entry->ecx & GENMASK(19, 16)))
+		pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_BR_CNTR;
+
 	__intel_pmu_refresh_lbr(vcpu);
 
 	fixed_bits = fixed_ctrs_bitmap(pmu);

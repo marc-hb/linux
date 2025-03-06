@@ -842,7 +842,9 @@ void kvm_pmu_refresh(struct kvm_vcpu *vcpu)
 	pmu->nr_arch_gp_counters = 0;
 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
-	pmu->eventsel_rsvd = 0xffffffff00200000ull;
+
+	/* KVM is not able to emulate the AnyThread bit */
+	pmu->eventsel_rsvd = GENMASK_ULL(63, 32) | ARCH_PERFMON_EVENTSEL_ANY;
 	pmu->raw_event_mask = X86_RAW_EVENT_MASK;
 	pmu->global_ctrl_rsvd = ~0ull;
 	pmu->global_status_rsvd = ~0ull;
