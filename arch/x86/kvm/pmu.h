@@ -314,8 +314,11 @@ static inline void kvm_init_pmu_capability(const struct kvm_pmu_ops *pmu_ops)
 	kvm_pmu_cap.cntr_mask64 &= BIT_ULL(pmu_ops->MAX_NR_GP_COUNTERS) - 1;
 	kvm_pmu_cap.fixed_cntr_mask64 &= BIT_ULL(KVM_MAX_NR_FIXED_COUNTERS) - 1;
 
-	if (!enable_mediated_pmu)
+	if (kvm_pmu_cap.version < 6) {
 		kvm_pmu_cap.arch_pebs = 0;
+		kvm_pmu_cap.config_mask &= ~(ARCH_PERFMON_EVENTSEL_UMASK2 |
+					     ARCH_PERFMON_EVENTSEL_EQ);
+	}
 
 	kvm_pmu_eventsel.INSTRUCTIONS_RETIRED =
 		perf_get_hw_event_config(PERF_COUNT_HW_INSTRUCTIONS);
