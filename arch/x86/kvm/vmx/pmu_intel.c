@@ -626,7 +626,7 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	struct kvm_pmc *pmc;
 	u32 msr = msr_info->index;
 	u64 data = msr_info->data;
-	u64 reserved_bits, diff;
+	u64 eventsel_rsvd, diff;
 	u64 global_inuse_rsvd;
 
 	switch (msr) {
@@ -728,11 +728,11 @@ static int intel_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			break;
 		} else if ((pmc = get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)) ||
 			   (pmc = get_gp_pmc(pmu, msr, MSR_IA32_PMC_V6_GP0_CFG_A))) {
-			reserved_bits = pmu->reserved_bits;
+			eventsel_rsvd = pmu->eventsel_rsvd;
 			if ((pmc->idx == 2) &&
 			    (pmu->raw_event_mask & HSW_IN_TX_CHECKPOINTED))
-				reserved_bits ^= HSW_IN_TX_CHECKPOINTED;
-			if (data & reserved_bits)
+				eventsel_rsvd ^= HSW_IN_TX_CHECKPOINTED;
+			if (data & eventsel_rsvd)
 				return 1;
 
 			if (data != pmc->eventsel) {
@@ -1054,7 +1054,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 
 		entry = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
 		if (entry && entry->ebx & BIT(9))
-			pmu->reserved_bits &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
+			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
 
 		/* Make sure the first xrstors loads from the PT state area. */
 		header = &to_vmx(vcpu)->pt_desc.guest.header;
@@ -1066,7 +1066,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (entry &&
 	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
 	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM))) {
-		pmu->reserved_bits ^= HSW_IN_TX;
+		pmu->eventsel_rsvd ^= HSW_IN_TX;
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
 
@@ -1078,7 +1078,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (perf_capabilities & PERF_CAP_PEBS_FORMAT) {
 		if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
 			pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd;
-			pmu->reserved_bits &= ~ICL_EVENTSEL_ADAPTIVE;
+			pmu->eventsel_rsvd &= ~ICL_EVENTSEL_ADAPTIVE;
 
 			for_each_set_bit(i, (unsigned long*)&fixed_bits,
 					 KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
