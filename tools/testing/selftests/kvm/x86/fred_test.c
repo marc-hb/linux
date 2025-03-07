@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
 		if (r == UCALL_SYNC) {
 			TEST_ASSERT((uc.args[1] == expected_current_stack_level) &&
-				    (uc.args[2] == fred_invalid_rsp[expected_current_stack_level] - 1),
+				    (uc.args[2] == fred_invalid_rsp[expected_current_stack_level] - 8),
 				    "Incorrect stack level %lx and #PF address %lx\n",
 				    uc.args[1], uc.args[2]);
 			expected_current_stack_level++;
