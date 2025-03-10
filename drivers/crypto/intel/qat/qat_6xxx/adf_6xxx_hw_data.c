@@ -1151,8 +1151,8 @@ static void adf_gen6_set_cmdq_cnt(struct adf_accel_dev *accel_dev)
 	cmdq_cnt->cpr_cnt = slice_cnt->cpr_cnt * 5;
 	cmdq_cnt->dcpr_cnt = slice_cnt->dcpr_cnt * 3;
 	cmdq_cnt->pke_cnt = slice_cnt->pke_cnt;
-	cmdq_cnt->wat_cnt = slice_cnt->wat_cnt * 7;
-	cmdq_cnt->wcp_cnt = slice_cnt->wcp_cnt * 7;
+	cmdq_cnt->wat_cnt = slice_cnt->wat_cnt ? ADF_GEN6_WAT_CMDQ_CNT : 0;
+	cmdq_cnt->wcp_cnt = slice_cnt->wcp_cnt ? ADF_GEN6_WCP_CMDQ_CNT : 0;
 	cmdq_cnt->ucs_cnt = slice_cnt->ucs_cnt * 3;
 	cmdq_cnt->ath_cnt = slice_cnt->ath_cnt * 2;
 }

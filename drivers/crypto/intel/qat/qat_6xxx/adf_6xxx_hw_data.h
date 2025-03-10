@@ -185,6 +185,10 @@
 #define ADF_6XXX_WCY_MODE(accel_dev) \
 	(GET_CAP_MASK(accel_dev) & ICP_ACCEL_CAPABILITIES_WIRELESS_CRYPTO_EXT)
 
+/* Command queue */
+#define ADF_GEN6_WCP_CMDQ_CNT	18
+#define ADF_GEN6_WAT_CMDQ_CNT	18
+
 enum icp_qat_gen6_slice_mask {
 	ICP_ACCEL_GEN6_MASK_UCS_SLICE = BIT(0),
 	ICP_ACCEL_GEN6_MASK_AUTH_SLICE = BIT(1),
