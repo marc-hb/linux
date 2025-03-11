@@ -82,6 +82,9 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	pci_read_config_dword(pdev, ADF_GEN6_FUSECTL4_OFFSET, &hw_data->fuses);
 	pci_read_config_dword(pdev, ADF_GEN6_FUSECTL0_OFFSET, &hw_data->fuse0);
 
+	if (accel_pci_dev->revid == ADF_6XXX_B0_REV_ID)
+		hw_data->fw_name = ADF_6XXX_B0_FW;
+
 	/* Get Accelerators and Accelerator Engine masks */
 	hw_data->accel_mask = hw_data->get_accel_mask(hw_data);
 	hw_data->ae_mask = hw_data->get_ae_mask(hw_data);
@@ -205,6 +208,7 @@ module_pci_driver(adf_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Intel");
 MODULE_FIRMWARE(ADF_6XXX_FW);
+MODULE_FIRMWARE(ADF_6XXX_B0_FW);
 MODULE_FIRMWARE(ADF_6XXX_MMP);
 MODULE_DESCRIPTION("Intel(R) QuickAssist Technology");
 MODULE_VERSION(ADF_DRV_VERSION);

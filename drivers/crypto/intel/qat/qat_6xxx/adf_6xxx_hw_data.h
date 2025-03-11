@@ -157,10 +157,13 @@
 
 /* Firmware binaries */
 #define ADF_6XXX_FW		"qat_6xxx.bin"
+#define ADF_6XXX_B0_FW		"qat_6xxx_b0.bin"
 #define ADF_6XXX_MMP		"qat_6xxx_mmp.bin"
 #define ADF_6XXX_CY_OBJ		"qat_6xxx_cy.bin"
 #define ADF_6XXX_DC_OBJ		"qat_6xxx_dc.bin"
 #define ADF_6XXX_ADMIN_OBJ	"qat_6xxx_admin.bin"
+
+#define ADF_6XXX_B0_REV_ID	0x10
 
 /* RL constants */
 #define ADF_6XXX_RL_PCIE_SCALE_FACTOR_DIV	100
