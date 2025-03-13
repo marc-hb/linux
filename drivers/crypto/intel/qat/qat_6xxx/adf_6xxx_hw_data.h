@@ -4,6 +4,7 @@
 #define ADF_6XXX_HW_DATA_H_
 
 #include <linux/bits.h>
+#include <linux/bitops.h>
 #include <linux/time.h>
 #include <linux/units.h>
 
@@ -17,6 +18,9 @@
 #define ADF_GEN6_PMISC_BAR		1
 #define ADF_GEN6_ETR_BAR		2
 #define ADF_6XXX_MAX_ACCELENGINES	9
+
+#define ADF_GEN6_PCI_MAJOR_REVID_MASK	GENMASK(7, 4)
+#define ADF_GEN6_PCI_MAJOR_REVID_A0	0
 
 /* Clocks frequency */
 #define ADF_GEN6_COUNTER_FREQ		(100 * HZ_PER_MHZ)
