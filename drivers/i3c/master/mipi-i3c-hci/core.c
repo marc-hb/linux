@@ -78,7 +78,7 @@
 #define INTR_SIGNAL_ENABLE		0x28
 #define INTR_FORCE			0x2c
 #define INTR_HC_CMD_SEQ_UFLOW_STAT	BIT(12)	/* Cmd Sequence Underflow */
-#define INTR_HC_RESET_CANCEL		BIT(11)	/* HC Cancelled Reset */
+#define INTR_HC_SEQ_CANCEL		BIT(11)	/* HC Cancelled Transaction Sequence */
 #define INTR_HC_INTERNAL_ERR		BIT(10)	/* HC Internal Error */
 
 #define DAT_SECTION			0x30	/* Device Address Table */
@@ -596,22 +596,24 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
 
 	if (val) {
 		reg_write(INTR_STATUS, val);
+		result = IRQ_HANDLED;
 	}
 
-	if (val & INTR_HC_RESET_CANCEL) {
-		DBG("cancelled reset");
-		val &= ~INTR_HC_RESET_CANCEL;
+	if (val & INTR_HC_SEQ_CANCEL) {
+		dev_dbg(&hci->master.dev,
+			"Host Controller Cancelled Transaction Sequence\n");
+		val &= ~INTR_HC_SEQ_CANCEL;
 	}
 	if (val & INTR_HC_INTERNAL_ERR) {
 		dev_err(&hci->master.dev, "Host Controller Internal Error\n");
 		val &= ~INTR_HC_INTERNAL_ERR;
 	}
 
-	hci->io->irq_handler(hci);
-
 	if (val)
-		dev_err(&hci->master.dev, "unexpected INTR_STATUS %#x\n", val);
-	else
+		dev_warn_once(&hci->master.dev,
+			      "unexpected INTR_STATUS %#x\n", val);
+
+	if (hci->io->irq_handler(hci))
 		result = IRQ_HANDLED;
 
 	return result;
@@ -632,6 +634,7 @@ static int i3c_hci_init(struct i3c_hci *hci)
 		   hci->version_major, hci->version_minor, hci->revision);
 	/* known versions */
 	switch (regval & ~0xf) {
+	case 0x050:	/* version 0.5 */
 	case 0x100:	/* version 1.0 */
 	case 0x110:	/* version 1.1 */
 	case 0x200:	/* version 2.0 */
@@ -701,9 +704,10 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	if (ret)
 		return -ENXIO;
 
-	/* Disable all interrupts and allow all signal updates */
+	/* Disable all interrupts */
 	reg_write(INTR_SIGNAL_ENABLE, 0x0);
-	reg_write(INTR_STATUS_ENABLE, 0xffffffff);
+	/* Allow signal updates relevant to IP versions 0.8 and beyond */
+	reg_write(INTR_STATUS_ENABLE, GENMASK(31, 10));
 
 	/* Make sure our data ordering fits the host's */
 	regval = reg_read(HC_CONTROL);
