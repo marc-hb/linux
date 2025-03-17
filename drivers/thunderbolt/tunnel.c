@@ -100,6 +100,14 @@ MODULE_PARM_DESC(bw_alloc_mode,
 
 static const char * const tb_tunnel_names[] = { "PCI", "DP", "DMA", "USB3" };
 
+static const char * const tb_event_names[] = {
+	[TB_TUNNEL_ACTIVATED] = "activated",
+	[TB_TUNNEL_CHANGED] = "changed",
+	[TB_TUNNEL_DEACTIVATED] = "deactivated",
+	[TB_TUNNEL_LOW_BANDWIDTH] = "low bandwidth",
+	[TB_TUNNEL_NO_BANDWIDTH] = "insufficient bandwidth",
+};
+
 /* Synchronizes kref_get()/put() of struct tb_tunnel */
 static DEFINE_MUTEX(tb_tunnel_lock);
 
@@ -122,7 +130,7 @@ static unsigned int tb_available_credits(const struct tb_port *port,
 	size_t ndp;
 
 	usb3 = tb_acpi_may_tunnel_usb3() ? sw->max_usb3_credits : 0;
-	pcie = tb_acpi_may_tunnel_pcie() ? sw->max_pcie_credits : 0;
+	pcie = tb_may_tunnel_pcie() ? sw->max_pcie_credits : 0;
 
 	if (tb_acpi_is_xdomain_allowed()) {
 		spare = min_not_zero(sw->max_dma_credits, dma_credits);
@@ -218,6 +226,72 @@ void tb_tunnel_put(struct tb_tunnel *tunnel)
 	mutex_lock(&tb_tunnel_lock);
 	kref_put(&tunnel->kref, tb_tunnel_destroy);
 	mutex_unlock(&tb_tunnel_lock);
+}
+
+/**
+ * tb_tunnel_event() - Notify userspace about tunneling event
+ * @tb: Domain where the event occured
+ * @event: Event that happened
+ * @type: Type of the tunnel in question
+ * @src_port: Tunnel source port (can be %NULL)
+ * @dst_port: Tunnel destination port (can be %NULL)
+ *
+ * Notifies userspace about tunneling @event in the domain. The tunnel
+ * does not need to exist (e.g the tunnel was not activated because
+ * there is not enough bandwidth). If the @src_port and @dst_port are
+ * given fill in full %TUNNEL_DETAILS environment variable. Otherwise
+ * uses the shorter one (just the tunnel type).
+ */
+void tb_tunnel_event(struct tb *tb, enum tb_tunnel_event event,
+		     enum tb_tunnel_type type,
+		     const struct tb_port *src_port,
+		     const struct tb_port *dst_port)
+{
+	char *envp[3] = { NULL };
+
+	if (WARN_ON_ONCE(event >= ARRAY_SIZE(tb_event_names)))
+		return;
+	if (WARN_ON_ONCE(type >= ARRAY_SIZE(tb_tunnel_names)))
+		return;
+
+	envp[0] = kasprintf(GFP_KERNEL, "TUNNEL_EVENT=%s", tb_event_names[event]);
+	if (!envp[0])
+		return;
+
+	if (src_port != NULL && dst_port != NULL) {
+		envp[1] = kasprintf(GFP_KERNEL, "TUNNEL_DETAILS=%llx:%u <-> %llx:%u (%s)",
+				    tb_route(src_port->sw), src_port->port,
+				    tb_route(dst_port->sw), dst_port->port,
+				    tb_tunnel_names[type]);
+	} else {
+		envp[1] = kasprintf(GFP_KERNEL, "TUNNEL_DETAILS=(%s)",
+				    tb_tunnel_names[type]);
+	}
+
+	if (envp[1])
+		tb_domain_event(tb, envp);
+
+	kfree(envp[1]);
+	kfree(envp[0]);
+}
+
+static inline void tb_tunnel_set_active(struct tb_tunnel *tunnel, bool active)
+{
+	if (active) {
+		tunnel->state = TB_TUNNEL_ACTIVE;
+		tb_tunnel_event(tunnel->tb, TB_TUNNEL_ACTIVATED, tunnel->type,
+				tunnel->src_port, tunnel->dst_port);
+	} else {
+		tunnel->state = TB_TUNNEL_INACTIVE;
+		tb_tunnel_event(tunnel->tb, TB_TUNNEL_DEACTIVATED, tunnel->type,
+				tunnel->src_port, tunnel->dst_port);
+	}
+}
+
+static inline void tb_tunnel_changed(struct tb_tunnel *tunnel)
+{
+	tb_tunnel_event(tunnel->tb, TB_TUNNEL_CHANGED, tunnel->type,
+			tunnel->src_port, tunnel->dst_port);
 }
 
 static int tb_pci_set_ext_encapsulation(struct tb_tunnel *tunnel, bool enable)
@@ -479,7 +553,7 @@ bool tb_tunnel_reserved_pci(struct tb_port *port, int *reserved_up,
 	if (WARN_ON_ONCE(!port->remote))
 		return false;
 
-	if (!tb_acpi_may_tunnel_pcie())
+	if (!tb_may_tunnel_pcie())
 		return false;
 
 	if (tb_port_get_link_generation(port) < 4)
@@ -992,7 +1066,7 @@ static void tb_dp_dprx_work(struct work_struct *work)
 				return;
 			}
 		} else {
-			tunnel->state = TB_TUNNEL_ACTIVE;
+			tb_tunnel_set_active(tunnel, true);
 		}
 		mutex_unlock(&tb->lock);
 	}
@@ -1646,7 +1720,7 @@ static unsigned int tb_dma_available_credits(const struct tb_port *port)
 	int credits;
 
 	credits = tb_available_credits(port, NULL);
-	if (tb_acpi_may_tunnel_pcie())
+	if (tb_may_tunnel_pcie())
 		credits -= sw->max_pcie_credits;
 	credits -= port->dma_credits;
 
@@ -1957,7 +2031,7 @@ static int tb_usb3_consumed_bandwidth(struct tb_tunnel *tunnel,
 		int *consumed_up, int *consumed_down)
 {
 	struct tb_port *port = tb_upstream_port(tunnel->dst_port->sw);
-	int pcie_weight = tb_acpi_may_tunnel_pcie() ? TB_PCI_WEIGHT : 0;
+	int pcie_weight = tb_may_tunnel_pcie() ? TB_PCI_WEIGHT : 0;
 
 	/*
 	 * PCIe tunneling, if enabled, affects the USB3 bandwidth so
@@ -2326,7 +2400,7 @@ int tb_tunnel_activate(struct tb_tunnel *tunnel)
 		}
 	}
 
-	tunnel->state = TB_TUNNEL_ACTIVE;
+	tb_tunnel_set_active(tunnel, true);
 	return 0;
 
 err:
@@ -2356,7 +2430,7 @@ void tb_tunnel_deactivate(struct tb_tunnel *tunnel)
 	if (tunnel->post_deactivate)
 		tunnel->post_deactivate(tunnel);
 
-	tunnel->state = TB_TUNNEL_INACTIVE;
+	tb_tunnel_set_active(tunnel, false);
 }
 
 /**
@@ -2449,8 +2523,16 @@ int tb_tunnel_alloc_bandwidth(struct tb_tunnel *tunnel, int *alloc_up,
 	if (!tb_tunnel_is_active(tunnel))
 		return -ENOTCONN;
 
-	if (tunnel->alloc_bandwidth)
-		return tunnel->alloc_bandwidth(tunnel, alloc_up, alloc_down);
+	if (tunnel->alloc_bandwidth) {
+		int ret;
+
+		ret = tunnel->alloc_bandwidth(tunnel, alloc_up, alloc_down);
+		if (ret)
+			return ret;
+
+		tb_tunnel_changed(tunnel);
+		return 0;
+	}
 
 	return -EOPNOTSUPP;
 }
