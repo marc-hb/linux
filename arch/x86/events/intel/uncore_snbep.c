@@ -6811,7 +6811,7 @@ PNC_UNCORE_UNIT(irp);
 PNC_UNCORE_UNIT(m2pcie);
 PNC_UNCORE_UNIT(pcu);
 PNC_UNCORE_UNIT(ubox);
-PNC_UNCORE_UNIT(mc);
+PNC_UNCORE_UNIT(imc);
 PNC_UNCORE_UNIT(m2m);
 PNC_UNCORE_UNIT(upi_ll);
 PNC_UNCORE_UNIT(m3upi);
@@ -6852,7 +6852,7 @@ static struct intel_uncore_type *pnc_uncores[UNCORE_PNC_NUM_UNCORE_TYPES] = {
 	&pnc_uncore_m2pcie,
 	&pnc_uncore_pcu,
 	&pnc_uncore_ubox,
-	&pnc_uncore_mc,
+	&pnc_uncore_imc,
 	&pnc_uncore_m2m,
 	&pnc_uncore_upi_ll,
 	&pnc_uncore_m3upi,
