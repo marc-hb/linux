@@ -1855,7 +1855,7 @@ void vmx_inject_exception(struct kvm_vcpu *vcpu)
 
 	vmx_clear_hlt(vcpu);
 
-	if (ex->vector == DB_VECTOR && kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+	if (ex->vector == DB_VECTOR && guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR))
 		vmcs_clear_bits64(GUEST_IA32_LBR_CTL, ARCH_LBR_CTL_LBREN);
 }
 
@@ -7867,7 +7867,6 @@ static void update_intel_pt_cfg(struct kvm_vcpu *vcpu)
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
-	bool guest_has_pt;
 
 	/*
 	 * XSAVES is effectively enabled if and only if XSAVE is also exposed
@@ -7895,12 +7894,9 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
 		nested_vmx_cr_fixed1_bits_update(vcpu);
 
-	guest_has_pt = kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
-		       guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT);
-	guest_cpu_cap_change(vcpu, X86_FEATURE_INTEL_PT, guest_has_pt);
-	if (guest_has_pt) {
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT))
 		update_intel_pt_cfg(vcpu);
-	} else {
+	else {
 		vm_entry_controls_clearbit(vmx, VM_ENTRY_LOAD_IA32_RTIT_CTL |
 					   VM_ENTRY_PT_CONCEAL_PIP);
 		vm_exit_controls_clearbit(vmx, VM_EXIT_PT_CONCEAL_PIP |
@@ -8292,7 +8288,7 @@ int vmx_enter_smm(struct kvm_vcpu *vcpu, union kvm_smram *smram)
 	vmx->nested.vmxon = false;
 	vmx_clear_hlt(vcpu);
 
-	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR)) {
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR)) {
 		WARN_ON_ONCE(!IS_ENABLED(CONFIG_X86_64) ||
 			     !guest_cpu_cap_has(vcpu, X86_FEATURE_LM));
 
@@ -8324,7 +8320,7 @@ int vmx_leave_smm(struct kvm_vcpu *vcpu, const union kvm_smram *smram)
 		vmx->nested.smm.guest_mode = false;
 	}
 
-	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR)) {
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR)) {
 		WARN_ON_ONCE(!IS_ENABLED(CONFIG_X86_64) ||
 			     !guest_cpu_cap_has(vcpu, X86_FEATURE_LM));
 

@@ -1027,8 +1027,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 					  MSR_CORE_PERF_GLOBAL_OVF_CTRL_OVF_UNCORE);
 	}
 
-	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
-	    guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
 		pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
 
 		entry = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
@@ -1036,10 +1035,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
 	}
 
-	entry = kvm_find_cpuid_entry_index(vcpu, 7, 0);
-	if (entry &&
-	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
-	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM))) {
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_HLE) ||
+	    guest_cpu_cap_has(vcpu, X86_FEATURE_RTM)) {
 		pmu->eventsel_rsvd ^= HSW_IN_TX;
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
@@ -1254,7 +1251,7 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL |
 			VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL, mediated);
 
-	arch_lbr = mediated && kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR);
+	arch_lbr = mediated && guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR);
 	vm_exit_controls_changebit(vmx, VM_EXIT_CLEAR_IA32_LBR_CTL, arch_lbr);
 	vm_entry_controls_changebit(vmx, VM_ENTRY_LOAD_IA32_LBR_CTL, arch_lbr);
 }
@@ -1405,7 +1402,7 @@ void vmx_passthrough_lbr_msrs(struct kvm_vcpu *vcpu)
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 
-	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR))
 		return;
 
 	if (!lbr_desc->event) {
