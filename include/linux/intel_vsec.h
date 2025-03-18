@@ -18,7 +18,8 @@
 #define VSEC_CAP_SDSI		BIT(4)
 #define VSEC_CAP_TPMI		BIT(5)
 #define VSEC_CAP_DISCOVERY	BIT(6)
-#define VSEC_FEATURE_COUNT	7
+#define VSEC_CAP_S3M		BIT(7)
+#define VSEC_FEATURE_COUNT	8
 
 /* Intel DVSEC offsets */
 #define INTEL_DVSEC_ENTRIES		0xA
@@ -38,6 +39,7 @@ enum intel_vsec_id {
 	VSEC_ID_DISCOVERY	= 12,
 	VSEC_ID_SDSI		= 65,
 	VSEC_ID_TPMI		= 66,
+	VSEC_ID_S3M		= 71,
 };
 
 /**
