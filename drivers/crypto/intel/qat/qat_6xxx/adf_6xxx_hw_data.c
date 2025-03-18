@@ -98,6 +98,8 @@ static struct adf_hw_device_class adf_6xxx_class = {
 	.type = DEV_6XXX,
 };
 
+static bool enable_asym = true;
+
 static bool services_supported(unsigned long mask)
 {
 	int num_svc = hweight_long(mask);
@@ -723,6 +725,19 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 
 	capabilities_asym = 0;
 
+	if (enable_asym) {
+		capabilities_asym = ICP_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC |
+			ICP_ACCEL_CAPABILITIES_CIPHER |
+			ICP_ACCEL_CAPABILITIES_SM2 |
+			ICP_ACCEL_CAPABILITIES_ECEDMONT;
+
+		if (fusectl1 & ICP_ACCEL_GEN6_MASK_PKE_SLICE) {
+			capabilities_asym &= ~ICP_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC;
+			capabilities_asym &= ~ICP_ACCEL_CAPABILITIES_SM2;
+			capabilities_asym &= ~ICP_ACCEL_CAPABILITIES_ECEDMONT;
+		}
+	}
+
 	capabilities_dc = ICP_ACCEL_CAPABILITIES_COMPRESSION |
 			  ICP_ACCEL_CAPABILITIES_LZ4_COMPRESSION |
 			  ICP_ACCEL_CAPABILITIES_LZ4S_COMPRESSION |
@@ -1026,3 +1041,6 @@ void adf_clean_hw_data_6xxx(struct adf_hw_device_data *hw_data)
 	if (hw_data->dev_class->instances)
 		hw_data->dev_class->instances--;
 }
+
+module_param(enable_asym, bool, 0644);
+MODULE_PARM_DESC(enable_asym, "Enable asym support");
