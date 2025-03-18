@@ -24,6 +24,7 @@ intel-target-$(CONFIG_INTEL_VBTN)		+= vbtn.o
 intel-target-$(CONFIG_INTEL_INT0002_VGPIO)	+= int0002_vgpio.o
 intel-target-$(CONFIG_INTEL_ISHTP_ECLITE)	+= ishtp_eclite.o
 intel-target-$(CONFIG_INTEL_OAKTRAIL)		+= oaktrail.o
+intel-target-$(CONFIG_INTEL_S3M_BRIDGE)		+= s3m.o
 intel-target-$(CONFIG_INTEL_SDSI)		+= sdsi.o
 intel-target-$(CONFIG_INTEL_VSEC)		+= vsec.o
 

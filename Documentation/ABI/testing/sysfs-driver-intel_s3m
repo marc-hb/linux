@@ -1,0 +1,45 @@
+What:		/dev/s3mX
+Date:		Oct 2024
+KernelVersion:	6.6
+Contact:	"Will Skrydlak" <will.j.skrydlak@linux.intel.com>
+Description:
+		This interface provides issuance of commands to the S3M (Secure
+		Startup Services Module). Commands are relayed through the
+		OOBMSM mailbox, and processed by the S3M. The S3M will return a
+		response upon completion of command execution.
+
+		The ABI is defined in [/include/uapi/]<linux/s3m_if.h>. The user
+		must allocate a payload buffer to hold the request data and the
+		response data. The response size must be greater than or equal
+		to the request size. The payload allocation must be equal to
+		response size.
+
+		After sending the request payload to the S3M, the driver will
+		wait until the OOBMSM sets the OBJECT_RDY flag or times out.
+		Once the OBJECT_READY flag is set, the driver will read back the
+		response data. If the response data size (determined by the
+		driver) is larger than the payload allocation, an error will be
+		returned. Otherwise, the response size will be updated, and the
+		data will be copied back to the payload buffer.
+
+		If malformed payloads are sent to the S3M, the driver may not
+		produce an error. However, the S3M mailbox state machine may be
+		in error. If that is the case, the next command sent to the
+		driver, will attempt to reset the S3M by setting the ABORT bit.
+		This should reset the S3M mailbox state.
+
+		==========	=====
+		Error Code	Cause
+		==========	=====
+		EIO		General mailbox failure.
+		ETIMEDOUT	Timed out waiting for mailbox state change.
+		ENOMEM		Failed to allocate memory.
+		EAGAIN		Mailbox was in error state. Abort flag has been
+				set. Mailbox reset has been triggered. Try
+				sending command again.
+		EINVAL		Request size was too large.
+		EMSGSIZE	Response message was too long.
+		ENODATA		Failed to get device data.
+		EOPNOTSUPP	Invalid IOCTL command.
+		EOVERFLOW	Addition of two values overflowed.
+		EBADMSG		Mailbox discovery failed during probe
