@@ -563,11 +563,6 @@ static const struct intel_vsec_platform_info oobmsm_info = {
 	.quirks = VSEC_QUIRK_OOBMSM,
 };
 
-/* DMR OOBMSM info */
-static const struct intel_vsec_platform_info dmr_oobmsm_info = {
-	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI,
-};
-
 /* TGL info */
 static const struct intel_vsec_platform_info tgl_info = {
 	.caps = VSEC_CAP_TELEMETRY,
