@@ -18,7 +18,7 @@ Release History
 ===============
 
 
-dmr-6.13-v1.0
+dmr-6.14-v1.0
 ---------------
 
 4.   add arch/x86/configs/dmr.config file for build.
