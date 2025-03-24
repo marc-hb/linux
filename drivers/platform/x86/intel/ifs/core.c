@@ -21,6 +21,8 @@ static const struct x86_cpu_id ifs_cpu_ids[] __initconst = {
 	X86_MATCH(INTEL_GRANITERAPIDS_D, ARRAY_GEN0),
 	X86_MATCH(INTEL_ATOM_CRESTMONT_X, ARRAY_GEN1),
 	X86_MATCH(INTEL_ATOM_DARKMONT_X, ARRAY_GEN1),
+	X86_MATCH(INTEL_PANTHERCOVE_X, ARRAY_GEN0),
+	X86_MATCH(INTEL_PANTHERLAKE_L, ARRAY_GEN1),
 	{}
 };
 MODULE_DEVICE_TABLE(x86cpu, ifs_cpu_ids);
@@ -33,7 +35,6 @@ bool *ifs_pkg_auth;
 static const struct ifs_test_caps scan_test = {
 	.integrity_cap_bit = MSR_INTEGRITY_CAPS_PERIODIC_BIST_BIT,
 	.test_num = IFS_TYPE_SAF,
-	.image_suffix = "scan",
 };
 
 static const struct ifs_test_caps array_test = {
@@ -49,19 +50,7 @@ static const struct ifs_test_msrs scan_msrs = {
 	.test_ctrl = MSR_SAF_CTRL,
 };
 
-static const struct ifs_test_msrs sbaf_msrs = {
-	.copy_hashes = MSR_COPY_SBAF_HASHES,
-	.copy_hashes_status = MSR_SBAF_HASHES_STATUS,
-	.copy_chunks = MSR_AUTHENTICATE_AND_COPY_SBAF_CHUNK,
-	.copy_chunks_status = MSR_SBAF_CHUNKS_AUTHENTICATION_STATUS,
-	.test_ctrl = MSR_SBAF_CTRL,
-};
-
-static const struct ifs_test_caps sbaf_test = {
-	.integrity_cap_bit = MSR_INTEGRITY_CAPS_SBAF_BIT,
-	.test_num = IFS_TYPE_SBAF,
-	.image_suffix = "sbft",
-};
+DEFINE_PER_CPU(struct ifs_test_output, ifs_scan_n);
 
 static struct ifs_device ifs_devices[] = {
 	[IFS_TYPE_SAF] = {
@@ -72,6 +61,9 @@ static struct ifs_device ifs_devices[] = {
 			.minor = MISC_DYNAMIC_MINOR,
 			.groups = plat_ifs_groups,
 		},
+		.rw_data = {
+			.result_ptr = &ifs_scan_n,
+		}
 	},
 	[IFS_TYPE_ARRAY_BIST] = {
 		.test_caps = &array_test,
@@ -79,15 +71,6 @@ static struct ifs_device ifs_devices[] = {
 			.name = "intel_ifs_1",
 			.minor = MISC_DYNAMIC_MINOR,
 			.groups = plat_ifs_array_groups,
-		},
-	},
-	[IFS_TYPE_SBAF] = {
-		.test_caps = &sbaf_test,
-		.test_msrs = &sbaf_msrs,
-		.misc = {
-			.name = "intel_ifs_2",
-			.minor = MISC_DYNAMIC_MINOR,
-			.groups = plat_ifs_groups,
 		},
 	},
 };
@@ -109,7 +92,7 @@ static int __init ifs_init(void)
 {
 	const struct x86_cpu_id *m;
 	u64 msrval;
-	int i, ret;
+	int i, ret, cpu;
 
 	m = x86_match_cpu(ifs_cpu_ids);
 	if (!m)
@@ -133,11 +116,20 @@ static int __init ifs_init(void)
 			continue;
 		ifs_devices[i].rw_data.generation = FIELD_GET(MSR_INTEGRITY_CAPS_SAF_GEN_MASK,
 							      msrval);
+		ifs_devices[i].rw_data.all_lp_join = ifs_devices[i].rw_data.generation ?
+						(msrval & MSR_INTEGRITY_CAPS_ALL_LP_JOIN) : true;
 		ifs_devices[i].rw_data.array_gen = (u32)m->driver_data;
 		ret = misc_register(&ifs_devices[i].misc);
 		if (ret)
 			goto err_exit;
 	}
+
+	for_each_possible_cpu(cpu)
+		memset(per_cpu_ptr(&ifs_scan_n, cpu), 0, sizeof(struct ifs_test_output));
+
+	if (boot_cpu_data.x86_vfm == INTEL_PANTHERLAKE_L)
+		printk("intel_ifs: Experimetal IFS support only on PTL e-cores\n");
+
 	return 0;
 
 err_exit:
