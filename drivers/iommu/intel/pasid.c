@@ -21,6 +21,7 @@
 #include "iommu.h"
 #include "pasid.h"
 #include "../iommu-pages.h"
+#include "sats.h"
 
 /*
  * Intel IOMMU system wide PASID name space:
@@ -308,6 +309,29 @@ static void pasid_flush_caches(struct intel_iommu *iommu,
 	}
 }
 
+static void pasid_set_secure_ats(struct hpt_table *hpt,
+				 u16 did, struct pasid_entry *pte)
+{
+	pasid_set_bits(&pte->val[5], GENMASK_ULL(15, 0), did);
+	pasid_set_bits(&pte->val[4], VTD_PAGE_MASK,
+		       virt_to_phys(hpt->table));
+	pasid_set_bits(&pte->val[4], BIT_ULL(2), BIT_ULL(2));
+	pasid_set_bits(&pte->val[4], GENMASK_ULL(1, 0), hpt->order);
+	pasid_set_bits(&pte->val[4], GENMASK_ULL(11, 3), 0);
+}
+
+static void hpt_cache_invalidation_did(struct intel_iommu *iommu, u16 did)
+{
+	struct qi_desc desc;
+
+	desc.qw0 = QI_HPT_TYPE | QI_HPT_DID(did) | QI_HPT_GRAN(QI_HPT_DOMAIN);
+	desc.qw1 = QI_EIOTLB_IH(3);//YiLiu: no reason to leave some levels untouched
+	desc.qw2 = 0;
+	desc.qw3 = 0;
+
+	qi_submit_sync(iommu, &desc, 1, 0);
+}
+
 /*
  * This function is supposed to be used after caller updates the fields
  * except for the SSADE and P bit of a pasid table entry. It does the
@@ -347,7 +371,8 @@ static void intel_pasid_flush_present(struct intel_iommu *iommu,
  */
 static void pasid_pte_config_first_level(struct intel_iommu *iommu,
 					 struct pasid_entry *pte,
-					 pgd_t *pgd, u16 did, int flags)
+					 pgd_t *pgd, struct hpt_table *hpt,
+					 u16 did, int flags)
 {
 	lockdep_assert_held(&iommu->lock);
 
@@ -362,6 +387,9 @@ static void pasid_pte_config_first_level(struct intel_iommu *iommu,
 	if (flags & PASID_FLAG_PAGE_SNOOP)
 		pasid_set_pgsnp(pte);
 
+	if (hpt)
+		pasid_set_secure_ats(hpt, did, pte);
+
 	pasid_set_domain_id(pte, did);
 	pasid_set_address_width(pte, iommu->agaw);
 	pasid_set_page_snoop(pte, !!ecap_smpwc(iommu->ecap));
@@ -373,7 +401,8 @@ static void pasid_pte_config_first_level(struct intel_iommu *iommu,
 
 int intel_pasid_setup_first_level(struct intel_iommu *iommu,
 				  struct device *dev, pgd_t *pgd,
-				  u32 pasid, u16 did, int flags)
+				  struct hpt_table *hpt, u32 pasid,
+				  u16 did, int flags)
 {
 	struct pasid_entry *pte;
 
@@ -401,21 +430,27 @@ int intel_pasid_setup_first_level(struct intel_iommu *iommu,
 		return -EBUSY;
 	}
 
-	pasid_pte_config_first_level(iommu, pte, pgd, did, flags);
+	pasid_pte_config_first_level(iommu, pte, pgd, hpt, did, flags);
 
 	spin_unlock(&iommu->lock);
 
 	pasid_flush_caches(iommu, pte, pasid, did);
+	/* Keep it to be aligned with PoC */
+	if (hpt)
+	       hpt_cache_invalidation_did(iommu, did);
 
 	return 0;
 }
 
 int intel_pasid_replace_first_level(struct intel_iommu *iommu,
 				    struct device *dev, pgd_t *pgd,
-				    u32 pasid, u16 did, u16 old_did,
-				    int flags)
+				    struct hpt_table *hpt, u32 pasid,
+				    u16 did, u16 old_did, int flags)
 {
+	struct device_domain_info *info = dev_iommu_priv_get(dev);
 	struct pasid_entry *pte, new_pte;
+	struct context_entry *context;
+	bool hptc;
 
 	if (!ecap_flts(iommu->ecap)) {
 		pr_err("No first level translation support on %s\n",
@@ -429,7 +464,7 @@ int intel_pasid_replace_first_level(struct intel_iommu *iommu,
 		return -EINVAL;
 	}
 
-	pasid_pte_config_first_level(iommu, &new_pte, pgd, did, flags);
+	pasid_pte_config_first_level(iommu, &new_pte, pgd, hpt, did, flags);
 
 	spin_lock(&iommu->lock);
 	pte = intel_pasid_get_entry(dev, pasid);
@@ -445,11 +480,17 @@ int intel_pasid_replace_first_level(struct intel_iommu *iommu,
 
 	WARN_ON(old_did != pasid_get_domain_id(pte));
 
+	context = iommu_context_addr(iommu, info->bus, info->devfn, 0);
+	WARN_ON(!context);
+	hptc = context_get_sm_hpte(context);
+
 	*pte = new_pte;
 	spin_unlock(&iommu->lock);
 
 	intel_pasid_flush_present(iommu, dev, pasid, old_did, pte);
 	intel_iommu_drain_pasid_prq(dev, pasid);
+	if (hptc)
+	       hpt_cache_invalidation_did(iommu, old_did);
 
 	return 0;
 }
@@ -459,19 +500,21 @@ int intel_pasid_replace_first_level(struct intel_iommu *iommu,
  */
 static void pasid_pte_config_second_level(struct intel_iommu *iommu,
 					  struct pasid_entry *pte,
-					  u64 pgd_val, int agaw, u16 did,
-					  bool dirty_tracking)
+					  struct dmar_domain *domain)
 {
+	u16 did = domain_id_iommu(domain, iommu);
+	u64 pgd_val = virt_to_phys(domain->pgd);
+
 	lockdep_assert_held(&iommu->lock);
 
 	pasid_clear_entry(pte);
 	pasid_set_domain_id(pte, did);
 	pasid_set_slptr(pte, pgd_val);
-	pasid_set_address_width(pte, agaw);
+	pasid_set_address_width(pte, domain->agaw);
 	pasid_set_translation_type(pte, PASID_ENTRY_PGTT_SL_ONLY);
 	pasid_set_fault_enable(pte);
 	pasid_set_page_snoop(pte, !!ecap_smpwc(iommu->ecap));
-	if (dirty_tracking)
+	if (domain->dirty_tracking)
 		pasid_set_ssade(pte);
 
 	pasid_set_present(pte);
@@ -481,10 +524,8 @@ int intel_pasid_setup_second_level(struct intel_iommu *iommu,
 				   struct dmar_domain *domain,
 				   struct device *dev, u32 pasid)
 {
+	u16 did = domain_id_iommu(domain, iommu);
 	struct pasid_entry *pte;
-	struct dma_pte *pgd;
-	u64 pgd_val;
-	u16 did;
 
 	/*
 	 * If hardware advertises no support for second level
@@ -495,10 +536,6 @@ int intel_pasid_setup_second_level(struct intel_iommu *iommu,
 		       iommu->name);
 		return -EINVAL;
 	}
-
-	pgd = domain->pgd;
-	pgd_val = virt_to_phys(pgd);
-	did = domain_id_iommu(domain, iommu);
 
 	spin_lock(&iommu->lock);
 	pte = intel_pasid_get_entry(dev, pasid);
@@ -512,11 +549,13 @@ int intel_pasid_setup_second_level(struct intel_iommu *iommu,
 		return -EBUSY;
 	}
 
-	pasid_pte_config_second_level(iommu, pte, pgd_val, domain->agaw,
-				      did, domain->dirty_tracking);
+	pasid_pte_config_second_level(iommu, pte, domain);
 	spin_unlock(&iommu->lock);
 
 	pasid_flush_caches(iommu, pte, pasid, did);
+	/* Keep it to be aligned with PoC */
+	if (domain->hpt)
+	       hpt_cache_invalidation_did(iommu, did);
 
 	return 0;
 }
@@ -526,10 +565,10 @@ int intel_pasid_replace_second_level(struct intel_iommu *iommu,
 				     struct device *dev, u16 old_did,
 				     u32 pasid)
 {
+	struct device_domain_info *info = dev_iommu_priv_get(dev);
 	struct pasid_entry *pte, new_pte;
-	struct dma_pte *pgd;
-	u64 pgd_val;
-	u16 did;
+	struct context_entry *context;
+	bool hptc;
 
 	/*
 	 * If hardware advertises no support for second level
@@ -541,13 +580,7 @@ int intel_pasid_replace_second_level(struct intel_iommu *iommu,
 		return -EINVAL;
 	}
 
-	pgd = domain->pgd;
-	pgd_val = virt_to_phys(pgd);
-	did = domain_id_iommu(domain, iommu);
-
-	pasid_pte_config_second_level(iommu, &new_pte, pgd_val,
-				      domain->agaw, did,
-				      domain->dirty_tracking);
+	pasid_pte_config_second_level(iommu, &new_pte, domain);
 
 	spin_lock(&iommu->lock);
 	pte = intel_pasid_get_entry(dev, pasid);
@@ -563,11 +596,17 @@ int intel_pasid_replace_second_level(struct intel_iommu *iommu,
 
 	WARN_ON(old_did != pasid_get_domain_id(pte));
 
+	context = iommu_context_addr(iommu, info->bus, info->devfn, 0);
+	WARN_ON(!context);
+	hptc = context_get_sm_hpte(context);
+
 	*pte = new_pte;
 	spin_unlock(&iommu->lock);
 
 	intel_pasid_flush_present(iommu, dev, pasid, old_did, pte);
 	intel_iommu_drain_pasid_prq(dev, pasid);
+	if (hptc)
+	       hpt_cache_invalidation_did(iommu, old_did);
 
 	return 0;
 }
@@ -688,8 +727,11 @@ int intel_pasid_replace_pass_through(struct intel_iommu *iommu,
 				     struct device *dev, u16 old_did,
 				     u32 pasid)
 {
+	struct device_domain_info *info = dev_iommu_priv_get(dev);
 	struct pasid_entry *pte, new_pte;
+	struct context_entry *context;
 	u16 did = FLPT_DEFAULT_DID;
+	bool hptc;
 
 	pasid_pte_config_pass_through(iommu, &new_pte, did);
 
@@ -707,11 +749,17 @@ int intel_pasid_replace_pass_through(struct intel_iommu *iommu,
 
 	WARN_ON(old_did != pasid_get_domain_id(pte));
 
+	context = iommu_context_addr(iommu, info->bus, info->devfn, 0);
+	WARN_ON(!context);
+	hptc = context_get_sm_hpte(context);
+
 	*pte = new_pte;
 	spin_unlock(&iommu->lock);
 
 	intel_pasid_flush_present(iommu, dev, pasid, old_did, pte);
 	intel_iommu_drain_pasid_prq(dev, pasid);
+	if (hptc)
+	       hpt_cache_invalidation_did(iommu, old_did);
 
 	return 0;
 }
@@ -767,6 +815,9 @@ static void pasid_pte_config_nestd(struct intel_iommu *iommu,
 
 	if (s2_domain->force_snooping)
 		pasid_set_pgsnp(pte);
+
+	if (s2_domain->hpt)
+		pasid_set_secure_ats(s2_domain->hpt, did, pte);
 
 	pasid_set_slptr(pte, virt_to_phys(pgd));
 	pasid_set_fault_enable(pte);
@@ -842,6 +893,9 @@ int intel_pasid_setup_nested(struct intel_iommu *iommu, struct device *dev,
 	spin_unlock(&iommu->lock);
 
 	pasid_flush_caches(iommu, pte, pasid, did);
+	/* Keep it to be aligned with PoC */
+	if (domain->hpt)
+	       hpt_cache_invalidation_did(iommu, did);
 
 	return 0;
 }
@@ -850,10 +904,13 @@ int intel_pasid_replace_nested(struct intel_iommu *iommu,
 			       struct device *dev, u32 pasid,
 			       u16 old_did, struct dmar_domain *domain)
 {
+	struct device_domain_info *info = dev_iommu_priv_get(dev);
 	struct iommu_hwpt_vtd_s1 *s1_cfg = &domain->s1_cfg;
 	struct dmar_domain *s2_domain = domain->s2_domain;
 	u16 did = domain_id_iommu(domain, iommu);
 	struct pasid_entry *pte, new_pte;
+	struct context_entry *context;
+	bool hptc;
 
 	/* Address width should match the address width supported by hardware */
 	switch (s1_cfg->addr_width) {
@@ -900,11 +957,17 @@ int intel_pasid_replace_nested(struct intel_iommu *iommu,
 
 	WARN_ON(old_did != pasid_get_domain_id(pte));
 
+	context = iommu_context_addr(iommu, info->bus, info->devfn, 0);
+	WARN_ON(!context);
+	hptc = context_get_sm_hpte(context);
+
 	*pte = new_pte;
 	spin_unlock(&iommu->lock);
 
 	intel_pasid_flush_present(iommu, dev, pasid, old_did, pte);
 	intel_iommu_drain_pasid_prq(dev, pasid);
+	if (hptc)
+	       hpt_cache_invalidation_did(iommu, old_did);
 
 	return 0;
 }
@@ -990,8 +1053,13 @@ static int context_entry_set_pasid_table(struct context_entry *context,
 
 	if (info->ats_supported)
 		context_set_sm_dte(context);
-	if (info->pasid_supported)
-		context_set_pasid(context);
+	if (info->pasid_supported) {
+		unsigned long value = CONTEXT_PASIDE;
+		value |= info->sats_supported ? CONTEXT_EPTR : 0;
+		context_set_pasid(context, value);
+	}
+	if (info && info->sats_supported)
+		context_set_sm_hpte(context);
 
 	context_set_fault_enable(context);
 	context_set_present(context);

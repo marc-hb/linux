@@ -30,6 +30,7 @@
 #include "../iommu-pages.h"
 #include "pasid.h"
 #include "perfmon.h"
+#include "sats.h"
 
 #define ROOT_SIZE		VTD_PAGE_SIZE
 #define CONTEXT_SIZE		VTD_PAGE_SIZE
@@ -211,7 +212,9 @@ static int intel_iommu_superpage = 1;
 static int iommu_identity_mapping;
 static int iommu_skip_te_disable;
 static int disable_igfx_iommu;
+static int intel_iommu_sats = 0;
 
+#define sats_supported(iommu)   (intel_iommu_sats && ecap_hpts(iommu->ecap))
 #define IDENTMAP_AZALIA		4
 
 const struct iommu_ops intel_iommu_ops;
@@ -270,6 +273,9 @@ static int __init intel_iommu_setup(char *str)
 		} else if (!strncmp(str, "tboot_noforce", 13)) {
 			pr_info("Intel-IOMMU: not forcing on after tboot. This could expose security risk for tboot\n");
 			intel_iommu_tboot_noforce = 1;
+		} else if (!strncmp(str, "sats_on", 7)) {
+			pr_info("Enable secure ATS support\n");
+			intel_iommu_sats = 1;
 		} else {
 			pr_notice("Unknown option - '%s'\n", str);
 		}
@@ -1425,6 +1431,9 @@ static void domain_exit(struct dmar_domain *domain)
 
 		domain_unmap(domain, 0, DOMAIN_MAX_PFN(domain->gaw), &freelist);
 		iommu_put_pages_list(&freelist);
+		if (domain->hpt)
+			intel_sats_free_hpt_table(domain->hpt);
+
 	}
 
 	if (WARN_ON(!list_empty(&domain->devices)))
@@ -1753,13 +1762,14 @@ static void domain_context_clear_one(struct device_domain_info *info, u8 bus, u8
 
 int __domain_setup_first_level(struct intel_iommu *iommu,
 			       struct device *dev, ioasid_t pasid,
-			       u16 did, pgd_t *pgd, int flags,
-			       struct iommu_domain *old)
+			       u16 did, pgd_t *pgd, struct hpt_table *hpt,
+			       int flags, struct iommu_domain *old)
 {
 	if (!old)
 		return intel_pasid_setup_first_level(iommu, dev, pgd,
-						     pasid, did, flags);
-	return intel_pasid_replace_first_level(iommu, dev, pgd, pasid, did,
+						     hpt, pasid, did, flags);
+	return intel_pasid_replace_first_level(iommu, dev, pgd, hpt,
+					       pasid, did,
 					       iommu_domain_did(old, iommu),
 					       flags);
 }
@@ -1808,7 +1818,7 @@ static int domain_setup_first_level(struct intel_iommu *iommu,
 
 	return __domain_setup_first_level(iommu, dev, pasid,
 					  domain_id_iommu(domain, iommu),
-					  (pgd_t *)pgd, flags, old);
+					  (pgd_t *)pgd, domain->hpt, flags, old);
 }
 
 static int dmar_domain_attach_device(struct dmar_domain *domain,
@@ -3327,6 +3337,18 @@ static struct dmar_domain *paging_domain_alloc(struct device *dev, bool first_st
 		kfree(domain);
 		return ERR_PTR(-ENOMEM);
 	}
+
+	/* Use HPT as long as it is supported */
+	if (info->sats_supported) {
+		domain->hpt = intel_sats_alloc_hpt_table(domain);
+		if (!domain->hpt) {
+			iommu_free_page(domain->pgd);
+			kfree(domain);
+			return ERR_PTR(-ENOMEM);
+		}
+		pr_info("Allocate HPT for dmar domain: %p, and device: %s\n", domain, dev_name(dev));
+	}
+
 	domain_flush_cache(domain, domain->pgd, PAGE_SIZE);
 
 	return domain;
@@ -3427,6 +3449,11 @@ int paging_domain_compatible(struct iommu_domain *domain, struct device *dev)
 	    (!sm_supported(iommu) || !ecap_flts(iommu->ecap)))
 		return -EINVAL;
 
+	if (!!dmar_domain->hpt != !!info->sats_supported) {
+		pr_err("SATS incompatible detected between dmar domain (%p) and device (%s)\n", dmar_domain, dev_name(dev));
+		return -EINVAL;
+	}
+
 	/* check if this iommu agaw is sufficient for max mapped address */
 	addr_width = agaw_to_width(iommu->agaw);
 	if (addr_width > cap_mgaw(iommu->cap))
@@ -3497,6 +3524,7 @@ static int intel_iommu_map_pages(struct iommu_domain *domain,
 				 size_t pgsize, size_t pgcount,
 				 int prot, gfp_t gfp, size_t *mapped)
 {
+	struct dmar_domain *dmar_domain = to_dmar_domain(domain);
 	unsigned long pgshift = __ffs(pgsize);
 	size_t size = pgcount << pgshift;
 	int ret;
@@ -3508,8 +3536,25 @@ static int intel_iommu_map_pages(struct iommu_domain *domain,
 		return -EINVAL;
 
 	ret = intel_iommu_map(domain, iova, paddr, size, prot, gfp);
-	if (!ret && mapped)
+	if (ret)
+		return ret;
+
+	if (mapped)
 		*mapped = size;
+
+	if (dmar_domain->hpt) {
+		phys_addr_t perm_addr = paddr;
+		size_t i;
+
+		for(i = 0; i < pgcount; i++) {
+			ret = intel_sats_map_hpt(dmar_domain->hpt,
+						 perm_addr >> VTD_PAGE_SHIFT,
+						 pgsize, prot);
+			if (ret)
+				break;
+			perm_addr += pgsize;
+		}
+	}
 
 	return ret;
 }
@@ -3554,8 +3599,23 @@ static size_t intel_iommu_unmap_pages(struct iommu_domain *domain,
 				      size_t pgsize, size_t pgcount,
 				      struct iommu_iotlb_gather *gather)
 {
+	struct dmar_domain *dmar_domain = to_dmar_domain(domain);
 	unsigned long pgshift = __ffs(pgsize);
 	size_t size = pgcount << pgshift;
+
+	if (dmar_domain->hpt) {
+		unsigned long ioaddr = iova;
+		phys_addr_t paddr;
+		size_t i;
+
+		for(i = 0; i < pgcount; i++) {
+			paddr = iommu_iova_to_phys(domain, ioaddr);
+			intel_sats_unmap_hpt(dmar_domain->hpt,
+					     paddr >> VTD_PAGE_SHIFT,
+					     pgsize);
+			ioaddr = pgsize;
+		}
+	}
 
 	return intel_iommu_unmap(domain, iova, size, gather);
 }
@@ -3719,6 +3779,10 @@ static struct iommu_device *intel_iommu_probe_device(struct device *dev)
 			if (info->ats_supported && ecap_prs(iommu->ecap) &&
 			    pci_pri_supported(pdev))
 				info->pri_supported = 1;
+			if (info->ats_supported && sats_supported(iommu)) {
+				info->sats_supported = 1;
+				pr_info("device: %s supports SATS\n", dev_name(dev));
+			}
 		}
 	}
 

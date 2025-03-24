@@ -61,7 +61,7 @@
 #define CONTEXT_TT_DEV_IOTLB	1
 #define CONTEXT_TT_PASS_THROUGH 2
 #define CONTEXT_PASIDE		BIT_ULL(3)
-
+#define CONTEXT_EPTR		BIT_ULL(6)
 /*
  * Intel IOMMU register specification per version 1.0 public spec.
  */
@@ -194,6 +194,7 @@
  * Extended Capability Register
  */
 
+#define ecap_hpts(e)		(((e) >> 55) & 0x1)
 #define ecap_pms(e)		(((e) >> 51) & 0x1)
 #define ecap_rps(e)		(((e) >> 49) & 0x1)
 #define ecap_smpwc(e)		(((e) >> 48) & 0x1)
@@ -430,6 +431,18 @@ enum {
 #define QI_PC_DID(did)		(((u64)did) << 16)
 #define QI_PC_GRAN(gran)	(((u64)gran) << 4)
 
+#define QI_HPT_TYPE		0xa
+#define QI_HPT_GRAN(g)		(((u64)(g)) << 4)
+#define QI_HPT_DID(d)		(((u64)(d)) << 16)
+
+/* HPT cache invalidation granu */
+#define QI_HPT_GLOBAL		1
+#define QI_HPT_DOMAIN		2
+#define QI_HPT_PSI		3
+#define QI_HPT_ADDR(addr)	((u64)(addr) & VTD_PAGE_MASK)
+#define QI_HPT_IH(ih)		(((u64)(ih)) << 6)
+#define QI_HPT_AM(am)		(((u64)(am)) & 0x3f)
+
 /* PASID cache invalidation granu */
 #define QI_PC_ALL_PASIDS	0
 #define QI_PC_PASID_SEL		1
@@ -627,6 +640,9 @@ struct dmar_domain {
 	int		iommu_superpage;/* Level of superpages supported:
 					   0 == 4KiB (no superpages), 1 == 2MiB,
 					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
+	/* host permission table */
+	struct hpt_table *hpt;
+
 	union {
 		/* DMA remapping domain */
 		struct {
@@ -766,11 +782,12 @@ struct device_domain_info {
 	u8 bus;			/* PCI bus number */
 	u8 devfn;		/* PCI devfn number */
 	u16 pfsid;		/* SRIOV physical function source ID */
-	u8 pasid_supported:3;
+	u8 pasid_supported:4;
 	u8 pasid_enabled:1;
 	u8 pri_supported:1;
 	u8 pri_enabled:1;
 	u8 ats_supported:1;
+	u8 sats_supported:1;
 	u8 ats_enabled:1;
 	u8 dtlb_extra_inval:1;	/* Quirk for devices need extra flush */
 	u8 ats_qdep;
@@ -1008,9 +1025,10 @@ static inline void context_set_domain_id(struct context_entry *context,
 	context->hi |= (value & ((1 << 16) - 1)) << 8;
 }
 
-static inline void context_set_pasid(struct context_entry *context)
+static inline void context_set_pasid(struct context_entry *context,
+				     unsigned long value)
 {
-	context->lo |= CONTEXT_PASIDE;
+	context->lo |= value;
 }
 
 static inline int context_domain_id(struct context_entry *c)
@@ -1206,6 +1224,20 @@ static inline void qi_desc_dev_iotlb_pasid(u16 sid, u16 pfsid, u32 pasid,
 	}
 }
 
+/*
+ * Set the HPTE(Host Permission Table Enable) field of a scalable mode
+ * context entry.
+ */
+static inline void context_set_sm_hpte(struct context_entry *context)
+{
+	context->lo |= BIT_ULL(5);
+}
+
+static inline bool context_get_sm_hpte(struct context_entry *context)
+{
+	return context->lo & BIT_ULL(5);
+}
+
 /* Convert value to context PASID directory size field coding. */
 #define context_pdts(pds)	(((pds) & 0x7) << 9)
 
@@ -1259,8 +1291,8 @@ void domain_remove_dev_pasid(struct iommu_domain *domain,
 
 int __domain_setup_first_level(struct intel_iommu *iommu,
 			       struct device *dev, ioasid_t pasid,
-			       u16 did, pgd_t *pgd, int flags,
-			       struct iommu_domain *old);
+			       u16 did, pgd_t *pgd, struct hpt_table *hpt,
+			       int flags, struct iommu_domain *old);
 
 int dmar_ir_support(void);
 

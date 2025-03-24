@@ -17,6 +17,7 @@
 #include "iommu.h"
 #include "pasid.h"
 #include "perf.h"
+#include "sats.h"
 
 struct tbl_walk {
 	u16 bus;
@@ -470,6 +471,104 @@ static int dev_domain_translation_struct_show(struct seq_file *m, void *unused)
 }
 DEFINE_SHOW_ATTRIBUTE(dev_domain_translation_struct);
 
+static inline void
+dump_hpt_info(struct seq_file *m, unsigned long phys_pfn, struct hpt_pte *path)
+{
+	seq_printf(m, "%013lx |\t%016llx:%016llx\t%016llx:%016llx\t%016llx:%016llx\t%016llx:%016llx\n",
+		   phys_pfn,
+		   path[4].high, path[4].low,
+		   path[3].high, path[3].low,
+		   path[2].high, path[2].low,
+		   path[1].high, path[1].low);
+}
+
+static void hpt_table_walk_level(struct seq_file *m, struct hpt_pte *parent,
+				 int level, unsigned long start,
+				 struct hpt_pte *path)
+{
+	struct hpt_pte *pte;
+	int i;
+
+	if (level > HPTL4 || level < HPTL1)
+		return;
+
+	for (i = 0; i < HPT_ENTRIES;
+			i++, start += hpt_level_to_entry_coverage(level)) {
+		pte =  &parent[i];
+
+		if (level == HPTL4 && !hpt_pte_address_valid(pte))
+			continue;
+
+		if (!pte->high && !pte->low)
+			continue;
+
+		path[level] = *pte;
+		if (level == HPTL1 || !hpt_pte_address_valid(pte))
+			dump_hpt_info(m, start, path);
+		else
+			hpt_table_walk_level(m, phys_to_virt(hpt_pte_addr(pte)),
+					     level - 1, start, path);
+		path[level].high = 0;
+		path[level].low = 0;
+	}
+}
+
+static int show_device_hpt_translation(struct device *dev, void *data)
+{
+	struct iommu_domain *idomain = iommu_get_domain_for_dev(dev);
+	struct hpt_pte path[5] = { 0 };
+	struct hpt_table *hpt_table;
+	struct dmar_domain *domain;
+	struct seq_file *m = data;
+	bool dump_s2_hpt;
+
+	if (!idomain)
+		return 0;
+
+	domain = to_dmar_domain(idomain);
+
+	/*
+	 * For nested translation, the 'domain' is user stage-1 page
+	 * table, which is used for GVA/GIOVA-GPA translation in the
+	 * guest, domain->s2_domain is stage-2 page table, which is used
+	 * for GPA-HPA translation. The mappings of 's2_domain' may have
+	 * corresponding HPT to check their permission on host.
+	 */
+
+	if (!domain)
+		return 0;
+
+	hpt_table = domain->hpt;
+	if (domain->s2_domain && domain->s2_domain->hpt)
+		dump_s2_hpt = true;
+
+dump_hpt:
+	if (hpt_table) {
+		seq_printf(m, "Device %s @0x%llx\n", dev_name(dev),
+			   (u64)virt_to_phys(hpt_table->table));
+		seq_printf(m, "%-15s\t%-33s\t%-33s\t%-33s\t%-33s\n",
+			   "PHYS_PFN", "HPTL4", "HPTL3", "HPTL2", "HPTL1");
+
+		hpt_table_walk_level(m, hpt_table->table, HPTL4, 0, path);
+		seq_putc(m, '\n');
+	}
+
+	if (dump_s2_hpt) {
+		hpt_table = domain->s2_domain->hpt;
+		dump_s2_hpt = false;
+		goto dump_hpt;
+	}
+
+	return 0;
+}
+
+static int hpt_translation_struct_show(struct seq_file *m, void *unused)
+{
+	return bus_for_each_dev(&pci_bus_type, NULL, m,
+			show_device_hpt_translation);
+}
+DEFINE_SHOW_ATTRIBUTE(hpt_translation_struct);
+
 static int pasid_domain_translation_struct_show(struct seq_file *m, void *unused)
 {
 	struct dev_pasid_info *dev_pasid = (struct dev_pasid_info *)m->private;
@@ -743,6 +842,38 @@ static const struct file_operations dmar_perf_latency_fops = {
 	.release	= single_release,
 };
 
+static int sats_hpte_dis_read_get(void *data, u64 *val)
+{
+	*val = *(u32 *)data;
+	return 0;
+}
+
+static int sats_hpte_dis_read_set(void *data, u64 val)
+{
+	*(u32 *)data = val;
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(sats_hpte_dis_read_fops,
+			sats_hpte_dis_read_get,
+			sats_hpte_dis_read_set, "%lld\n");
+
+static int sats_hpte_dis_write_get(void *data, u64 *val)
+{
+	*val = *(u32 *)data;
+	return 0;
+}
+
+static int sats_hpte_dis_write_set(void *data, u64 val)
+{
+	*(u32 *)data = val;
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(sats_hpte_dis_write_fops,
+			sats_hpte_dis_write_get,
+			sats_hpte_dis_write_set, "%lld\n");
+
 void __init intel_iommu_debugfs_init(void)
 {
 	intel_iommu_debug = debugfs_create_dir("intel", iommu_debugfs_dir);
@@ -751,6 +882,9 @@ void __init intel_iommu_debugfs_init(void)
 			    &iommu_regset_fops);
 	debugfs_create_file("dmar_translation_struct", 0444, intel_iommu_debug,
 			    NULL, &dmar_translation_struct_fops);
+	debugfs_create_file("hpt_translation_struct", 0444,
+			    intel_iommu_debug, NULL,
+			    &hpt_translation_struct_fops);
 	debugfs_create_file("invalidation_queue", 0444, intel_iommu_debug,
 			    NULL, &invalidation_queue_fops);
 #ifdef CONFIG_IRQ_REMAP
@@ -759,6 +893,11 @@ void __init intel_iommu_debugfs_init(void)
 #endif
 	debugfs_create_file("dmar_perf_latency", 0644, intel_iommu_debug,
 			    NULL, &dmar_perf_latency_fops);
+
+	debugfs_create_file("sats_hpte_dis_read", 0660, intel_iommu_debug,
+			    &sats_hpte_dis_read, &sats_hpte_dis_read_fops);
+	debugfs_create_file("sats_hpte_dis_write", 0660, intel_iommu_debug,
+			    &sats_hpte_dis_write, &sats_hpte_dis_write_fops);
 }
 
 /*
