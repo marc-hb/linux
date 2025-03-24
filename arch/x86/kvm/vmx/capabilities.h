@@ -296,6 +296,11 @@ static inline bool cpu_has_vmx_ipiv(void)
 	return vmcs_config.cpu_based_3rd_exec_ctrl & TERTIARY_EXEC_IPI_VIRT;
 }
 
+static inline bool cpu_has_vmx_avx10_256(void)
+{
+	return vmcs_config.cpu_based_3rd_exec_ctrl & TERTIARY_EXEC_AVX10_256;
+}
+
 static inline bool cpu_has_vmx_flexpriority(void)
 {
 	return cpu_has_vmx_tpr_shadow() &&

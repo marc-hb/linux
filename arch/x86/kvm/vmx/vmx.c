@@ -4662,6 +4662,8 @@ static u64 vmx_tertiary_exec_control(struct vcpu_vmx *vmx)
 	if (!enable_ipiv || !kvm_vcpu_apicv_active(&vmx->vcpu))
 		exec_control &= ~TERTIARY_EXEC_IPI_VIRT;
 
+	exec_control &= ~TERTIARY_EXEC_AVX10_256;
+
 	return exec_control;
 }
 
@@ -8031,6 +8033,14 @@ void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
 	if (cpu_has_secondary_exec_ctrls())
 		vmcs_set_secondary_exec_control(vmx,
 						vmx_secondary_exec_control(vmx));
+
+	if (cpu_has_tertiary_exec_ctrls() && cpu_has_vmx_avx10_256()) {
+		if (guest_cpu_cap_has(vcpu, X86_FEATURE_AVX10) &&
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_AVX10_512))
+			tertiary_exec_controls_setbit(vmx, TERTIARY_EXEC_AVX10_256);
+		else
+			tertiary_exec_controls_clearbit(vmx, TERTIARY_EXEC_AVX10_256);
+	}
 
 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
 		vmx->msr_ia32_feature_control_valid_bits |=
