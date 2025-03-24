@@ -597,6 +597,9 @@ extern struct pci_extra_dev *uncore_extra_pci_dev;
 extern struct event_constraint uncore_constraint_empty;
 extern int spr_uncore_units_ignore[];
 extern int gnr_uncore_units_ignore[];
+extern int pnc_uncore_units_ignore[];
+
+extern bool enable_ignore;
 
 /* uncore_snb.c */
 int snb_uncore_pci_init(void);
@@ -612,10 +615,12 @@ void tgl_uncore_cpu_init(void);
 void adl_uncore_cpu_init(void);
 void lnl_uncore_cpu_init(void);
 void mtl_uncore_cpu_init(void);
+void ptl_uncore_cpu_init(void);
 void tgl_uncore_mmio_init(void);
 void tgl_l_uncore_mmio_init(void);
 void adl_uncore_mmio_init(void);
 void lnl_uncore_mmio_init(void);
+void ptl_uncore_mmio_init(void);
 int snb_pci2phy_map_init(int devid);
 
 /* uncore_snbep.c */
@@ -643,6 +648,8 @@ void spr_uncore_mmio_init(void);
 int gnr_uncore_pci_init(void);
 void gnr_uncore_cpu_init(void);
 void gnr_uncore_mmio_init(void);
+int pnc_uncore_pci_init(void);
+void pnc_uncore_mmio_init(void);
 
 /* uncore_nhmex.c */
 void nhmex_uncore_cpu_init(void);

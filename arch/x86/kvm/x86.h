@@ -49,6 +49,7 @@ struct kvm_host_values {
 
 	u64 fred_config;
 	u64 fred_stklvls;
+	u64 perf_capabilities;
 };
 
 void kvm_spurious_fault(void);
@@ -395,6 +396,7 @@ extern struct kvm_caps kvm_caps;
 extern struct kvm_host_values kvm_host;
 
 extern bool enable_pmu;
+extern bool enable_mediated_pmu;
 
 /*
  * Get a filtered version of KVM's supported XCR0 that strips out dynamic
@@ -513,11 +515,6 @@ static __always_inline void kvm_after_interrupt(struct kvm_vcpu *vcpu)
 	WRITE_ONCE(vcpu->arch.handling_intr_from_guest, 0);
 }
 
-static inline bool kvm_handling_nmi_from_guest(struct kvm_vcpu *vcpu)
-{
-	return vcpu->arch.handling_intr_from_guest == KVM_HANDLING_NMI;
-}
-
 static inline bool kvm_pat_valid(u64 data)
 {
 	if (data & 0xF8F8F8F8F8F8F8F8ull)
@@ -526,11 +523,7 @@ static inline bool kvm_pat_valid(u64 data)
 	return (data | ((data & 0x0202020202020202ull) << 1)) == data;
 }
 
-static inline bool kvm_dr7_valid(u64 data)
-{
-	/* Bits [63:32] are reserved */
-	return !(data >> 32);
-}
+bool kvm_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated);
 static inline bool kvm_dr6_valid(u64 data)
 {
 	/* Bits [63:32] are reserved */
@@ -563,6 +556,7 @@ int kvm_handle_memory_failure(struct kvm_vcpu *vcpu, int r,
 			      struct x86_exception *e);
 int kvm_handle_invpcid(struct kvm_vcpu *vcpu, unsigned long type, gva_t gva);
 bool kvm_msr_allowed(struct kvm_vcpu *vcpu, u32 index, u32 type);
+void kvm_probe_msr_to_save(u32 msr_index);
 
 enum kvm_msr_access {
 	MSR_TYPE_R	= BIT(0),

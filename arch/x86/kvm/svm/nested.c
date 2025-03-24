@@ -295,7 +295,8 @@ static bool __nested_vmcb_check_save(struct kvm_vcpu *vcpu,
 	    CC(save->cr0 & ~0xffffffffULL))
 		return false;
 
-	if (CC(!kvm_dr6_valid(save->dr6)) || CC(!kvm_dr7_valid(save->dr7)))
+	if (CC(!kvm_dr6_valid(save->dr6)) ||
+	    CC(!kvm_dr7_valid(vcpu, save->dr7, NULL)))
 		return false;
 
 	/*

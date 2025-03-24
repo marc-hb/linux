@@ -62,15 +62,20 @@ static struct pt_cap_desc {
 	PT_CAP(power_event_trace,	0, CPUID_EBX, BIT(5)),
 	PT_CAP(event_trace,		0, CPUID_EBX, BIT(7)),
 	PT_CAP(tnt_disable,		0, CPUID_EBX, BIT(8)),
+	PT_CAP(trigger_tracing,		0, CPUID_EBX, BIT(9)),
 	PT_CAP(topa_output,		0, CPUID_ECX, BIT(0)),
 	PT_CAP(topa_multiple_entries,	0, CPUID_ECX, BIT(1)),
 	PT_CAP(single_range_output,	0, CPUID_ECX, BIT(2)),
 	PT_CAP(output_subsys,		0, CPUID_ECX, BIT(3)),
 	PT_CAP(payloads_lip,		0, CPUID_ECX, BIT(31)),
 	PT_CAP(num_address_ranges,	1, CPUID_EAX, 0x7),
+	PT_CAP(num_trigger_msrs,	1, CPUID_EAX, 0x700),
 	PT_CAP(mtc_periods,		1, CPUID_EAX, 0xffff0000),
 	PT_CAP(cycle_thresholds,	1, CPUID_EBX, 0xffff),
 	PT_CAP(psb_periods,		1, CPUID_EBX, 0xffff0000),
+	PT_CAP(trigger_attribution,	1, CPUID_ECX, BIT(0)),
+	PT_CAP(pause_resume,		1, CPUID_ECX, BIT(1)),
+	PT_CAP(dr_match,		1, CPUID_ECX, BIT(15)),
 };
 
 u32 intel_pt_validate_cap(u32 *caps, enum pt_capabilities capability)
@@ -1554,6 +1559,7 @@ void intel_pt_interrupt(void)
 		pt_config_start(event);
 	}
 }
+EXPORT_SYMBOL_GPL(intel_pt_interrupt);
 
 void intel_pt_handle_vmx(int on)
 {
@@ -1826,6 +1832,15 @@ int is_intel_pt_event(struct perf_event *event)
 	return event->pmu == &pt_pmu.pmu;
 }
 
+void intel_pt_passthrough(bool passthru)
+{
+	if (passthru)
+		pt_pmu.pmu.capabilities &= ~PERF_PMU_CAP_MEDIATED_DISABLED_VPMU;
+	else
+		pt_pmu.pmu.capabilities |= PERF_PMU_CAP_MEDIATED_DISABLED_VPMU;
+}
+EXPORT_SYMBOL_GPL(intel_pt_passthrough);
+
 static __init int pt_init(void)
 {
 	int ret, cpu, prior_warn = 0;
@@ -1866,7 +1881,8 @@ static __init int pt_init(void)
 
 	pt_pmu.pmu.capabilities		|= PERF_PMU_CAP_EXCLUSIVE |
 					   PERF_PMU_CAP_ITRACE |
-					   PERF_PMU_CAP_AUX_PAUSE;
+					   PERF_PMU_CAP_AUX_PAUSE |
+					   PERF_PMU_CAP_MEDIATED_VPMU;
 	pt_pmu.pmu.attr_groups		 = pt_attr_groups;
 	pt_pmu.pmu.task_ctx_nr		 = perf_sw_context;
 	pt_pmu.pmu.event_init		 = pt_event_init;

@@ -169,6 +169,7 @@ struct kvm_x86_cpu_feature {
 #define	X86_FEATURE_RDPID		KVM_X86_CPU_FEATURE(0x7, 0, ECX, 22)
 #define	X86_FEATURE_SGX_LC		KVM_X86_CPU_FEATURE(0x7, 0, ECX, 30)
 #define	X86_FEATURE_SHSTK		KVM_X86_CPU_FEATURE(0x7, 0, ECX, 7)
+#define	X86_FEATURE_ARCH_LBR		KVM_X86_CPU_FEATURE(0x7, 0, EDX, 19)
 #define	X86_FEATURE_IBT			KVM_X86_CPU_FEATURE(0x7, 0, EDX, 20)
 #define	X86_FEATURE_AMX_TILE		KVM_X86_CPU_FEATURE(0x7, 0, EDX, 24)
 #define	X86_FEATURE_SPEC_CTRL		KVM_X86_CPU_FEATURE(0x7, 0, EDX, 26)
@@ -272,6 +273,8 @@ struct kvm_x86_cpu_property {
 #define X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK	KVM_X86_CPU_PROPERTY(0xa, 0, ECX, 0, 31)
 #define X86_PROPERTY_PMU_NR_FIXED_COUNTERS	KVM_X86_CPU_PROPERTY(0xa, 0, EDX, 0, 4)
 #define X86_PROPERTY_PMU_FIXED_COUNTERS_BIT_WIDTH	KVM_X86_CPU_PROPERTY(0xa, 0, EDX, 5, 12)
+#define X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK	KVM_X86_CPU_PROPERTY(0x23, 1, EBX, 0, 31)
+#define X86_PROPERTY_PMU_EXT_EVENTS_MASK	KVM_X86_CPU_PROPERTY(0x23, 3, EAX, 0, 31)
 
 #define X86_PROPERTY_SUPPORTED_XCR0_LO		KVM_X86_CPU_PROPERTY(0xd,  0, EAX,  0, 31)
 #define X86_PROPERTY_XSTATE_MAX_SIZE_XCR0	KVM_X86_CPU_PROPERTY(0xd,  0, EBX,  0, 31)
@@ -326,6 +329,15 @@ struct kvm_x86_pmu_feature {
 	feature;							\
 })
 
+#define	KVM_X86_PMU_EXT_FEATURE(__idx, __reg, __bit)			\
+({									\
+	struct kvm_x86_pmu_feature feature = {				\
+		.f = KVM_X86_CPU_FEATURE(0x23, __idx, __reg, __bit),	\
+	};								\
+									\
+	feature;							\
+})
+
 #define X86_PMU_FEATURE_CPU_CYCLES			KVM_X86_PMU_FEATURE(EBX, 0)
 #define X86_PMU_FEATURE_INSNS_RETIRED			KVM_X86_PMU_FEATURE(EBX, 1)
 #define X86_PMU_FEATURE_REFERENCE_CYCLES		KVM_X86_PMU_FEATURE(EBX, 2)
@@ -334,11 +346,19 @@ struct kvm_x86_pmu_feature {
 #define X86_PMU_FEATURE_BRANCH_INSNS_RETIRED		KVM_X86_PMU_FEATURE(EBX, 5)
 #define X86_PMU_FEATURE_BRANCHES_MISPREDICTED		KVM_X86_PMU_FEATURE(EBX, 6)
 #define X86_PMU_FEATURE_TOPDOWN_SLOTS			KVM_X86_PMU_FEATURE(EBX, 7)
+#define X86_PMU_FEATURE_TOPDOWN_BE_BOUND		KVM_X86_PMU_EXT_FEATURE(3, EAX, 8)
+#define X86_PMU_FEATURE_TOPDOWN_BAD_SPEC		KVM_X86_PMU_EXT_FEATURE(3, EAX, 9)
+#define X86_PMU_FEATURE_TOPDOWN_FE_BOUND		KVM_X86_PMU_EXT_FEATURE(3, EAX, 10)
+#define X86_PMU_FEATURE_TOPDOWN_RETIRING		KVM_X86_PMU_EXT_FEATURE(3, EAX, 11)
+#define X86_PMU_FEATURE_LBR_INSERTS			KVM_X86_PMU_EXT_FEATURE(3, EAX, 12)
 
 #define X86_PMU_FEATURE_INSNS_RETIRED_FIXED		KVM_X86_PMU_FEATURE(ECX, 0)
 #define X86_PMU_FEATURE_CPU_CYCLES_FIXED		KVM_X86_PMU_FEATURE(ECX, 1)
 #define X86_PMU_FEATURE_REFERENCE_TSC_CYCLES_FIXED	KVM_X86_PMU_FEATURE(ECX, 2)
 #define X86_PMU_FEATURE_TOPDOWN_SLOTS_FIXED		KVM_X86_PMU_FEATURE(ECX, 3)
+#define X86_PMU_FEATURE_TOPDOWN_BAD_SPEC_FIXED		KVM_X86_PMU_EXT_FEATURE(1, EBX, 4)
+#define X86_PMU_FEATURE_TOPDOWN_FE_BOUND_FIXED		KVM_X86_PMU_EXT_FEATURE(1, EBX, 5)
+#define X86_PMU_FEATURE_TOPDOWN_RETIRING_FIXED		KVM_X86_PMU_EXT_FEATURE(1, EBX, 6)
 
 static inline unsigned int x86_family(unsigned int eax)
 {
@@ -744,6 +764,9 @@ static inline bool this_pmu_has(struct kvm_x86_pmu_feature feature)
 {
 	uint32_t nr_bits;
 
+	if (feature.f.function == 0x23)
+		return this_cpu_has(feature.f);
+
 	if (feature.f.reg == KVM_CPUID_EBX) {
 		nr_bits = this_cpu_property(X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH);
 		return nr_bits > feature.f.bit && !this_cpu_has(feature.f);
@@ -1074,6 +1097,9 @@ static inline void vcpu_set_cpuid(struct kvm_vcpu *vcpu)
 	vcpu_get_cpuid(vcpu);
 }
 
+void vcpu_update_cpuid_property(struct kvm_cpuid_entry2 *entry,
+				struct kvm_x86_cpu_property property,
+				uint32_t value);
 void vcpu_set_cpuid_property(struct kvm_vcpu *vcpu,
 			     struct kvm_x86_cpu_property property,
 			     uint32_t value);
@@ -1320,6 +1346,14 @@ bool kvm_is_tdp_enabled(void);
 static inline bool kvm_is_pmu_enabled(void)
 {
 	return get_kvm_param_bool("enable_pmu");
+}
+
+static inline bool kvm_is_mediated_pmu_enabled(void)
+{
+	if (host_cpu_is_intel)
+		return get_kvm_intel_param_bool("enable_mediated_pmu");
+	else
+		return get_kvm_amd_param_bool("enable_mediated_pmu");
 }
 
 static inline bool kvm_is_forced_emulation_enabled(void)

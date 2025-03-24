@@ -1,0 +1,57 @@
+[
+    {
+        "Unit": "cpu_atom",
+        "CountersNumFixed": "3",
+        "CountersNumGeneric": "39"
+    },
+    {
+        "Unit": "cpu_core",
+        "CountersNumFixed": "4",
+        "CountersNumGeneric": "10"
+    },
+    {
+        "Unit": "iMC",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "5"
+    },
+    {
+        "Unit": "HAC_ARB",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "HAC_CBO",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "CLOCK",
+        "CountersNumFixed": 1,
+        "CountersNumGeneric": "0"
+    },
+    {
+        "Unit": "UFIBRIDGE",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "1"
+    },
+    {
+        "Unit": "ARB",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "CBOX",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "NCU",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "HAC_NCU",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    }
+]

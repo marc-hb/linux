@@ -1,0 +1,1281 @@
+[
+    {
+        "BriefDescription": "Counts the number of unhalted cycles a Core is blocked due to a lock In Progress issued by another core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x63",
+        "EventName": "BUS_LOCK.BLOCKED_CYCLES",
+        "PublicDescription": "Counts the number of unhalted cycles a Core is blocked due to a lock In Progress issued by another core. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of unhalted cycles a Core is blocked due to an Accepted lock it issued, includes both split and non-split lock cycles.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x63",
+        "EventName": "BUS_LOCK.LOCK_CYCLES",
+        "PublicDescription": "Counts the number of unhalted cycles a Core is blocked due to an Accepted lock it issued, includes both split and non-split lock cycles. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of non-split locks such as UC locks issued by a Core (does not include cache locks)",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x63",
+        "EventName": "BUS_LOCK.NON_SPLIT_LOCKS",
+        "PublicDescription": "Counts the number of non-split locks such as UC locks issued by a Core (does not include cache locks). Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of split locks issued by a Core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x63",
+        "EventName": "BUS_LOCK.SPLIT_LOCKS",
+        "PublicDescription": "Counts the number of split locks issued by a Core. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Count the number of CMP snoops issued to another core in the same module that result in a HITM response to this core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb8",
+        "EventName": "CORE_SNOOP.DSIDE_HIT",
+        "SampleAfterValue": "1000003"
+    },
+    {
+        "BriefDescription": "Count the number of CMP snoops issued to another core in the same module that result in a HITM response to this core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb8",
+        "EventName": "CORE_SNOOP.DSIDE_HITM",
+        "SampleAfterValue": "1000003"
+    },
+    {
+        "BriefDescription": "Count the number of CMP snoops issued to another core in the same module that result in a HITM response to this core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb8",
+        "EventName": "CORE_SNOOP.DSIDE_MISS",
+        "SampleAfterValue": "1000003"
+    },
+    {
+        "BriefDescription": "Count the number of CMP snoops issued to another core in the same module that result in a HITM response to this core",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb8",
+        "EventName": "CORE_SNOOP.DSIDE_SELF",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Count the number of CMP snoops issued to another core in the same module",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb8",
+        "EventName": "CORE_SNOOP.ITLB",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of code software prefetch stream requests that are dropped due to a full prefetch queue or a multi-cluster conflict at decode time. (this includes port busy cases which are not reissued)",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x88",
+        "EventName": "CSWPF_DROPPED.DECODE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts prefetches that are dropped in the ICU for security or other reasons that make the prefetch impossible to complete.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x88",
+        "EventName": "CSWPF_DROPPED.INVALID",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the L2 Prefetchers are at throttle level 0",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x32",
+        "EventName": "DYNAMIC_PREFETCH_THROTTLER.LEVEL0_SOC",
+        "PublicDescription": "Counts the number of cycles the L2 Prefetchers are at throttle level 0. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 1",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x32",
+        "EventName": "DYNAMIC_PREFETCH_THROTTLER.LEVEL1_SOC",
+        "PublicDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 1. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 2",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x32",
+        "EventName": "DYNAMIC_PREFETCH_THROTTLER.LEVEL2_SOC",
+        "PublicDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 2. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 3",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x32",
+        "EventName": "DYNAMIC_PREFETCH_THROTTLER.LEVEL3_SOC",
+        "PublicDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 3. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 4",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x32",
+        "EventName": "DYNAMIC_PREFETCH_THROTTLER.LEVEL4_SOC",
+        "PublicDescription": "Counts the number of cycles the L2 Prefetcher throttle level is at 4. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x10"
+    },
+    {
+        "BriefDescription": "Counts the number of core cycles during which interrupts are masked (disabled). Increments by 1 each core cycle that EFLAGS.IF is 0, regardless of whether interrupts are pending or not.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xcb",
+        "EventName": "HW_INTERRUPTS.MASKED",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of core cycles during which there are pending interrupts but interrupts are masked (disabled).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xcb",
+        "EventName": "HW_INTERRUPTS.PENDING_AND_MASKED",
+        "PublicDescription": "Counts the number of core cycles during which there are pending interrupts but interrupts are masked (disabled). Increments by 1 each core cycle that both EFLAGS.IF is 0 and an INTR is pending (which means the APIC is telling the ROB to cause an INTR). This event does not increment if EFLAGS.IF is 0 but all interrupt in the APIC?s Interrupt Request Register (IRR) are inhibited by the PPR (thus either by ISRV or TPR) ? because in these cases the interrupts would be held up in the APIC and would not be pended to the ROB. This event does count when an interrupt is only inhibited by MOV/POP SS state machines or the STI state machine. These extra inhibits only last for a single instructions and would not be important.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of hardware interrupts received by the processor.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xcb",
+        "EventName": "HW_INTERRUPTS.RECEIVED",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of times a PT Overflow is detected.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x70",
+        "EventName": "INTEL_PT.OVERFLOW",
+        "SampleAfterValue": "1000003"
+    },
+    {
+        "BriefDescription": "Counts the number of PTWRITE instructions retired",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x70",
+        "EventName": "INTEL_PT.PT_WRITE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on secondary integer ports 0,1,2,3.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.2ND",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x80"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on all Integer ports.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.ALL",
+        "SampleAfterValue": "1000003",
+        "UMask": "0xff"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on a load port.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.LD",
+        "PublicDescription": "Counts the number of uops executed on a load port.  This event counts for integer uops even if the destination is FP/vector",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on integer port 0.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.P0",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on integer port 1.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.P1",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x10"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on integer port 2.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.P2",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x20"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on integer port 3.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.P3",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x40"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on integer port  0,1, 2, 3.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.PRIMARY",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x78"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on a Store address port.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.STA",
+        "PublicDescription": "Counts the number of uops executed on a Store address port. This event counts integer uops even if the data source is FP/vector",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of uops executed on an integer store data and jump port.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xb3",
+        "EventName": "INT_UOPS_EXECUTED.STD_JMP",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled due to a BTB or GLOB update.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.BR_UPDATE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x10"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled due to code software prefetches.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.CSWPF",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled waiting for an ITLB fill.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.ITLB",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x80"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled because the frontend pipeline is full.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.Q_FULL",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled because there are no available iside request buffers.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.RB_FULL",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x20"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled due to throttling of the iside request buffers.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.RB_THROT",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x40"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled because the NIP is sleeping waiting for a flush event such as a nuke, BACLEAR, etc.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.SLEEP",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles in which demand fetches are stalled because the frontend is servicing a snoop.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x86",
+        "EventName": "IP_STALL.SNOOP",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of LLC prefetches that were  throttled due to Dynamic Prefetch Throttling.  The throttle requestor/source could be from the uncore/SOC or the Dead Block Predictor. Counts on a per core basis.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x29",
+        "EventName": "LLC_PREFETCHES_THROTTLED.DPT",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of LLC prefetches throttled due to Demand Throttle Prefetcher.  DTP Global Triggered with no Local Override. Counts on a per core basis.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x29",
+        "EventName": "LLC_PREFETCHES_THROTTLED.DTP",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of LLC prefetches not throttled by DTP due to local override.  These prefetches may still be throttled due to another throttler mechanism. Counts on a per core basis.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x29",
+        "EventName": "LLC_PREFETCHES_THROTTLED.DTP_OVERRIDE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of LLC prefetches throttled due to LLC hit rate in <insert knob name here>. Counts on a per core basis.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x29",
+        "EventName": "LLC_PREFETCHES_THROTTLED.HIT_RATE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x10"
+    },
+    {
+        "BriefDescription": "Counts the number of LLC prefetches throttled due to exceeding the XQ threshold set by either XQ_THRESOLD_DTP or LLC_XQ_THRESHOLD. Counts on a per core basis.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x29",
+        "EventName": "LLC_PREFETCHES_THROTTLED.XQ_THRESH",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be Zero, effectively no throttle.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL0",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be Zero, effectively no throttle. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 10 to 12",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL10_12",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 10 to 12. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x10"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 13-14",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL13_14",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 13-14. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x20"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 15",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL15",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 15. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x40"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 1 to 3.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL1_3",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 1 to 3. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 4 to 6.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL4_6",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 4 to 6. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 7 to 9",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x2c",
+        "EventName": "MBE_THROTTLE.LEVEL7_9",
+        "PublicDescription": "Counts the number of cycles the Memory Bandwidth Enforcement is requested by IDI to be 7 to 9. Counts on a per core basis.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts all read requests through the GP-XQ, includes demands and prefetches (excludes all writebacks through the WOB-XQ), that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_GPXQ_REQUESTS.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100000001CFF7",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all requests that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_REQUESTS.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0xFF0000001DFFF",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all requests that were supplied by CXL MEM (Type 2 or Type 3).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_REQUESTS.CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0xFF00703C0DFFF",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all requests that were supplied by CXL MEM (Type 2 and Type 3) attached to local socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_REQUESTS.LOCAL_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0xFF00700C0DFFF",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all requests that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_REQUESTS.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x800FF0000000DFFF",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all requests that were supplied by CXL MEM (Type 2 or Type 3) attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_REQUESTS.REMOTE_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0xFF0070300DFFF",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all writebacks through the WOB-XQ that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ALL_WBXQ_REQUESTS.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x2000000011000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts writebacks of modified cachelines that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.COREWB_M.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10008",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts writebacks of non-modified cachelines that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.COREWB_NONM.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x11000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x7BC000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM attached to this socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.LOCAL_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x784000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster (SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.LOCAL_SOCKET_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x78C000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000000000000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x3FB3000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand instruction fetches and L1 instruction cache prefetches that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_CODE_RD.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x730000004",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by CXL MEM (Type 2 or Type 3).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x703C00001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by DRAM.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x7BC000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by CXL MEM (Type 2 and Type 3) attached to local socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.LOCAL_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x700C00001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by DRAM attached to this socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.LOCAL_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x784000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster (SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.LOCAL_SOCKET_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x78C000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by a non-DRAM system address, such as MMIO.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.NON_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x203C000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000000000000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x3FB3000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by CXL MEM (Type 2 or Type 3) attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.REMOTE_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x703000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand data reads that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_DATA_RD.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x730000001",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by CXL MEM (Type 2 or Type 3).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x703C00002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x7BC000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by CXL MEM (Type 2 and Type 3) attached to local socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.LOCAL_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x700C00002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM attached to this socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.LOCAL_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x784000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster (SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.LOCAL_SOCKET_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x78C000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by a non-DRAM system address, such as MMIO.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.NON_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x203C000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000000000000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x3FB3000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by CXL MEM (Type 2 or Type 3) attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.REMOTE_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x703000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts demand read for ownership (RFO) requests and software prefetches for exclusive ownership (PREFETCHW) that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.DEMAND_RFO.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x730000002",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts full streaming stores (64 bytes, WCiLF) that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.FULL_STREAMING_WR.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x800000010000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all hardware prefetches that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x107F0",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all hardware prefetches that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x3FB30007F0",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all hardware prefetches that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x7300007F0",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache hardware prefetch requests and software prefetches (except PREFETCHW) that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF_L1D.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10400",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L2 cache hardware prefetches that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF_L2.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10070",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts hardware prefetch data reads to the L2 cache that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF_L2_DATA_RD.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10010",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts hardware prefetch RFOs to the L2 cache that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF_L2_RFO.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10020",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L3 cache hardware prefetches that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.HWPF_L3.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10380",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "OCR.ITOM.ANY_RESPONSE - Counts requests for exclusive ownership of a cacheline with no data transfer and atomically writes the cacheline back to the fabric, guarantees that the entire line will be modified (ItoM, SpecItoM) have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.ITOM.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x8000000010000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts miscellaneous requests, such as CLFlush, I/O and uncacheable accesses that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.OTHER.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x18000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts miscellaneous requests, such as CLFlush, I/O and uncacheable accesses that were supplied by a non-DRAM system address, such as MMIO.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.OTHER.NON_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x203C008000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts partial streaming stores (less than 64 bytes, WCiL) that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.PARTIAL_STREAMING_WR.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x400000010000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100000014477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by CXL MEM (Type 2 or Type 3).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100703C04477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by DRAM.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x1007BC004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by CXL MEM (Type 2 and Type 3) attached to local socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.LOCAL_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100700C04477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by DRAM attached to this socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.LOCAL_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100784004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster (SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.LOCAL_SOCKET_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10078C004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by a non-DRAM system address, such as MMIO.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.NON_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10203C004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000100000004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x103FB3004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by CXL MEM (Type 2 or Type 3) attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.REMOTE_CXL_MEM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100703004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts all data read, code read, and RFO requests including demands and prefetches (written to the L1 cache or L2 cache) that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.READS_TO_CORE.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x100730004477",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts RFO requests including demands and L2 prefetches (written to the L1 cache or L2 cache) that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.RFO_TO_CORE.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000000000000022",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts streaming stores that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.STREAMING_WR.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x10800",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that have any type of response.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.ANY_RESPONSE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x14000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that were supplied by DRAM.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x7BC004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that were supplied by DRAM attached to this socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.LOCAL_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x784004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that were supplied by DRAM attached to this socket, whether or not in Sub NUMA Cluster (SNC) Mode.  In SNC Mode counts DRAM accesses that are controlled by the close or distant SNC Cluster.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.LOCAL_SOCKET_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x78C004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that have an outstanding request. Returns the number of cycles until the response is received (i.e. XQ to XQ latency).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.OUTSTANDING",
+        "MSRIndex": "0x1a6",
+        "MSRValue": "0x8000000000004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that were supplied by a remote socket with any snoop type.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.REMOTE",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x3FB3004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts L1 data cache software prefetch requests which include T0/T1/T2 and NTA that were supplied by DRAM attached to another socket.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.SWPF_RD.REMOTE_DRAM",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x730004000",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts Demand RFOs, ITOMs, PREFECTHWs, Hardware RFO Prefetches to the L1 cache or L2 cache, and streaming stores that likely resulted in a store to Memory (DRAM)",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xB7",
+        "EventName": "OCR.WRITE_ESTIMATE.MEMORY",
+        "MSRIndex": "0x1a6,0x1a7",
+        "MSRValue": "0x8200FBFF80822",
+        "SampleAfterValue": "100003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the total number of BTCLEARS.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xe8",
+        "EventName": "PREDICTION.BTCLEAR",
+        "PublicDescription": "Counts the total number of BTCLEARS which occurs when the Branch Target Buffer (BTB) predicts a taken branch.",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the total number of NLCLEARS.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xe8",
+        "EventName": "PREDICTION.NLCLEAR",
+        "SampleAfterValue": "1000003",
+        "UMask": "0xe"
+    },
+    {
+        "BriefDescription": "Counts the total number of NLCLEARS due to a double taken fake branch.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xe8",
+        "EventName": "PREDICTION.NLCLEAR_DTFS",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the total number of NLCLEARS due to a double taken short forward branch.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xe8",
+        "EventName": "PREDICTION.NLCLEAR_DTSFB",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the total number of NLCLEARS due to a basic single taken branch.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xe8",
+        "EventName": "PREDICTION.NLCLEAR_SINGLE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of Current Privilege Level (CPL) transitions into ring 0 (Kernel) from ring 1,2,3",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x3d",
+        "EventName": "RING_TRANS.CPL0",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of Current Privilege Level (CPL) transitions into ring 1,2,3 from ring 0",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x3d",
+        "EventName": "RING_TRANS.CPL123",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of issue slots in a UMWAIT or TPAUSE instruction where no uop issues due to the instruction putting the CPU into the C0.1 activity state. For Tremont, UMWAIT and TPAUSE will only put the CPU into C0.1 activity state (not C0.2 activity state).",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x75",
+        "EventName": "SERIALIZATION.C01_MS_SCB",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number issue slots not consumed  due to a  color request for an FCW or MXCSR control register when all 4 colors (copies) are already in use.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x75",
+        "EventName": "SERIALIZATION.COLOR_STALLS",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x8"
+    },
+    {
+        "BriefDescription": "Counts the number of issue slots where no uop could issue due to an IQ scoreboard that stalls allocation until a specified older uop retires or (in the case of jump scoreboard) executes. Commonly executed instructions with IQ scoreboards include LFENCE and MFENCE.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x75",
+        "EventName": "SERIALIZATION.IQ_JEU_SCB",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of instances that the HDR -Data Seperation, a predicted wake up cycle value, was earlier than the actual incoming U2C packet time",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x37",
+        "EventName": "U2C_HDR_DATA_SEPARATION.EARLY",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of instances that the HDR -Data Seperation, a predicted wake up cycle value, was later than the actual incoming U2C packet time",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x37",
+        "EventName": "U2C_HDR_DATA_SEPARATION.LATE",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    },
+    {
+        "BriefDescription": "Counts the number of instances that the HDR -Data Seperation, a predicted wake up cycle value, was the same as the actual incoming U2C packet time",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0x37",
+        "EventName": "U2C_HDR_DATA_SEPARATION.ONTIME",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of prefetch requests that were promoted in the XQ to a demand request.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xf4",
+        "EventName": "XQ_PROMOTION.ALL",
+        "SampleAfterValue": "1000003"
+    },
+    {
+        "BriefDescription": "Counts the number of prefetch requests that were promoted in the XQ to a demand code read.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xf4",
+        "EventName": "XQ_PROMOTION.CRDS",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x4"
+    },
+    {
+        "BriefDescription": "Counts the number of prefetch requests that were promoted in the XQ to a demand read.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xf4",
+        "EventName": "XQ_PROMOTION.DRDS",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x1"
+    },
+    {
+        "BriefDescription": "Counts the number of prefetch requests that were promoted in the XQ to a demand RFO.",
+        "Counter": "0,1,2,3,4,5,6,7",
+        "EventCode": "0xf4",
+        "EventName": "XQ_PROMOTION.RFOS",
+        "SampleAfterValue": "1000003",
+        "UMask": "0x2"
+    }
+]

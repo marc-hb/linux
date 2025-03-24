@@ -246,6 +246,7 @@ enum x86_intercept_stage;
 #define DR7_BP_EN_MASK	0x000000ff
 #define DR7_GE		(1 << 9)
 #define DR7_GD		(1 << 13)
+#define DR7_DRx_PT_LOG	(0xfull << 32)
 #define DR7_FIXED_1	0x00000400
 #define DR7_VOLATILE	0xffff2bff
 
@@ -525,6 +526,7 @@ struct kvm_pmc {
 	 */
 	u64 emulated_counter;
 	u64 eventsel;
+	u64 arch_pebs_cfg_c;
 	struct perf_event *perf_event;
 	struct kvm_vcpu *vcpu;
 	/*
@@ -537,32 +539,60 @@ struct kvm_pmc {
 
 /* More counters may conflict with other existing Architectural MSRs */
 #define KVM_MAX(a, b)	((a) >= (b) ? (a) : (b))
-#define KVM_MAX_NR_INTEL_GP_COUNTERS	8
+#define KVM_MAX_NR_INTEL_GP_COUNTERS	10
 #define KVM_MAX_NR_AMD_GP_COUNTERS	6
 #define KVM_MAX_NR_GP_COUNTERS		KVM_MAX(KVM_MAX_NR_INTEL_GP_COUNTERS, \
 						KVM_MAX_NR_AMD_GP_COUNTERS)
 
-#define KVM_MAX_NR_INTEL_FIXED_COUTNERS	3
+#define KVM_MAX_NR_INTEL_FIXED_COUTNERS	7
 #define KVM_MAX_NR_AMD_FIXED_COUTNERS	0
 #define KVM_MAX_NR_FIXED_COUNTERS	KVM_MAX(KVM_MAX_NR_INTEL_FIXED_COUTNERS, \
 						KVM_MAX_NR_AMD_FIXED_COUTNERS)
 
+#define MSR_IA32_PMC_V6_GP_MSR_STRAT	MSR_IA32_PMC_V6_GP0_CTR
+#define MSR_IA32_PMC_V6_GP_MSR_END	\
+	(MSR_IA32_PMC_V6_GP0_CFG_C + (KVM_MAX_NR_GP_COUNTERS - 1) * MSR_IA32_PMC_V6_STEP)
+
+#define MSR_IA32_PMC_V6_FX_MSR_STRAT	MSR_IA32_PMC_V6_FX0_CTR
+#define MSR_IA32_PMC_V6_FX_MSR_END	\
+	(MSR_IA32_PMC_V6_FX0_CFG_C + (KVM_MAX_NR_FIXED_COUNTERS - 1) * MSR_IA32_PMC_V6_STEP)
+
+/*
+ * Maximum LBR stack size is 32, each entry may have up to 3 MSRs:
+ * LBR_x_FROM_IP, LBR_x_TO_IP, LBR_x_INFO.
+ * Plus LBR_CTL and LBR_DEPTH.
+ */
+#define KVM_MAX_NR_ARCH_DEPTH		32
+#define KVM_MAX_NR_ARCH_LBR_MSRS	(KVM_MAX_NR_ARCH_DEPTH * 3 + 2)
+
 struct kvm_pmu {
 	u8 version;
 	unsigned nr_arch_gp_counters;
-	unsigned nr_arch_fixed_counters;
 	unsigned available_event_types;
 	u64 fixed_ctr_ctrl;
 	u64 fixed_ctr_ctrl_rsvd;
+	/*
+	 * kvm_pmu_sync_global_ctrl_from_vmcs() must be called to update
+	 * this SW-maintained global_ctrl for mediated vPMU before accessing it.
+	 */
 	u64 global_ctrl;
 	u64 global_status;
+	u64 global_status_set;
+	u64 global_inuse;
 	u64 counter_bitmask[2];
 	u64 global_ctrl_rsvd;
 	u64 global_status_rsvd;
-	u64 reserved_bits;
+	u64 arch_lbr_ctrl_rsvd;
+	u64 eventsel_rsvd;
 	u64 raw_event_mask;
 	struct kvm_pmc gp_counters[KVM_MAX_NR_GP_COUNTERS];
 	struct kvm_pmc fixed_counters[KVM_MAX_NR_FIXED_COUNTERS];
+	u32 gp_eventsel_base;
+	u32 gp_counter_base;
+	u32 fixed_base;
+	u32 cntr_shift;
+	u64 extra_msrs[X86_MAX_NR_EXTRA_MSRS];
+	u64 perf_metrics;
 
 	/*
 	 * Overlay the bitmap with a 64-bit atomic so that all bits can be
@@ -573,7 +603,10 @@ struct kvm_pmu {
 		DECLARE_BITMAP(reprogram_pmi, X86_PMC_IDX_MAX);
 		atomic64_t __reprogram_pmi;
 	};
-	DECLARE_BITMAP(all_valid_pmc_idx, X86_PMC_IDX_MAX);
+	union {
+		DECLARE_BITMAP(all_valid_pmc_idx, X86_PMC_IDX_MAX);
+		u64 all_valid_pmc_idx64;
+	};
 	DECLARE_BITMAP(pmc_in_use, X86_PMC_IDX_MAX);
 
 	u64 ds_area;
@@ -581,6 +614,12 @@ struct kvm_pmu {
 	u64 pebs_enable_rsvd;
 	u64 pebs_data_cfg;
 	u64 pebs_data_cfg_rsvd;
+
+	bool arch_pebs;
+	u64 arch_pebs_base;
+	u64 arch_pebs_index;
+	u64 arch_pebs_index_rsvd;
+	u64 arch_pebs_cfg_c_rsvd;
 
 	/*
 	 * If a guest counter is cross-mapped to host counter with different
@@ -1705,6 +1744,7 @@ struct kvm_x86_ops {
 	void (*sync_dirty_debug_regs)(struct kvm_vcpu *vcpu);
 	void (*set_dr6)(struct kvm_vcpu *vcpu, unsigned long value);
 	void (*set_dr7)(struct kvm_vcpu *vcpu, unsigned long value);
+	bool (*dr7_valid)(struct kvm_vcpu *vcpu, u64 data, u64 *validated);
 	void (*cache_reg)(struct kvm_vcpu *vcpu, enum kvm_reg reg);
 	unsigned long (*get_rflags)(struct kvm_vcpu *vcpu);
 	void (*set_rflags)(struct kvm_vcpu *vcpu, unsigned long rflags);

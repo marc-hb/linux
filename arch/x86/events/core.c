@@ -54,6 +54,8 @@ DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
 	.pmu = &pmu,
 };
 
+static DEFINE_PER_CPU(bool, pmi_vector_is_nmi) = true;
+
 DEFINE_STATIC_KEY_FALSE(rdpmc_never_available_key);
 DEFINE_STATIC_KEY_FALSE(rdpmc_always_available_key);
 DEFINE_STATIC_KEY_FALSE(perf_is_hybrid);
@@ -93,6 +95,8 @@ DEFINE_STATIC_CALL_NULL(x86_pmu_drain_pebs,   *x86_pmu.drain_pebs);
 DEFINE_STATIC_CALL_NULL(x86_pmu_pebs_aliases, *x86_pmu.pebs_aliases);
 
 DEFINE_STATIC_CALL_NULL(x86_pmu_filter, *x86_pmu.filter);
+
+DEFINE_STATIC_CALL_NULL(x86_pmu_late_setup, *x86_pmu.late_setup);
 
 /*
  * This one is magic, it will get called even when PMU init fails (because
@@ -409,7 +413,7 @@ int x86_reserve_hardware(void)
 			if (!reserve_pmc_hardware()) {
 				err = -EBUSY;
 			} else {
-				reserve_ds_buffers();
+				reserve_bts_pebs_buffers();
 				reserve_lbr_buffers();
 			}
 		}
@@ -425,7 +429,7 @@ void x86_release_hardware(void)
 {
 	if (atomic_dec_and_mutex_lock(&pmc_refcount, &pmc_reserve_mutex)) {
 		release_pmc_hardware();
-		release_ds_buffers();
+		release_bts_pebs_buffers();
 		release_lbr_buffers();
 		mutex_unlock(&pmc_reserve_mutex);
 	}
@@ -547,14 +551,22 @@ static inline int precise_br_compat(struct perf_event *event)
 	return m == b;
 }
 
-int x86_pmu_max_precise(void)
+int x86_pmu_max_precise(struct pmu *pmu)
 {
 	int precise = 0;
 
-	/* Support for constant skid */
 	if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
-		precise++;
+		/* arch PEBS */
+		if (x86_pmu.arch_pebs) {
+			precise = 2;
+			if (hybrid(pmu, arch_pebs_cap).pdists)
+				precise++;
 
+			return precise;
+		}
+
+		/* legacy PEBS - support for constant skid */
+		precise++;
 		/* Support for IP fixup */
 		if (x86_pmu.lbr_nr || x86_pmu.intel_cap.pebs_format >= 2)
 			precise++;
@@ -562,13 +574,47 @@ int x86_pmu_max_precise(void)
 		if (x86_pmu.pebs_prec_dist)
 			precise++;
 	}
+
 	return precise;
+}
+
+static bool has_vec_regs(struct perf_event *event, int start, int end)
+{
+	/* -1 to subtract PERF_REG_EXTENDED_OFFSET */
+	int idx = start / 64 - 1;
+	int s = start % 64;
+	int e = end % 64;
+
+	return event->attr.sample_regs_intr_ext[idx] & GENMASK_ULL(e, s);
+}
+
+static inline bool has_ymmh_regs(struct perf_event *event)
+{
+	return has_vec_regs(event, PERF_REG_X86_YMMH0, PERF_REG_X86_YMMH15 + 1);
+}
+
+static inline bool has_zmmh_regs(struct perf_event *event)
+{
+	return has_vec_regs(event, PERF_REG_X86_ZMMH0, PERF_REG_X86_ZMMH7 + 3) ||
+	       has_vec_regs(event, PERF_REG_X86_ZMMH8, PERF_REG_X86_ZMMH15 + 3);
+}
+
+static inline bool has_h16zmm_regs(struct perf_event *event)
+{
+	return has_vec_regs(event, PERF_REG_X86_ZMM16, PERF_REG_X86_ZMM19 + 7) ||
+	       has_vec_regs(event, PERF_REG_X86_ZMM20, PERF_REG_X86_ZMM27 + 7) ||
+	       has_vec_regs(event, PERF_REG_X86_ZMM28, PERF_REG_X86_ZMM31 + 7);
+}
+
+static inline bool has_opmask_regs(struct perf_event *event)
+{
+	return has_vec_regs(event, PERF_REG_X86_OPMASK0, PERF_REG_X86_OPMASK7);
 }
 
 int x86_pmu_hw_config(struct perf_event *event)
 {
 	if (event->attr.precise_ip) {
-		int precise = x86_pmu_max_precise();
+		int precise = x86_pmu_max_precise(event->pmu);
 
 		if (event->attr.precise_ip > precise)
 			return -EOPNOTSUPP;
@@ -635,6 +681,16 @@ int x86_pmu_hw_config(struct perf_event *event)
 			return -EINVAL;
 	}
 
+	/* sample_regs_user never support SSP register. */
+	if (unlikely(event->attr.sample_regs_user & BIT_ULL(PERF_REG_X86_SSP)))
+		return -EINVAL;
+
+	if (unlikely(event->attr.sample_regs_intr & BIT_ULL(PERF_REG_X86_SSP))) {
+		/* Only arch-PEBS supports to capture SSP register. */
+		if (!x86_pmu.arch_pebs || !event->attr.precise_ip)
+			return -EINVAL;
+	}
+
 	/* sample_regs_user never support XMM registers */
 	if (unlikely(event->attr.sample_regs_user & PERF_REG_EXTENDED_MASK))
 		return -EINVAL;
@@ -644,6 +700,32 @@ int x86_pmu_hw_config(struct perf_event *event)
 	 */
 	if (unlikely(event->attr.sample_regs_intr & PERF_REG_EXTENDED_MASK)) {
 		if (!(event->pmu->capabilities & PERF_PMU_CAP_EXTENDED_REGS))
+			return -EINVAL;
+
+		if (!event->attr.precise_ip)
+			return -EINVAL;
+	}
+
+	/*
+	 * Architectural PEBS supports to capture more vector registers besides
+	 * XMM registers, like YMM, OPMASK and ZMM registers.
+	 */
+	if (unlikely(has_more_extended_regs(event))) {
+		u64 caps = hybrid(event->pmu, arch_pebs_cap).caps;
+
+		if (!(event->pmu->capabilities & PERF_PMU_CAP_MORE_EXT_REGS))
+			return -EINVAL;
+
+		if (has_opmask_regs(event) && !(caps & ARCH_PEBS_VECR_OPMASK))
+			return -EINVAL;
+
+		if (has_ymmh_regs(event) && !(caps & ARCH_PEBS_VECR_YMM))
+			return -EINVAL;
+
+		if (has_zmmh_regs(event) && !(caps & ARCH_PEBS_VECR_ZMMH))
+			return -EINVAL;
+
+		if (has_h16zmm_regs(event) && !(caps & ARCH_PEBS_VECR_H16ZMM))
 			return -EINVAL;
 
 		if (!event->attr.precise_ip)
@@ -673,6 +755,7 @@ static int __x86_pmu_event_init(struct perf_event *event)
 	event->hw.idx = -1;
 	event->hw.last_cpu = -1;
 	event->hw.last_tag = ~0ULL;
+	event->hw.dyn_constraint = ~0ULL;
 
 	/* mark unused */
 	event->hw.extra_reg.idx = EXTRA_REG_NONE;
@@ -753,7 +836,7 @@ void x86_pmu_enable_all(int added)
 	}
 }
 
-static inline int is_x86_event(struct perf_event *event)
+int is_x86_event(struct perf_event *event)
 {
 	int i;
 
@@ -1298,6 +1381,15 @@ static void x86_pmu_enable(struct pmu *pmu)
 
 	if (cpuc->n_added) {
 		int n_running = cpuc->n_events - cpuc->n_added;
+
+		/*
+		 * The late setup (after counters are scheduled)
+		 * is required for some cases, e.g., PEBS counters
+		 * snapshotting. Because an accurate counter index
+		 * is needed.
+		 */
+		static_call_cond(x86_pmu_late_setup)();
+
 		/*
 		 * apply assignment obtained either from
 		 * hw_perf_group_sched_in() or x86_pmu_enable()
@@ -1350,7 +1442,6 @@ static void x86_pmu_enable(struct pmu *pmu)
 			x86_pmu_start(event, PERF_EF_RELOAD);
 		}
 		cpuc->n_added = 0;
-		perf_events_lapic_init();
 	}
 
 	cpuc->enabled = 1;
@@ -1738,6 +1829,24 @@ perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
 	int ret;
 
 	/*
+	 * When guest pmu context is loaded this handler should be forbidden from
+	 * running, the reasons are:
+	 * 1. After perf_guest_enter() is called, and before cpu enter into
+	 *    non-root mode, host non-PMI NMI could happen, but x86_pmu_handle_irq()
+	 *    restore PMU to use NMI vector, which destroy KVM PMI vector setting.
+	 * 2. When VM is running, host non-PMI NMI causes VM exit, KVM will
+	 *    call host NMI handler (vmx_vcpu_enter_exit()) first before KVM save
+	 *    guest PMU context (kvm_pmu_put_guest_context()), as x86_pmu_handle_irq()
+	 *    clear global_status MSR which has guest status now, then this destroy
+	 *    guest PMU status.
+	 * 3. After VM exit, but before KVM save guest PMU context, host non-PMI NMI
+	 *    could happen, x86_pmu_handle_irq() clear global_status MSR which has
+	 *    guest status now, then this destroy guest PMU status.
+	 */
+	if (!this_cpu_read(pmi_vector_is_nmi))
+		return NMI_DONE;
+
+	/*
 	 * All PMUs/events that share this PMI handler should make sure to
 	 * increment active_events for their events.
 	 */
@@ -2035,6 +2144,8 @@ static void x86_pmu_static_call_update(void)
 
 	static_call_update(x86_pmu_guest_get_msrs, x86_pmu.guest_get_msrs);
 	static_call_update(x86_pmu_filter, x86_pmu.filter);
+
+	static_call_update(x86_pmu_late_setup, x86_pmu.late_setup);
 }
 
 static void _x86_pmu_read(struct perf_event *event)
@@ -2044,13 +2155,24 @@ static void _x86_pmu_read(struct perf_event *event)
 
 void x86_pmu_show_pmu_cap(struct pmu *pmu)
 {
-	pr_info("... version:                %d\n",     x86_pmu.version);
-	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
-	pr_info("... generic registers:      %d\n",     x86_pmu_num_counters(pmu));
-	pr_info("... value mask:             %016Lx\n", x86_pmu.cntval_mask);
-	pr_info("... max period:             %016Lx\n", x86_pmu.max_period);
-	pr_info("... fixed-purpose events:   %d\n",     x86_pmu_num_counters_fixed(pmu));
-	pr_info("... event mask:             %016Lx\n", hybrid(pmu, intel_ctrl));
+	u64 events_bitmap;
+
+	if (hybrid(pmu, events_mask_ext64))
+		events_bitmap = hybrid(pmu, events_mask_ext64);
+	else
+		events_bitmap = (BIT_ULL(x86_pmu.events_mask_len) - 1) &
+				~x86_pmu.events_maskl;
+
+	pr_info("... version:                   %d\n", x86_pmu.version);
+	pr_info("... bit width:                 %d\n", x86_pmu.cntval_bits);
+	pr_info("... generic counters:          %d\n", x86_pmu_num_counters(pmu));
+	pr_info("... generic bitmap:            %016Lx\n", hybrid(pmu, cntr_mask64));
+	pr_info("... fixed-purpose counters:    %d\n", x86_pmu_num_counters_fixed(pmu));
+	pr_info("... fixed-purpose bitmap:      %016Lx\n", hybrid(pmu, fixed_cntr_mask64));
+	pr_info("... value mask:                %016Lx\n", x86_pmu.cntval_mask);
+	pr_info("... max period:                %016Lx\n", x86_pmu.max_period);
+	pr_info("... global_ctrl mask:          %016Lx\n", hybrid(pmu, intel_ctrl));
+	pr_info("... events bitmap:             %016Lx\n", events_bitmap);
 }
 
 static int __init init_hw_perf_events(void)
@@ -2092,7 +2214,8 @@ static int __init init_hw_perf_events(void)
 
 	pr_cont("%s PMU driver.\n", x86_pmu.name);
 
-	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+	/* enable userspace RDPMC usage by default */
+	x86_pmu.attr_rdpmc = X86_USER_RDPMC_CONDITIONAL_ENABLE;
 
 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
 		quirk->func();
@@ -2544,6 +2667,27 @@ static ssize_t get_attr_rdpmc(struct device *cdev,
 	return snprintf(buf, 40, "%d\n", x86_pmu.attr_rdpmc);
 }
 
+/*
+ * Behaviors of rdpmc value:
+ * - rdpmc = 0
+ *    global user space rdpmc and counter level's user space rdpmc of all
+ *    counters are both disabled.
+ * - rdpmc = 1
+ *    global user space rdpmc is enabled in mmap enabled time window and
+ *    counter level's user space rdpmc is enabled for only non system-wide
+ *    events. Counter level's user space rdpmc of system-wide events is
+ *    still disabled by default. This won't introduce counter data leak for
+ *    non system-wide events since their count data would be cleared when
+ *    context switches.
+ * - rdpmc = 2
+ *    global user space rdpmc and counter level's user space rdpmc of all
+ *    counters are enabled unconditionally.
+ *
+ * Suppose the rdpmc value won't be changed frequently, don't dynamically
+ * reschedule events to make the new rpdmc value take effect on active perf
+ * events immediately, the new rdpmc value would only impact the new
+ * activated perf events. This makes code simpler and cleaner.
+ */
 static ssize_t set_attr_rdpmc(struct device *cdev,
 			      struct device_attribute *attr,
 			      const char *buf, size_t count)
@@ -2572,12 +2716,12 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
 		 */
 		if (val == 0)
 			static_branch_inc(&rdpmc_never_available_key);
-		else if (x86_pmu.attr_rdpmc == 0)
+		else if (x86_pmu.attr_rdpmc == X86_USER_RDPMC_NEVER_ENABLE)
 			static_branch_dec(&rdpmc_never_available_key);
 
 		if (val == 2)
 			static_branch_inc(&rdpmc_always_available_key);
-		else if (x86_pmu.attr_rdpmc == 2)
+		else if (x86_pmu.attr_rdpmc == X86_USER_RDPMC_ALWAYS_ENABLE)
 			static_branch_dec(&rdpmc_always_available_key);
 
 		on_each_cpu(cr4_update_pce, NULL, 1);
@@ -2602,7 +2746,9 @@ static ssize_t max_precise_show(struct device *cdev,
 				  struct device_attribute *attr,
 				  char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n", x86_pmu_max_precise());
+	struct pmu *pmu = dev_get_drvdata(cdev);
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", x86_pmu_max_precise(pmu));
 }
 
 static DEVICE_ATTR_RO(max_precise);
@@ -2677,6 +2823,27 @@ static bool x86_pmu_filter(struct pmu *pmu, int cpu)
 	return ret;
 }
 
+static void x86_pmu_switch_pebs(bool enter)
+{
+	if (x86_pmu.switch_pebs)
+		x86_pmu.switch_pebs(enter);
+}
+
+static void x86_pmu_switch_guest_ctx(bool enter, void *data)
+{
+	u32 guest_lvtpc = *(u32 *)data;
+
+	x86_pmu_switch_pebs(enter);
+
+	if (enter) {
+		apic_write(APIC_LVTPC, guest_lvtpc);
+		this_cpu_write(pmi_vector_is_nmi, false);
+	} else {
+		apic_write(APIC_LVTPC, APIC_DM_NMI);
+		this_cpu_write(pmi_vector_is_nmi, true);
+	}
+}
+
 static struct pmu pmu = {
 	.pmu_enable		= x86_pmu_enable,
 	.pmu_disable		= x86_pmu_disable,
@@ -2706,6 +2873,8 @@ static struct pmu pmu = {
 	.aux_output_match	= x86_pmu_aux_output_match,
 
 	.filter			= x86_pmu_filter,
+
+	.switch_guest_ctx	= x86_pmu_switch_guest_ctx,
 };
 
 void arch_perf_update_userpage(struct perf_event *event,
@@ -3057,6 +3226,8 @@ unsigned long perf_arch_misc_flags(struct pt_regs *regs)
 
 void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 {
+	struct extra_reg *er;
+
 	/* This API doesn't currently support enumerating hybrid PMUs. */
 	if (WARN_ON_ONCE(cpu_feature_enabled(X86_FEATURE_HYBRID_CPU)) ||
 	    !x86_pmu_initialized()) {
@@ -3070,13 +3241,23 @@ void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 	 * base PMU holds the correct number of counters for P-cores.
 	 */
 	cap->version		= x86_pmu.version;
-	cap->num_counters_gp	= x86_pmu_num_counters(NULL);
-	cap->num_counters_fixed	= x86_pmu_num_counters_fixed(NULL);
-	cap->bit_width_gp	= x86_pmu.cntval_bits;
-	cap->bit_width_fixed	= x86_pmu.cntval_bits;
+	cap->cntr_mask64	= x86_pmu.cntr_mask64;
+	cap->fixed_cntr_mask64	= x86_pmu.fixed_cntr_mask64;
+	cap->bit_width_gp	= cap->cntr_mask64 ? x86_pmu.cntval_bits : 0;
+	cap->bit_width_fixed	= cap->fixed_cntr_mask64 ? x86_pmu.cntval_bits : 0;
 	cap->events_mask	= (unsigned int)x86_pmu.events_maskl;
 	cap->events_mask_len	= x86_pmu.events_mask_len;
+	cap->events_mask_ext	= x86_pmu.events_mask_ext64;
 	cap->pebs_ept		= x86_pmu.pebs_ept;
+	cap->mediated		= !!(pmu.capabilities & PERF_PMU_CAP_MEDIATED_VPMU);
+	cap->config_mask	= x86_pmu.config_mask;
+	cap->arch_pebs		= x86_pmu.arch_pebs;
+
+	for (er = x86_pmu.extra_regs; er && er->msr; er++) {
+		if (er->extra_msr_access &&
+			(cap->num_extra_msrs < X86_MAX_NR_EXTRA_MSRS))
+			cap->extra_msrs[cap->num_extra_msrs++] = er->msr;
+	}
 }
 EXPORT_SYMBOL_GPL(perf_get_x86_pmu_capability);
 

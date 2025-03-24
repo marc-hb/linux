@@ -37,6 +37,16 @@ struct event_constraint uncore_constraint_empty =
 MODULE_DESCRIPTION("Support for Intel uncore performance events");
 MODULE_LICENSE("GPL");
 
+/*
+ * Use it to indicate DMR simics
+ */
+bool __read_mostly enable_ignore = true;
+module_param(enable_ignore, bool, 0444);
+
+static bool force_probe;
+module_param(force_probe, bool, 0444);
+MODULE_PARM_DESC(force_probe, "Force probe for uncore HW (used for pre-silicon platform only)");
+
 int uncore_pcibus_to_dieid(struct pci_bus *bus)
 {
 	struct pci2phy_map *map;
@@ -1715,6 +1725,8 @@ struct intel_uncore_init_fun {
 	bool	use_discovery;
 	/* The units in the discovery table should be ignored. */
 	int	*uncore_units_ignore;
+	/* For pre-silcon HW force probe */
+	bool	require_force_probe;
 };
 
 static const struct intel_uncore_init_fun nhm_uncore_init __initconst = {
@@ -1815,6 +1827,12 @@ static const struct intel_uncore_init_fun lnl_uncore_init __initconst = {
 	.mmio_init = lnl_uncore_mmio_init,
 };
 
+static const struct intel_uncore_init_fun ptl_uncore_init __initconst = {
+	.cpu_init = ptl_uncore_cpu_init,
+	.mmio_init = ptl_uncore_mmio_init,
+	.use_discovery = true,
+};
+
 static const struct intel_uncore_init_fun icx_uncore_init __initconst = {
 	.cpu_init = icx_uncore_cpu_init,
 	.pci_init = icx_uncore_pci_init,
@@ -1841,6 +1859,14 @@ static const struct intel_uncore_init_fun gnr_uncore_init __initconst = {
 	.mmio_init = gnr_uncore_mmio_init,
 	.use_discovery = true,
 	.uncore_units_ignore = gnr_uncore_units_ignore,
+};
+
+static const struct intel_uncore_init_fun pnc_uncore_init __initconst = {
+	.pci_init = pnc_uncore_pci_init,
+	.mmio_init = pnc_uncore_mmio_init,
+	.use_discovery = true,
+	.uncore_units_ignore = pnc_uncore_units_ignore,
+	.require_force_probe = true,
 };
 
 static const struct intel_uncore_init_fun generic_uncore_init __initconst = {
@@ -1896,6 +1922,7 @@ static const struct x86_cpu_id intel_uncore_match[] __initconst = {
 	X86_MATCH_VFM(INTEL_ARROWLAKE_U,	&mtl_uncore_init),
 	X86_MATCH_VFM(INTEL_ARROWLAKE_H,	&mtl_uncore_init),
 	X86_MATCH_VFM(INTEL_LUNARLAKE_M,	&lnl_uncore_init),
+	X86_MATCH_VFM(INTEL_PANTHERLAKE_L,	&ptl_uncore_init),
 	X86_MATCH_VFM(INTEL_SAPPHIRERAPIDS_X,	&spr_uncore_init),
 	X86_MATCH_VFM(INTEL_EMERALDRAPIDS_X,	&spr_uncore_init),
 	X86_MATCH_VFM(INTEL_GRANITERAPIDS_X,	&gnr_uncore_init),
@@ -1905,6 +1932,7 @@ static const struct x86_cpu_id intel_uncore_match[] __initconst = {
 	X86_MATCH_VFM(INTEL_ATOM_CRESTMONT_X,	&gnr_uncore_init),
 	X86_MATCH_VFM(INTEL_ATOM_CRESTMONT,	&gnr_uncore_init),
 	X86_MATCH_VFM(INTEL_ATOM_DARKMONT_X,	&gnr_uncore_init),
+	X86_MATCH_VFM(INTEL_PANTHERCOVE_X,	&pnc_uncore_init),
 	{},
 };
 MODULE_DEVICE_TABLE(x86cpu, intel_uncore_match);
@@ -1929,10 +1957,14 @@ static int __init intel_uncore_init(void)
 			return -ENODEV;
 	} else {
 		uncore_init = (struct intel_uncore_init_fun *)id->driver_data;
+		if (!force_probe && uncore_init->require_force_probe) {
+			pr_info("Uncore HW support requires force_probe to be set.\n");
+			return -ENODEV;
+		}
 		if (uncore_no_discover && uncore_init->use_discovery)
 			return -ENODEV;
 		if (uncore_init->use_discovery &&
-		    !intel_uncore_has_discovery_tables(uncore_init->uncore_units_ignore))
+		    !intel_uncore_has_discovery_tables(enable_ignore ? uncore_init->uncore_units_ignore : NULL))
 			return -ENODEV;
 	}
 

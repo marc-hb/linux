@@ -1,0 +1,37 @@
+[
+    {
+        "Unit": "cpu_atom",
+        "CountersNumFixed": "3",
+        "CountersNumGeneric": "39"
+    },
+    {
+        "Unit": "cpu_core",
+        "CountersNumFixed": "4",
+        "CountersNumGeneric": "10"
+    },
+    {
+        "Unit": "iMC",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "5"
+    },
+    {
+        "Unit": "SANTA",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "sNCU",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "CBOX",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "2"
+    },
+    {
+        "Unit": "HBO",
+        "CountersNumFixed": "0",
+        "CountersNumGeneric": "4"
+    }
+]

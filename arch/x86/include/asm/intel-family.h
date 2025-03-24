@@ -137,6 +137,8 @@
 
 #define INTEL_PANTHERLAKE_L		IFM(6, 0xCC)
 
+#define INTEL_WILDCATLAKE_L		IFM(6, 0xD5)
+
 /* "Small Core" Processors (Atom/E-Core) */
 
 #define INTEL_ATOM_BONNELL		IFM(6, 0x1C) /* Diamondville, Pineview */
@@ -181,6 +183,7 @@
 
 /* Family 19 */
 #define INTEL_PANTHERCOVE_X		IFM(19, 0x01) /* Diamond Rapids */
+#define INTEL_PANTHERCOVE_D		IFM(19, 0x03) /* Diamond Rapids-D */
 
 /* CPU core types */
 enum intel_cpu_type {

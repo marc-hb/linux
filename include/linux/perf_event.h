@@ -32,7 +32,6 @@
 struct perf_guest_info_callbacks {
 	unsigned int			(*state)(void);
 	unsigned long			(*get_ip)(void);
-	unsigned int			(*handle_intel_pt_intr)(void);
 };
 
 #ifdef CONFIG_HAVE_HW_BREAKPOINT
@@ -144,7 +143,7 @@ struct hw_perf_event_extra {
  * PERF_EVENT_FLAG_ARCH bits are reserved for architecture-specific
  * usage.
  */
-#define PERF_EVENT_FLAG_ARCH			0x000fffff
+#define PERF_EVENT_FLAG_ARCH			0x0fffffff
 #define PERF_EVENT_FLAG_USER_READ_CNT		0x80000000
 
 static_assert((PERF_EVENT_FLAG_USER_READ_CNT & PERF_EVENT_FLAG_ARCH) == 0);
@@ -157,7 +156,9 @@ struct hw_perf_event {
 	union {
 		struct { /* hardware */
 			u64		config;
+			u64		config1;
 			u64		last_tag;
+			u64		dyn_constraint;
 			unsigned long	config_base;
 			unsigned long	event_base;
 			int		event_base_rdpmc;
@@ -301,6 +302,10 @@ struct perf_event_pmu_context;
 #define PERF_PMU_CAP_AUX_OUTPUT			0x0080
 #define PERF_PMU_CAP_EXTENDED_HW_TYPE		0x0100
 #define PERF_PMU_CAP_AUX_PAUSE			0x0200
+#define PERF_PMU_CAP_MORE_EXT_REGS		0x0400
+/* Support to passthrough whole PMU resoure to guest */
+#define PERF_PMU_CAP_MEDIATED_VPMU		0x0800
+#define PERF_PMU_CAP_MEDIATED_DISABLED_VPMU	0x1000
 
 /**
  * pmu::scope
@@ -582,6 +587,11 @@ struct pmu {
 	 * Check period value for PERF_EVENT_IOC_PERIOD ioctl.
 	 */
 	int (*check_period)		(struct perf_event *event, u64 value); /* optional */
+
+	/*
+	 * Switch guest context when a guest enter/exit, e.g., interrupt vectors.
+	 */
+	void (*switch_guest_ctx)	(bool enter, void *data); /* optional */
 };
 
 enum perf_addr_filter_action_t {
@@ -951,6 +961,11 @@ struct perf_event_groups {
 	u64		index;
 };
 
+struct perf_time_ctx {
+	u64		time;
+	u64		stamp;
+	u64		offset;
+};
 
 /**
  * struct perf_event_context - event context structure
@@ -990,9 +1005,12 @@ struct perf_event_context {
 	/*
 	 * Context clock, runs when context enabled.
 	 */
-	u64				time;
-	u64				timestamp;
-	u64				timeoffset;
+	struct perf_time_ctx		time;
+
+	/*
+	 * Context clock, runs when in the guest mode.
+	 */
+	struct perf_time_ctx		timeguest;
 
 	/*
 	 * These fields let us detect when two contexts have both
@@ -1020,6 +1038,11 @@ struct perf_event_context {
 	local_t				nr_no_switch_fast;
 };
 
+struct mediated_pmus_list {
+	raw_spinlock_t		lock;
+	struct list_head	list;
+};
+
 struct perf_cpu_pmu_context {
 	struct perf_event_pmu_context	epc;
 	struct perf_event_pmu_context	*task_epc;
@@ -1034,6 +1057,9 @@ struct perf_cpu_pmu_context {
 	struct hrtimer			hrtimer;
 	ktime_t				hrtimer_interval;
 	unsigned int			hrtimer_active;
+
+	/* Track the PMU with PERF_PMU_CAP_MEDIATED_VPMU cap */
+	struct list_head		mediated_entry;
 };
 
 /**
@@ -1062,7 +1088,13 @@ struct perf_output_handle {
 	struct perf_buffer		*rb;
 	unsigned long			wakeup;
 	unsigned long			size;
-	u64				aux_flags;
+	union {
+		u64			flags;		/* perf_output*() */
+		u64			aux_flags;	/* perf_aux_output*() */
+		struct {
+			u64		skip_read : 1;
+		};
+	};
 	union {
 		void			*addr;
 		unsigned long		head;
@@ -1083,9 +1115,8 @@ struct bpf_perf_event_data_kern {
  * This is a per-cpu dynamically allocated data structure.
  */
 struct perf_cgroup_info {
-	u64				time;
-	u64				timestamp;
-	u64				timeoffset;
+	struct perf_time_ctx		time;
+	struct perf_time_ctx		timeguest;
 	int				active;
 };
 
@@ -1383,6 +1414,7 @@ static inline void perf_clear_branch_entry_bitfields(struct perf_branch_entry *b
 	br->reserved = 0;
 }
 
+extern bool has_more_extended_regs(struct perf_event *event);
 extern void perf_output_sample(struct perf_output_handle *handle,
 			       struct perf_event_header *header,
 			       struct perf_sample_data *data,
@@ -1574,7 +1606,6 @@ extern struct perf_guest_info_callbacks __rcu *perf_guest_cbs;
 
 DECLARE_STATIC_CALL(__perf_guest_state, *perf_guest_cbs->state);
 DECLARE_STATIC_CALL(__perf_guest_get_ip, *perf_guest_cbs->get_ip);
-DECLARE_STATIC_CALL(__perf_guest_handle_intel_pt_intr, *perf_guest_cbs->handle_intel_pt_intr);
 
 static inline unsigned int perf_guest_state(void)
 {
@@ -1584,16 +1615,11 @@ static inline unsigned long perf_guest_get_ip(void)
 {
 	return static_call(__perf_guest_get_ip)();
 }
-static inline unsigned int perf_guest_handle_intel_pt_intr(void)
-{
-	return static_call(__perf_guest_handle_intel_pt_intr)();
-}
 extern void perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *cbs);
 extern void perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs);
 #else
 static inline unsigned int perf_guest_state(void)		 { return 0; }
 static inline unsigned long perf_guest_get_ip(void)		 { return 0; }
-static inline unsigned int perf_guest_handle_intel_pt_intr(void) { return 0; }
 #endif /* CONFIG_GUEST_PERF_EVENTS */
 
 extern void perf_event_exec(void);
@@ -1811,6 +1837,11 @@ extern void perf_event_task_tick(void);
 extern int perf_event_account_interrupt(struct perf_event *event);
 extern int perf_event_period(struct perf_event *event, u64 value);
 extern u64 perf_event_pause(struct perf_event *event, bool reset);
+int perf_get_mediated_pmu(void);
+void perf_put_mediated_pmu(void);
+void perf_switch_guest_ctx(bool enter, u32 guest_lvtpc);
+void perf_guest_enter(u32 guest_lvtpc);
+void perf_guest_exit(void);
 #else /* !CONFIG_PERF_EVENTS: */
 static inline void *
 perf_aux_output_begin(struct perf_output_handle *handle,
@@ -1901,6 +1932,16 @@ static inline int perf_exclude_event(struct perf_event *event, struct pt_regs *r
 {
 	return 0;
 }
+
+static inline int perf_get_mediated_pmu(void)
+{
+	return 0;
+}
+
+static inline void perf_put_mediated_pmu(void)			{ }
+static inline void perf_switch_guest_ctx(bool enter, u32 guest_lvtpc) {}
+static inline void perf_guest_enter(u32 guest_lvtpc)		{ }
+static inline void perf_guest_exit(void)			{ }
 #endif
 
 #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_INTEL)

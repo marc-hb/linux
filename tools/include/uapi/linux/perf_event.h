@@ -328,8 +328,9 @@ enum {
 	PERF_TXN_CONFLICT       = (1 << 5), /* Conflict abort */
 	PERF_TXN_CAPACITY_WRITE = (1 << 6), /* Capacity write abort */
 	PERF_TXN_CAPACITY_READ  = (1 << 7), /* Capacity read abort */
+	PERF_TXN_INSUSPEND      = (1 << 8), /* While in a suspend region abort */
 
-	PERF_TXN_MAX	        = (1 << 8), /* non-ABI */
+	PERF_TXN_MAX	        = (1 << 9), /* non-ABI */
 
 	/* bits 32..63 are reserved for the abort code */
 
@@ -379,6 +380,13 @@ enum perf_event_read_format {
 #define PERF_ATTR_SIZE_VER6	120	/* add: aux_sample_size */
 #define PERF_ATTR_SIZE_VER7	128	/* add: sig_data */
 #define PERF_ATTR_SIZE_VER8	136	/* add: config3 */
+#define PERF_ATTR_SIZE_VER9	168	/* add: sample_regs_intr_ext[PERF_EXT_REGS_ARRAY_SIZE] */
+
+#define PERF_EXT_REGS_ARRAY_SIZE	4
+#define PERF_NUM_EXT_REGS		(PERF_EXT_REGS_ARRAY_SIZE * 64)
+
+#define PERF_NUM_INTR_REGS		(PERF_EXT_REGS_ARRAY_SIZE + 1)
+#define PERF_NUM_INTR_REGS_SIZE		((PERF_NUM_INTR_REGS) * 64)
 
 /*
  * Hardware event_id to monitor via a performance monitoring event:
@@ -531,6 +539,12 @@ struct perf_event_attr {
 	__u64	sig_data;
 
 	__u64	config3; /* extension of config2 */
+
+	/*
+	 * Extension sets of regs to dump for each sample.
+	 * See asm/perf_regs.h for details.
+	 */
+	__u64	sample_regs_intr_ext[PERF_EXT_REGS_ARRAY_SIZE];
 };
 
 /*
@@ -1296,14 +1310,16 @@ union perf_mem_data_src {
 			mem_snoopx:2,	/* snoop mode, ext */
 			mem_blk:3,	/* access blocked */
 			mem_hops:3,	/* hop level */
-			mem_rsvd:18;
+			mem_region:5,	/* cache/memory regions */
+			mem_rsvd:13;
 	};
 };
 #elif defined(__BIG_ENDIAN_BITFIELD)
 union perf_mem_data_src {
 	__u64 val;
 	struct {
-		__u64	mem_rsvd:18,
+		__u64	mem_rsvd:13,
+			mem_region:5,	/* cache/memory regions */
 			mem_hops:3,	/* hop level */
 			mem_blk:3,	/* access blocked */
 			mem_snoopx:2,	/* snoop mode, ext */
@@ -1360,7 +1376,7 @@ union perf_mem_data_src {
 #define PERF_MEM_LVLNUM_L4	0x04 /* L4 */
 #define PERF_MEM_LVLNUM_L2_MHB	0x05 /* L2 Miss Handling Buffer */
 #define PERF_MEM_LVLNUM_MSC	0x06 /* Memory-side Cache */
-/* 0x7 available */
+#define PERF_MEM_LVLNUM_L0	0x07 /* L0 */
 #define PERF_MEM_LVLNUM_UNC	0x08 /* Uncached */
 #define PERF_MEM_LVLNUM_CXL	0x09 /* CXL */
 #define PERF_MEM_LVLNUM_IO	0x0a /* I/O */
@@ -1412,6 +1428,25 @@ union perf_mem_data_src {
 #define PERF_MEM_HOPS_3		0x04 /* remote board */
 /* 5-7 available */
 #define PERF_MEM_HOPS_SHIFT	43
+
+/* Cache/Memory region */
+#define PERF_MEM_REGION_NA		0x0  /* Invalid */
+#define PERF_MEM_REGION_RSVD		0x01 /* Reserved */
+#define PERF_MEM_REGION_L_SHARE		0x02 /* Local CA shared cache */
+#define PERF_MEM_REGION_L_NON_SHARE	0x03 /* Local CA non-shared cache */
+#define PERF_MEM_REGION_O_IO		0x04 /* Other CA IO agent */
+#define PERF_MEM_REGION_O_SHARE		0x05 /* Other CA shared cache */
+#define PERF_MEM_REGION_O_NON_SHARE	0x06 /* Other CA non-shared cache */
+#define PERF_MEM_REGION_MMIO		0x07 /* MMIO */
+#define PERF_MEM_REGION_MEM0		0x08 /* Memory region 0 */
+#define PERF_MEM_REGION_MEM1		0x09 /* Memory region 1 */
+#define PERF_MEM_REGION_MEM2		0x0a /* Memory region 2 */
+#define PERF_MEM_REGION_MEM3		0x0b /* Memory region 3 */
+#define PERF_MEM_REGION_MEM4		0x0c /* Memory region 4 */
+#define PERF_MEM_REGION_MEM5		0x0d /* Memory region 5 */
+#define PERF_MEM_REGION_MEM6		0x0e /* Memory region 6 */
+#define PERF_MEM_REGION_MEM7		0x0f /* Memory region 7 */
+#define PERF_MEM_REGION_SHIFT		47
 
 #define PERF_MEM_S(a, s) \
 	(((__u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)

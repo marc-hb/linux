@@ -89,7 +89,6 @@
 #define CREATE_TRACE_POINTS
 #include "trace.h"
 
-#define MAX_IO_MSRS 256
 #define KVM_MAX_MCE_BANKS 32
 
 /*
@@ -188,6 +187,14 @@ bool __read_mostly enable_pmu = true;
 EXPORT_SYMBOL_GPL(enable_pmu);
 module_param(enable_pmu, bool, 0444);
 
+/*
+ * Enable/disable mediated passthrough PMU virtualization.
+ * Don't expose it to userspace as a module paramerter until
+ * all mediated vPMU code is in place.
+ */
+bool __read_mostly enable_mediated_pmu;
+EXPORT_SYMBOL_GPL(enable_mediated_pmu);
+
 bool __read_mostly eager_page_split = true;
 module_param(eager_page_split, bool, 0644);
 
@@ -221,6 +228,8 @@ static struct kvm_user_return_msrs __percpu *user_return_msrs;
 				| XFEATURE_MASK_BNDCSR | XFEATURE_MASK_AVX512 \
 				| XFEATURE_MASK_PKRU | XFEATURE_MASK_XTILE \
 				| XFEATURE_MASK_APX)
+
+#define KVM_SUPPORTED_XSS     XFEATURE_MASK_LBR
 
 bool __read_mostly allow_smaller_maxphyaddr = 0;
 EXPORT_SYMBOL_GPL(allow_smaller_maxphyaddr);
@@ -332,27 +341,21 @@ static const u32 msrs_to_save_base[] = {
 	MSR_IA32_RTIT_ADDR1_A, MSR_IA32_RTIT_ADDR1_B,
 	MSR_IA32_RTIT_ADDR2_A, MSR_IA32_RTIT_ADDR2_B,
 	MSR_IA32_RTIT_ADDR3_A, MSR_IA32_RTIT_ADDR3_B,
+	MSR_IA32_RTIT_TRIGGER0_CFG, MSR_IA32_RTIT_TRIGGER0_CFG + 1,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 2, MSR_IA32_RTIT_TRIGGER0_CFG + 3,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 4, MSR_IA32_RTIT_TRIGGER0_CFG + 5,
+	MSR_IA32_RTIT_TRIGGER0_CFG + 6,
 	MSR_IA32_UMWAIT_CONTROL,
 
 	MSR_IA32_XFD, MSR_IA32_XFD_ERR,
+	MSR_IA32_XSS,
 };
 
-static const u32 msrs_to_save_pmu[] = {
-	MSR_ARCH_PERFMON_FIXED_CTR0, MSR_ARCH_PERFMON_FIXED_CTR1,
-	MSR_ARCH_PERFMON_FIXED_CTR0 + 2,
+static const u32 msrs_to_save_pmu_base[] = {
 	MSR_CORE_PERF_FIXED_CTR_CTRL, MSR_CORE_PERF_GLOBAL_STATUS,
-	MSR_CORE_PERF_GLOBAL_CTRL,
+	MSR_CORE_PERF_GLOBAL_CTRL, MSR_PERF_METRICS,
 	MSR_IA32_PEBS_ENABLE, MSR_IA32_DS_AREA, MSR_PEBS_DATA_CFG,
-
-	/* This part of MSRs should match KVM_MAX_NR_INTEL_GP_COUNTERS. */
-	MSR_ARCH_PERFMON_PERFCTR0, MSR_ARCH_PERFMON_PERFCTR1,
-	MSR_ARCH_PERFMON_PERFCTR0 + 2, MSR_ARCH_PERFMON_PERFCTR0 + 3,
-	MSR_ARCH_PERFMON_PERFCTR0 + 4, MSR_ARCH_PERFMON_PERFCTR0 + 5,
-	MSR_ARCH_PERFMON_PERFCTR0 + 6, MSR_ARCH_PERFMON_PERFCTR0 + 7,
-	MSR_ARCH_PERFMON_EVENTSEL0, MSR_ARCH_PERFMON_EVENTSEL1,
-	MSR_ARCH_PERFMON_EVENTSEL0 + 2, MSR_ARCH_PERFMON_EVENTSEL0 + 3,
-	MSR_ARCH_PERFMON_EVENTSEL0 + 4, MSR_ARCH_PERFMON_EVENTSEL0 + 5,
-	MSR_ARCH_PERFMON_EVENTSEL0 + 6, MSR_ARCH_PERFMON_EVENTSEL0 + 7,
+	MSR_IA32_PEBS_BASE, MSR_IA32_PEBS_INDEX,
 
 	MSR_K7_EVNTSEL0, MSR_K7_EVNTSEL1, MSR_K7_EVNTSEL2, MSR_K7_EVNTSEL3,
 	MSR_K7_PERFCTR0, MSR_K7_PERFCTR1, MSR_K7_PERFCTR2, MSR_K7_PERFCTR3,
@@ -363,13 +366,23 @@ static const u32 msrs_to_save_pmu[] = {
 	MSR_F15H_PERF_CTR0, MSR_F15H_PERF_CTR1, MSR_F15H_PERF_CTR2,
 	MSR_F15H_PERF_CTR3, MSR_F15H_PERF_CTR4, MSR_F15H_PERF_CTR5,
 
+	MSR_OFFCORE_RSP_0, MSR_OFFCORE_RSP_1,
+	MSR_PEBS_LD_LAT_THRESHOLD,
+	MSR_PEBS_FRONTEND,
+	MSR_SNOOP_RSP_0, MSR_SNOOP_RSP_1,
+
 	MSR_AMD64_PERF_CNTR_GLOBAL_CTL,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR,
 };
 
+static u32 msrs_to_save_pmu_cntrs[3 * KVM_MAX_NR_FIXED_COUNTERS +
+				  6 * KVM_MAX_NR_GP_COUNTERS];
+
 static u32 msrs_to_save[ARRAY_SIZE(msrs_to_save_base) +
-			ARRAY_SIZE(msrs_to_save_pmu)];
+			ARRAY_SIZE(msrs_to_save_pmu_base) +
+			ARRAY_SIZE(msrs_to_save_pmu_cntrs) +
+			KVM_MAX_NR_ARCH_LBR_MSRS];
 static unsigned num_msrs_to_save;
 
 static const u32 emulated_msrs_all[] = {
@@ -1542,6 +1555,12 @@ static void kvm_update_dr0123(struct kvm_vcpu *vcpu)
 	}
 }
 
+bool kvm_dr7_valid(struct kvm_vcpu *vcpu, u64 data, u64 *validated)
+{
+	return kvm_x86_call(dr7_valid)(vcpu, data, validated);
+}
+EXPORT_SYMBOL_GPL(kvm_dr7_valid);
+
 void kvm_update_dr7(struct kvm_vcpu *vcpu)
 {
 	unsigned long dr7;
@@ -1572,6 +1591,7 @@ static u64 kvm_dr6_fixed(struct kvm_vcpu *vcpu)
 int kvm_set_dr(struct kvm_vcpu *vcpu, int dr, unsigned long val)
 {
 	size_t size = ARRAY_SIZE(vcpu->arch.db);
+	u64 validated;
 
 	switch (dr) {
 	case 0 ... 3:
@@ -1587,9 +1607,9 @@ int kvm_set_dr(struct kvm_vcpu *vcpu, int dr, unsigned long val)
 		break;
 	case 5:
 	default: /* 7 */
-		if (!kvm_dr7_valid(val))
+		if (!kvm_dr7_valid(vcpu, val, &validated))
 			return 1; /* #GP */
-		vcpu->arch.dr7 = (val & DR7_VOLATILE) | DR7_FIXED_1;
+		vcpu->arch.dr7 = validated;
 		kvm_update_dr7(vcpu);
 		break;
 	}
@@ -4003,8 +4023,10 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		 */
 		if (data & ~kvm_caps.supported_xss)
 			return 1;
-		vcpu->arch.ia32_xss = data;
-		kvm_update_cpuid_runtime(vcpu);
+		if (vcpu->arch.ia32_xss != data) {
+			vcpu->arch.ia32_xss = data;
+			kvm_update_cpuid_runtime(vcpu);
+		}
 		break;
 	case MSR_SMI_COUNT:
 		if (!msr_info->host_initiated)
@@ -4102,16 +4124,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_IA32_MC0_CTL2 ... MSR_IA32_MCx_CTL2(KVM_MAX_MCE_BANKS) - 1:
 		return set_msr_mce(vcpu, msr_info);
 
-	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
-	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
-	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
-	case MSR_P6_EVNTSEL0 ... MSR_P6_EVNTSEL1:
-		if (kvm_pmu_is_valid_msr(vcpu, msr))
-			return kvm_pmu_set_msr(vcpu, msr_info);
-
-		if (data)
-			kvm_pr_unimpl_wrmsr(vcpu, msr, data);
-		break;
 	case MSR_K7_CLK_CTL:
 		/*
 		 * Ignore all writes to this no longer documented MSR.
@@ -4186,6 +4198,24 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		vcpu->arch.guest_fpu.xfd_err = data;
 		break;
 #endif
+	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
+	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
+	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
+	case MSR_P6_EVNTSEL0 ... MSR_P6_EVNTSEL1:
+		/*
+		 * Some legacy guests don't expect to get a #GP if these MSRs
+		 * are invalid on the old platforms with non-architectural PMUs.
+		 * Refer: commit 5753785fa977 ("KVM: do not #GP on perf MSR writes
+		 * when vPMU is disabled")
+		 */
+		if (!vcpu_to_pmu(vcpu)->version) {
+			if (kvm_pmu_is_valid_msr(vcpu, msr))
+				return kvm_pmu_set_msr(vcpu, msr_info);
+			if (data)
+				kvm_pr_unimpl_wrmsr(vcpu, msr, data);
+			break;
+		}
+		fallthrough;
 	default:
 		if (kvm_pmu_is_valid_msr(vcpu, msr))
 			return kvm_pmu_set_msr(vcpu, msr_info);
@@ -4278,14 +4308,6 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_PP1_ENERGY_STATUS:	/* Power plane 1 (graphics uncore) */
 	case MSR_PKG_ENERGY_STATUS:	/* Total package */
 	case MSR_DRAM_ENERGY_STATUS:	/* DRAM controller */
-		msr_info->data = 0;
-		break;
-	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
-	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
-	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
-	case MSR_P6_EVNTSEL0 ... MSR_P6_EVNTSEL1:
-		if (kvm_pmu_is_valid_msr(vcpu, msr_info->index))
-			return kvm_pmu_get_msr(vcpu, msr_info);
 		msr_info->data = 0;
 		break;
 	case MSR_IA32_UCODE_REV:
@@ -4535,6 +4557,23 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		msr_info->data = vcpu->arch.guest_fpu.xfd_err;
 		break;
 #endif
+	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
+	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
+	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
+	case MSR_P6_EVNTSEL0 ... MSR_P6_EVNTSEL1:
+		/*
+		 * Some legacy guests don't expect to get a #GP if these MSRs
+		 * are invalid on the old platforms with non-architectural PMUs.
+		 * Refer: commit 5753785fa977 ("KVM: do not #GP on perf MSR writes
+		 * when vPMU is disabled")
+		 */
+		if (!vcpu_to_pmu(vcpu)->version) {
+			if (kvm_pmu_is_valid_msr(vcpu, msr_info->index))
+				return kvm_pmu_get_msr(vcpu, msr_info);
+			msr_info->data = 0;
+			break;
+		}
+		fallthrough;
 	default:
 		if (kvm_pmu_is_valid_msr(vcpu, msr_info->index))
 			return kvm_pmu_get_msr(vcpu, msr_info);
@@ -4584,7 +4623,7 @@ static int msr_io(struct kvm_vcpu *vcpu, struct kvm_msrs __user *user_msrs,
 		goto out;
 
 	r = -E2BIG;
-	if (msrs.nmsrs >= MAX_IO_MSRS)
+	if (msrs.nmsrs > KVM_MAX_IO_MSRS)
 		goto out;
 
 	size = sizeof(struct kvm_msr_entry) * msrs.nmsrs;
@@ -5635,7 +5674,7 @@ static int kvm_vcpu_ioctl_x86_set_debugregs(struct kvm_vcpu *vcpu,
 
 	if (!kvm_dr6_valid(dbgregs->dr6))
 		return -EINVAL;
-	if (!kvm_dr7_valid(dbgregs->dr7))
+	if (!kvm_dr7_valid(vcpu, dbgregs->dr7, NULL))
 		return -EINVAL;
 
 	for (i = 0; i < ARRAY_SIZE(vcpu->arch.db); i++)
@@ -6744,9 +6783,28 @@ disable_exits_unlock:
 			break;
 
 		mutex_lock(&kvm->lock);
-		if (!kvm->created_vcpus) {
-			kvm->arch.enable_pmu = !(cap->args[0] & KVM_PMU_CAP_DISABLE);
-			r = 0;
+		/*
+		 * To keep PMU configuration "simple", setting vPMU support is
+		 * disallowed if vCPUs are created, or if mediated PMU support
+		 * was already enabled for the VM.
+		 */
+		if (!kvm->created_vcpus &&
+		    (!enable_mediated_pmu || !kvm->arch.enable_pmu)) {
+			bool pmu_enable = !(cap->args[0] & KVM_PMU_CAP_DISABLE);
+
+			if (enable_mediated_pmu && pmu_enable) {
+				char *err_msg = "Fail to enable mediated vPMU, " \
+					"please disable system wide perf events or nmi_watchdog " \
+					"(echo 0 > /proc/sys/kernel/nmi_watchdog).\n";
+
+				r = perf_get_mediated_pmu();
+				if (r)
+					kvm_err("%s", err_msg);
+			} else
+				r = 0;
+
+			if (!r)
+				kvm->arch.enable_pmu = pmu_enable;
 		}
 		mutex_unlock(&kvm->lock);
 		break;
@@ -7454,9 +7512,11 @@ static void kvm_probe_feature_msr(u32 msr_index)
 	msr_based_features[num_msr_based_features++] = msr_index;
 }
 
-static void kvm_probe_msr_to_save(u32 msr_index)
+void kvm_probe_msr_to_save(u32 msr_index)
 {
+	int pebs_format;
 	u32 dummy[2];
+	int idx;
 
 	if (rdmsr_safe(msr_index, &dummy[0], &dummy[1]))
 		return;
@@ -7502,22 +7562,84 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		     intel_pt_validate_hw_cap(PT_CAP_num_address_ranges) * 2))
 			return;
 		break;
+	case MSR_PERF_METRICS:
+		if (!(kvm_caps.supported_perf_cap & PERF_CAP_PERF_METRICS))
+			return;
+		break;
+	case MSR_IA32_RTIT_TRIGGER0_CFG ... MSR_IA32_RTIT_TRIGGER6_CFG:
+		/* PT_CAP_num_trigger_msrs implicitly requires Intel PTTT */
+		if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) ||
+		    (msr_index - MSR_IA32_RTIT_TRIGGER0_CFG >=
+		     intel_pt_validate_hw_cap(PT_CAP_num_trigger_msrs)))
+			return;
+		break;
 	case MSR_ARCH_PERFMON_PERFCTR0 ...
 	     MSR_ARCH_PERFMON_PERFCTR0 + KVM_MAX_NR_GP_COUNTERS - 1:
-		if (msr_index - MSR_ARCH_PERFMON_PERFCTR0 >=
-		    kvm_pmu_cap.num_counters_gp)
+		if (!(BIT_ULL(msr_index - MSR_ARCH_PERFMON_PERFCTR0) &
+		    kvm_pmu_cap.cntr_mask64))
+			return;
+		break;
+	case MSR_IA32_PMC0 ... MSR_IA32_PMC0 + KVM_MAX_NR_GP_COUNTERS - 1:
+		if (!(BIT_ULL(msr_index - MSR_IA32_PMC0) & kvm_pmu_cap.cntr_mask64))
 			return;
 		break;
 	case MSR_ARCH_PERFMON_EVENTSEL0 ...
 	     MSR_ARCH_PERFMON_EVENTSEL0 + KVM_MAX_NR_GP_COUNTERS - 1:
-		if (msr_index - MSR_ARCH_PERFMON_EVENTSEL0 >=
-		    kvm_pmu_cap.num_counters_gp)
+		if (!(BIT_ULL(msr_index - MSR_ARCH_PERFMON_EVENTSEL0) &
+		    kvm_pmu_cap.cntr_mask64))
 			return;
 		break;
 	case MSR_ARCH_PERFMON_FIXED_CTR0 ...
 	     MSR_ARCH_PERFMON_FIXED_CTR0 + KVM_MAX_NR_FIXED_COUNTERS - 1:
-		if (msr_index - MSR_ARCH_PERFMON_FIXED_CTR0 >=
-		    kvm_pmu_cap.num_counters_fixed)
+		if (!(BIT_ULL(msr_index - MSR_ARCH_PERFMON_FIXED_CTR0) &
+		    kvm_pmu_cap.fixed_cntr_mask64))
+			return;
+		break;
+	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
+	case MSR_PEBS_LD_LAT_THRESHOLD:
+	case MSR_PEBS_FRONTEND:
+	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
+		/*
+		 * We won't know if passthrough vPMU is enabled until vPMU
+		 * is initialized.  For now we put host supported MSRs in
+		 * msrs_to_save[], but KVM won't support them if passthrough
+		 * vPMU is not enabled.
+		 */
+		if (!kvm_pmu_is_possible_extra_msr(msr_index))
+			return;
+		break;
+	case MSR_IA32_PMC_V6_GP_MSR_STRAT ... MSR_IA32_PMC_V6_GP_MSR_END:
+		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CTR,
+				      KVM_MAX_NR_GP_COUNTERS - 1);
+		if (idx < 0)
+			idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CFG_A,
+					      KVM_MAX_NR_GP_COUNTERS -1);
+		if (idx < 0)
+			idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CFG_C,
+					      KVM_MAX_NR_GP_COUNTERS -1);
+		if (idx < 0 || !(BIT_ULL(idx) & kvm_pmu_cap.cntr_mask64))
+			return;
+		break;
+	case MSR_IA32_PMC_V6_FX_MSR_STRAT ... MSR_IA32_PMC_V6_FX_MSR_END:
+		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_FX0_CTR,
+				      KVM_MAX_NR_FIXED_COUNTERS - 1);
+		if (idx < 0)
+			idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_FX0_CFG_C,
+					      KVM_MAX_NR_FIXED_COUNTERS - 1);
+		if (idx < 0 || !(BIT_ULL(idx) & kvm_pmu_cap.fixed_cntr_mask64))
+			return;
+		break;
+	case MSR_IA32_PEBS_ENABLE:
+	case MSR_IA32_DS_AREA:
+	case MSR_PEBS_DATA_CFG:
+		pebs_format = (kvm_caps.supported_perf_cap & PERF_CAP_PEBS_FORMAT) >>
+			      PERF_CAP_PEBS_FORMAT_SHIFT;
+		if (pebs_format == 0 || pebs_format == 0xf)
+			return;
+		break;
+	case MSR_IA32_PEBS_BASE:
+	case MSR_IA32_PEBS_INDEX:
+		if (!kvm_pmu_cap.arch_pebs)
 			return;
 		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_CTL:
@@ -7529,6 +7651,10 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 	case MSR_IA32_XFD:
 	case MSR_IA32_XFD_ERR:
 		if (!kvm_cpu_cap_has(X86_FEATURE_XFD))
+			return;
+		break;
+	case MSR_IA32_XSS:
+		if (!kvm_caps.supported_xss)
 			return;
 		break;
 	case MSR_IA32_TSX_CTRL:
@@ -7543,15 +7669,35 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		break;
 	}
 
+	if (WARN_ON(num_msrs_to_save >= (ARRAY_SIZE(msrs_to_save) - 1)))
+		return;
+
 	msrs_to_save[num_msrs_to_save++] = msr_index;
+}
+
+static void kvm_init_save_pmu_cntrs_msr_array(void)
+{
+	int idx = 0;
+	int i;
+
+	for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++) {
+		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_FIXED_CTR0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i);
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i);
+	}
+	for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
+		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_PERFCTR0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = MSR_IA32_PMC0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_EVENTSEL0 + i;
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i);
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i);
+		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i);
+	}
 }
 
 static void kvm_init_msr_lists(void)
 {
 	unsigned i;
-
-	BUILD_BUG_ON_MSG(KVM_MAX_NR_FIXED_COUNTERS != 3,
-			 "Please update the fixed PMCs in msrs_to_save_pmu[]");
 
 	num_msrs_to_save = 0;
 	num_emulated_msrs = 0;
@@ -7561,8 +7707,12 @@ static void kvm_init_msr_lists(void)
 		kvm_probe_msr_to_save(msrs_to_save_base[i]);
 
 	if (enable_pmu) {
-		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu); i++)
-			kvm_probe_msr_to_save(msrs_to_save_pmu[i]);
+		kvm_init_save_pmu_cntrs_msr_array();
+		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu_base); i++)
+			kvm_probe_msr_to_save(msrs_to_save_pmu_base[i]);
+		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu_cntrs); i++)
+			kvm_probe_msr_to_save(msrs_to_save_pmu_cntrs[i]);
+		kvm_pmu_init_lbr_msr_to_save();
 	}
 
 	for (i = 0; i < ARRAY_SIZE(emulated_msrs_all); i++) {
@@ -9936,13 +10086,18 @@ int kvm_x86_vendor_init(struct kvm_x86_init_ops *ops)
 
 	rdmsrl_safe(MSR_EFER, &kvm_host.efer);
 
-	if (boot_cpu_has(X86_FEATURE_XSAVES))
+	if (boot_cpu_has(X86_FEATURE_XSAVES)) {
 		rdmsrl(MSR_IA32_XSS, kvm_host.xss);
+		kvm_caps.supported_xss = kvm_host.xss & KVM_SUPPORTED_XSS;
+	}
 
 	kvm_init_pmu_capability(ops->pmu_ops);
 
 	if (boot_cpu_has(X86_FEATURE_ARCH_CAPABILITIES))
 		rdmsrl(MSR_IA32_ARCH_CAPABILITIES, kvm_host.arch_capabilities);
+
+	if (boot_cpu_has(X86_FEATURE_PDCM))
+		rdmsrl(MSR_IA32_PERF_CAPABILITIES, kvm_host.perf_capabilities);
 
 	r = ops->hardware_setup();
 	if (r != 0)
@@ -11154,6 +11309,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 	}
 
 	vcpu->arch.host_debugctl = get_debugctlmsr();
+	kvm_pmu_load_guest_context(vcpu);
 
 	guest_timing_enter_irqoff();
 
@@ -11183,6 +11339,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 		/* Note, VM-Exits that go down the "slow" path are accounted below. */
 		++vcpu->stat.exits;
 	}
+
+	kvm_pmu_put_guest_context(vcpu);
 
 	/*
 	 * Do this here before restoring debug registers on the host.  And
@@ -12903,7 +13061,14 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 	kvm->arch.default_tsc_khz = max_tsc_khz ? : tsc_khz;
 	kvm->arch.apic_bus_cycle_ns = APIC_BUS_CYCLE_NS_DEFAULT;
 	kvm->arch.guest_can_read_msr_platform_info = true;
-	kvm->arch.enable_pmu = enable_pmu;
+
+	/*
+	 * PMU virtualization is opt-in when mediated PMU support is enabled.
+	 * KVM_CAP_PMU_CAPABILITY ioctl must be called explicitly to enable
+	 * mediated vPMU. For legacy perf-based vPMU, its behavior isn't changed,
+	 * KVM_CAP_PMU_CAPABILITY ioctl is optional.
+	 */
+	kvm->arch.enable_pmu = enable_pmu && !enable_mediated_pmu;
 
 #if IS_ENABLED(CONFIG_HYPERV)
 	spin_lock_init(&kvm->arch.hv_root_tdp_lock);
@@ -13056,6 +13221,8 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
 		__x86_set_memory_region(kvm, TSS_PRIVATE_MEMSLOT, 0, 0);
 		mutex_unlock(&kvm->slots_lock);
 	}
+	if (kvm->arch.enable_pmu && enable_mediated_pmu)
+		perf_put_mediated_pmu();
 	kvm_unload_vcpu_mmus(kvm);
 	kvm_destroy_vcpus(kvm);
 	kvm_x86_call(vm_destroy)(kvm);
@@ -14164,6 +14331,16 @@ int kvm_sev_es_string_io(struct kvm_vcpu *vcpu, unsigned int size,
 }
 EXPORT_SYMBOL_GPL(kvm_sev_es_string_io);
 
+static void kvm_handle_guest_pmi(void)
+{
+	struct kvm_vcpu *vcpu = kvm_get_running_vcpu();
+
+	if (WARN_ON_ONCE(!vcpu))
+		return;
+
+	kvm_make_request(KVM_REQ_PMI, vcpu);
+}
+
 EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_entry);
 EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
 EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_fast_mmio);
@@ -14201,12 +14378,14 @@ static int __init kvm_x86_init(void)
 
 	kvm_mmu_x86_module_init();
 	mitigate_smt_rsb &= boot_cpu_has_bug(X86_BUG_SMT_RSB) && cpu_smt_possible();
+	x86_set_kvm_irq_handler(KVM_GUEST_PMI_VECTOR, kvm_handle_guest_pmi);
 	return 0;
 }
 module_init(kvm_x86_init);
 
 static void __exit kvm_x86_exit(void)
 {
+	x86_set_kvm_irq_handler(KVM_GUEST_PMI_VECTOR, NULL);
 	WARN_ON_ONCE(static_branch_unlikely(&kvm_has_noapic_vcpu));
 }
 module_exit(kvm_x86_exit);

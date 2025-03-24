@@ -38,13 +38,18 @@ struct kvm_pmu_ops {
 	int (*set_msr)(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
 	void (*refresh)(struct kvm_vcpu *vcpu);
 	void (*init)(struct kvm_vcpu *vcpu);
+	void (*destroy)(struct kvm_vcpu *vcpu);
 	void (*reset)(struct kvm_vcpu *vcpu);
 	void (*deliver_pmi)(struct kvm_vcpu *vcpu);
 	void (*cleanup)(struct kvm_vcpu *vcpu);
+	void (*put_guest_context)(struct kvm_vcpu *vcpu);
+	void (*load_guest_context)(struct kvm_vcpu *vcpu);
+	bool (*context_switch_need_skip)(struct kvm_vcpu *vcpu);
 
 	const u64 EVENTSEL_EVENT;
 	const int MAX_NR_GP_COUNTERS;
 	const int MIN_NR_GP_COUNTERS;
+	const int MIN_MEDIATED_PMU_VERSION;
 };
 
 void kvm_pmu_ops_update(const struct kvm_pmu_ops *pmu_ops);
@@ -63,6 +68,35 @@ static inline bool kvm_pmu_has_perf_global_ctrl(struct kvm_pmu *pmu)
 	return pmu->version > 1;
 }
 
+static inline bool gp_ctr_is_supported(struct kvm_pmu *pmu, unsigned int idx)
+{
+	return idx < KVM_MAX_NR_GP_COUNTERS ?
+	       test_bit(idx, pmu->all_valid_pmc_idx) : false;
+}
+
+static inline bool fixed_ctr_is_supported(struct kvm_pmu *pmu, unsigned int idx)
+{
+	return idx < KVM_MAX_NR_FIXED_COUNTERS ?
+	       test_bit(INTEL_PMC_IDX_FIXED + idx, pmu->all_valid_pmc_idx) : false;
+}
+
+static inline u64 fixed_ctrs_bitmap(struct kvm_pmu *pmu)
+{
+	return ((pmu->all_valid_pmc_idx64 >> INTEL_PMC_IDX_FIXED) &
+		GENMASK_ULL(KVM_MAX_NR_FIXED_COUNTERS, 0));
+}
+
+static inline u64 gp_ctrs_bitmap(struct kvm_pmu *pmu)
+{
+	return pmu->all_valid_pmc_idx64 & GENMASK_ULL(INTEL_PMC_MAX_GENERIC - 1, 0);
+}
+
+static inline bool kvm_mediated_pmu_enabled(struct kvm_vcpu *vcpu)
+{
+	return vcpu->kvm->arch.enable_pmu &&
+	       enable_mediated_pmu && vcpu_to_pmu(vcpu)->version;
+}
+
 /*
  * KVM tracks all counters in 64-bit bitmaps, with general purpose counters
  * mapped to bits 31:0 and fixed counters mapped to 63:32, e.g. fixed counter 0
@@ -79,11 +113,11 @@ static inline bool kvm_pmu_has_perf_global_ctrl(struct kvm_pmu *pmu)
  */
 static inline struct kvm_pmc *kvm_pmc_idx_to_pmc(struct kvm_pmu *pmu, int idx)
 {
-	if (idx < pmu->nr_arch_gp_counters)
+	if (idx >= 0 && gp_ctr_is_supported(pmu, idx))
 		return &pmu->gp_counters[idx];
 
 	idx -= KVM_FIXED_PMC_BASE_IDX;
-	if (idx >= 0 && idx < pmu->nr_arch_fixed_counters)
+	if (idx >= 0 && fixed_ctr_is_supported(pmu, idx))
 		return &pmu->fixed_counters[idx];
 
 	return NULL;
@@ -105,6 +139,9 @@ static inline u64 pmc_bitmask(struct kvm_pmc *pmc)
 static inline u64 pmc_read_counter(struct kvm_pmc *pmc)
 {
 	u64 counter, enabled, running;
+
+	if (kvm_mediated_pmu_enabled(pmc->vcpu))
+		return pmc->counter & pmc_bitmask(pmc);
 
 	counter = pmc->counter + pmc->emulated_counter;
 
@@ -133,16 +170,44 @@ static inline bool kvm_valid_perf_global_ctrl(struct kvm_pmu *pmu,
 	return !(pmu->global_ctrl_rsvd & data);
 }
 
-/* returns general purpose PMC with the specified MSR. Note that it can be
- * used for both PERFCTRn and EVNTSELn; that is why it accepts base as a
- * parameter to tell them apart.
- */
-static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
-					 u32 base)
+static inline u32 pmu_v6_msr(u32 base, int idx)
 {
-	if (msr >= base && msr < base + pmu->nr_arch_gp_counters) {
-		u32 index = array_index_nospec(msr - base,
-					       pmu->nr_arch_gp_counters);
+	return base + MSR_IA32_PMC_V6_STEP * idx;
+}
+
+static inline int get_v6_cntr_idx(u32 msr, u32 base, int max)
+{
+	int idx = -1;
+
+	if (msr >= base &&
+	    msr < base + max * MSR_IA32_PMC_V6_STEP &&
+	    !((msr - base) & (MSR_IA32_PMC_V6_STEP - 1)))
+		idx = (msr - base) / MSR_IA32_PMC_V6_STEP;
+
+	return idx;
+}
+
+static inline int get_cntr_idx(struct kvm_pmu *pmu, u32 msr, u32 base, int max)
+{
+	int idx = -1;
+
+	if (msr < MSR_IA32_PMC_V6_GP0_CTR) {
+		if (msr >= base && msr < base + max)
+			idx = msr - base;
+	} else if (pmu->version >= 6) {
+		idx = get_v6_cntr_idx(msr, base, max);
+	}
+
+	return idx;
+}
+
+static inline struct kvm_pmc *get_gp_pmc_from_idx(struct kvm_pmu *pmu, int idx)
+{
+	if (idx >= 0) {
+		u32 index = array_index_nospec(idx, KVM_MAX_NR_GP_COUNTERS);
+
+		if (!gp_ctr_is_supported(pmu, index))
+			return NULL;
 
 		return &pmu->gp_counters[index];
 	}
@@ -150,19 +215,39 @@ static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
 	return NULL;
 }
 
-/* returns fixed PMC with the specified MSR */
-static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr)
+static inline struct kvm_pmc *get_fixed_pmc_from_idx(struct kvm_pmu *pmu, int idx)
 {
-	int base = MSR_CORE_PERF_FIXED_CTR0;
+	if (idx >= 0) {
+		u32 index = array_index_nospec(idx, KVM_MAX_NR_FIXED_COUNTERS);
 
-	if (msr >= base && msr < base + pmu->nr_arch_fixed_counters) {
-		u32 index = array_index_nospec(msr - base,
-					       pmu->nr_arch_fixed_counters);
+		if (!fixed_ctr_is_supported(pmu, index))
+			return NULL;
 
 		return &pmu->fixed_counters[index];
 	}
 
 	return NULL;
+}
+
+/*
+ * returns general purpose PMC with the specified MSR. Note that it can be
+ * used for both PERFCTRn and EVNTSELn; that is why it accepts base as a
+ * parameter to tell them apart.
+ */
+static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
+					 u32 base)
+{
+	int idx = get_cntr_idx(pmu, msr, base, KVM_MAX_NR_GP_COUNTERS);
+
+	return get_gp_pmc_from_idx(pmu, idx);
+}
+
+/* returns fixed PMC with the specified MSR */
+static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr, u32 base)
+{
+	int idx = get_cntr_idx(pmu, msr, base, KVM_MAX_NR_FIXED_COUNTERS);
+
+	return get_fixed_pmc_from_idx(pmu, idx);
 }
 
 static inline bool pmc_speculative_in_use(struct kvm_pmc *pmc)
@@ -184,6 +269,7 @@ static inline void kvm_init_pmu_capability(const struct kvm_pmu_ops *pmu_ops)
 {
 	bool is_intel = boot_cpu_data.x86_vendor == X86_VENDOR_INTEL;
 	int min_nr_gp_ctrs = pmu_ops->MIN_NR_GP_COUNTERS;
+	unsigned int gp_cnt_num;
 
 	/*
 	 * Hybrid PMUs don't play nice with virtualization without careful
@@ -203,28 +289,57 @@ static inline void kvm_init_pmu_capability(const struct kvm_pmu_ops *pmu_ops)
 		 * there are a non-zero number of counters, but fewer than what
 		 * is architecturally required.
 		 */
-		if (!kvm_pmu_cap.num_counters_gp ||
-		    WARN_ON_ONCE(kvm_pmu_cap.num_counters_gp < min_nr_gp_ctrs))
+		gp_cnt_num = hweight64(kvm_pmu_cap.cntr_mask64);
+		if (!gp_cnt_num || WARN_ON_ONCE(gp_cnt_num < min_nr_gp_ctrs))
 			enable_pmu = false;
 		else if (is_intel && !kvm_pmu_cap.version)
 			enable_pmu = false;
 	}
+
+	if (!enable_pmu || !kvm_pmu_cap.mediated ||
+	    pmu_ops->MIN_MEDIATED_PMU_VERSION > kvm_pmu_cap.version)
+		enable_mediated_pmu = false;
 
 	if (!enable_pmu) {
 		memset(&kvm_pmu_cap, 0, sizeof(kvm_pmu_cap));
 		return;
 	}
 
-	kvm_pmu_cap.version = min(kvm_pmu_cap.version, 2);
-	kvm_pmu_cap.num_counters_gp = min(kvm_pmu_cap.num_counters_gp,
-					  pmu_ops->MAX_NR_GP_COUNTERS);
-	kvm_pmu_cap.num_counters_fixed = min(kvm_pmu_cap.num_counters_fixed,
-					     KVM_MAX_NR_FIXED_COUNTERS);
+	if (is_intel && enable_mediated_pmu)
+		kvm_pmu_cap.version = kvm_pmu_cap.version >= 5 ?
+				      min(kvm_pmu_cap.version, 6) :
+				      min(kvm_pmu_cap.version, 2);
+	else
+		kvm_pmu_cap.version = min(kvm_pmu_cap.version, 2);
+	kvm_pmu_cap.cntr_mask64 &= BIT_ULL(pmu_ops->MAX_NR_GP_COUNTERS) - 1;
+	kvm_pmu_cap.fixed_cntr_mask64 &= BIT_ULL(KVM_MAX_NR_FIXED_COUNTERS) - 1;
+
+	if (kvm_pmu_cap.version < 6) {
+		kvm_pmu_cap.arch_pebs = 0;
+		kvm_pmu_cap.config_mask &= ~(ARCH_PERFMON_EVENTSEL_UMASK2 |
+					     ARCH_PERFMON_EVENTSEL_EQ);
+	}
 
 	kvm_pmu_eventsel.INSTRUCTIONS_RETIRED =
 		perf_get_hw_event_config(PERF_COUNT_HW_INSTRUCTIONS);
 	kvm_pmu_eventsel.BRANCH_INSTRUCTIONS_RETIRED =
 		perf_get_hw_event_config(PERF_COUNT_HW_BRANCH_INSTRUCTIONS);
+}
+
+/*
+ * kvm_pmu_cap.extra_msrs[] contains MSRs supported by the host, but
+ * KVM fully supports them only in passthrough vPMU.  So that it doesn't
+ * mean the MSR is fully supported even if this function returns true.
+ */
+static inline bool kvm_pmu_is_possible_extra_msr(u32 msr)
+{
+	int i;
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		if (kvm_pmu_cap.extra_msrs[i] == msr)
+			return true;
+
+	return false;
 }
 
 static inline void kvm_pmu_request_counter_reprogram(struct kvm_pmc *pmc)
@@ -260,6 +375,29 @@ static inline bool pmc_is_globally_enabled(struct kvm_pmc *pmc)
 	return test_bit(pmc->idx, (unsigned long *)&pmu->global_ctrl);
 }
 
+static inline u64 vcpu_get_perf_capabilities(struct kvm_vcpu *vcpu)
+{
+	if (!guest_cpu_cap_has(vcpu, X86_FEATURE_PDCM))
+		return 0;
+
+	return vcpu->arch.perf_capabilities;
+}
+
+static inline bool vcpu_has_perf_metrics(struct kvm_vcpu *vcpu)
+{
+	return !!(vcpu_get_perf_capabilities(vcpu) & PERF_CAP_PERF_METRICS);
+}
+
+static inline bool kvm_host_has_perf_metrics(void)
+{
+	return !!(kvm_host.perf_capabilities & PERF_CAP_PERF_METRICS);
+}
+
+static inline u32 pmc_msr_addr(struct kvm_pmu *pmu, u32 base, int idx)
+{
+	return base + idx * pmu->cntr_shift;
+}
+
 void kvm_pmu_deliver_pmi(struct kvm_vcpu *vcpu);
 void kvm_pmu_handle_event(struct kvm_vcpu *vcpu);
 int kvm_pmu_rdpmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
@@ -273,8 +411,15 @@ void kvm_pmu_cleanup(struct kvm_vcpu *vcpu);
 void kvm_pmu_destroy(struct kvm_vcpu *vcpu);
 int kvm_vm_ioctl_set_pmu_event_filter(struct kvm *kvm, void __user *argp);
 void kvm_pmu_trigger_event(struct kvm_vcpu *vcpu, u64 eventsel);
+bool vcpu_pmu_can_enable(struct kvm_vcpu *vcpu);
+void kvm_pmu_init_lbr_msr_to_save(void);
+void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu);
+void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu);
+void kvm_pmu_put_guest_context(struct kvm_vcpu *vcpu);
+void kvm_pmu_load_guest_context(struct kvm_vcpu *vcpu);
 
 bool is_vmware_backdoor_pmc(u32 pmc_idx);
+bool kvm_rdpmc_in_guest(struct kvm_vcpu *vcpu);
 
 extern struct kvm_pmu_ops intel_pmu_ops;
 extern struct kvm_pmu_ops amd_pmu_ops;

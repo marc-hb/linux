@@ -47,24 +47,42 @@ enum segment_cache_field {
 	SEG_FIELD_NR = 4
 };
 
-#define RTIT_ADDR_RANGE		4
+/* The theoritical maximum number of IA32_RTIT_ADDRx_A/B MSRs */
+#define RTIT_ADDR_RANGE		(2 * 7)
+#define RTIT_TRIGGER_RANGE	7
 
-struct pt_ctx {
-	u64 ctl;
-	u64 status;
+/*
+ * PT state comprises 9 MSRs only and any locations in the state component at
+ * or beyond byte offset 72 are ignored by the xsaves and xrstors instructions.
+ * These MSRs need to be saved and restored with RDMSR/WRMSR.
+ */
+struct pt_state {
+	u64 ctl;	/* value is ignored in guest context */
 	u64 output_base;
 	u64 output_mask;
+	u64 status;
 	u64 cr3_match;
-	u64 addr_a[RTIT_ADDR_RANGE];
-	u64 addr_b[RTIT_ADDR_RANGE];
+	u64 addr_ab[RTIT_ADDR_RANGE];
+	u64 trigger[RTIT_TRIGGER_RANGE];
+};
+
+union intel_pt_xsave_state {
+	struct xregs_state		xsave;
+	struct {
+		struct fxregs_state	i387;
+		struct xstate_header	header;
+		struct pt_state		pt;
+	} __packed __aligned(XSAVE_ALIGNMENT);
 };
 
 struct pt_desc {
+	u64 guest_rtit_ctl;
 	u64 ctl_bitmask;
 	u32 num_address_ranges;
+	u32 num_trigger_msrs;
 	u32 caps[PT_CPUID_REGS_NUM * PT_CPUID_LEAVES];
-	struct pt_ctx host;
-	struct pt_ctx guest;
+	union intel_pt_xsave_state host;
+	union intel_pt_xsave_state guest;
 };
 
 union vmx_exit_reason {
@@ -102,8 +120,14 @@ struct lbr_desc {
 	 */
 	struct perf_event *event;
 
-	/* True if LBRs are marked as not intercepted in the MSR bitmap */
+	/*
+	 * True if LBRs are marked as not intercepted in the MSR bitmap.
+	 * and it implies that guest LBR is enabled.
+	 */
 	bool msr_passthrough;
+
+	/*  Do not put anything after the LBR state. */
+	union arch_lbr_xsave_state *state;
 };
 
 extern struct x86_pmu_lbr vmx_lbr_caps;
@@ -492,7 +516,8 @@ static inline u8 vmx_get_rvi(void)
 	 VM_ENTRY_LOAD_BNDCFGS |					\
 	 VM_ENTRY_PT_CONCEAL_PIP |					\
 	 VM_ENTRY_LOAD_IA32_RTIT_CTL |					\
-	 VM_ENTRY_LOAD_IA32_FRED)
+	 VM_ENTRY_LOAD_IA32_FRED |					\
+	 VM_ENTRY_LOAD_IA32_LBR_CTL)
 
 #define __KVM_REQUIRED_VMX_VM_EXIT_CONTROLS				\
 	(VM_EXIT_SAVE_DEBUG_CONTROLS |					\
@@ -515,7 +540,9 @@ static inline u8 vmx_get_rvi(void)
 	       VM_EXIT_CLEAR_BNDCFGS |					\
 	       VM_EXIT_PT_CONCEAL_PIP |					\
 	       VM_EXIT_CLEAR_IA32_RTIT_CTL |				\
-	       VM_EXIT_ACTIVATE_SECONDARY_CONTROLS)
+	       VM_EXIT_ACTIVATE_SECONDARY_CONTROLS |			\
+	       VM_EXIT_CLEAR_IA32_LBR_CTL |				\
+	       VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL)
 
 #define KVM_REQUIRED_VMX_SECONDARY_VM_EXIT_CONTROLS (0)
 #define KVM_OPTIONAL_VMX_SECONDARY_VM_EXIT_CONTROLS			\
@@ -595,7 +622,8 @@ static inline u8 vmx_get_rvi(void)
 
 #define KVM_REQUIRED_VMX_TERTIARY_VM_EXEC_CONTROL 0
 #define KVM_OPTIONAL_VMX_TERTIARY_VM_EXEC_CONTROL			\
-	(TERTIARY_EXEC_IPI_VIRT | TERTIARY_EXEC_AVX10_256)
+	(TERTIARY_EXEC_IPI_VIRT | TERTIARY_EXEC_AVX10_256 |		\
+	 TERTIARY_EXEC_PEBS2GPA)
 
 #define BUILD_CONTROLS_SHADOW(lname, uname, bits)						\
 static inline void lname##_controls_set(struct vcpu_vmx *vmx, u##bits val)			\
@@ -622,6 +650,16 @@ static __always_inline void lname##_controls_clearbit(struct vcpu_vmx *vmx, u##b
 {												\
 	BUILD_BUG_ON(!(val & (KVM_REQUIRED_VMX_##uname | KVM_OPTIONAL_VMX_##uname)));		\
 	lname##_controls_set(vmx, lname##_controls_get(vmx) & ~val);				\
+}												\
+static __always_inline void lname##_controls_changebit(struct vcpu_vmx *vmx, u##bits val,	\
+						       bool set)				\
+{												\
+	if (!vmx->loaded_vmcs)									\
+		return;										\
+	if (set)										\
+		lname##_controls_setbit(vmx, val);						\
+	else											\
+		lname##_controls_clearbit(vmx, val);						\
 }
 BUILD_CONTROLS_SHADOW(vm_entry, VM_ENTRY_CONTROLS, 32)
 BUILD_CONTROLS_SHADOW(vm_exit, VM_EXIT_CONTROLS, 32)
@@ -690,9 +728,16 @@ static inline bool intel_pmu_lbr_is_enabled(struct kvm_vcpu *vcpu)
 	return !!vcpu_to_lbr_records(vcpu)->nr;
 }
 
+static inline bool vmx_guest_has_intel_pttt(struct kvm_vcpu *vcpu)
+{
+	struct vcpu_vmx *vmx = to_vmx(vcpu);
+	return intel_pt_validate_cap(vmx->pt_desc.caps, PT_CAP_trigger_tracing);
+}
+
 void intel_pmu_cross_mapped_check(struct kvm_pmu *pmu);
 int intel_pmu_create_guest_lbr_event(struct kvm_vcpu *vcpu);
 void vmx_passthrough_lbr_msrs(struct kvm_vcpu *vcpu);
+bool guest_can_use_arch_lbr(void);
 
 static __always_inline unsigned long vmx_get_exit_qual(struct kvm_vcpu *vcpu)
 {
@@ -782,6 +827,17 @@ static inline bool vmx_can_use_ipiv(struct kvm_vcpu *vcpu)
 static inline void vmx_segment_cache_clear(struct vcpu_vmx *vmx)
 {
 	vmx->segment_cache.bitmask = 0;
+}
+
+static inline bool pt_can_write_msr(struct vcpu_vmx *vmx)
+{
+	/*
+	 * SDM: A WRMSR to any of the IA32_RTIT_* configuration MSRs while
+	 * packet generation is enabled (IA32_RTIT_CTL.TraceEn=1) will
+	 * generate a #GP exception. Packet generation must be disabled before
+	 * the configuration MSRs can be changed.
+	 */
+	return !(vmx->pt_desc.guest_rtit_ctl & RTIT_CTL_TRACEEN);
 }
 
 #endif /* __KVM_X86_VMX_H */

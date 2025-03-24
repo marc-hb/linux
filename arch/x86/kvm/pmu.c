@@ -305,6 +305,11 @@ static void pmc_update_sample_period(struct kvm_pmc *pmc)
 
 void pmc_write_counter(struct kvm_pmc *pmc, u64 val)
 {
+	if (kvm_mediated_pmu_enabled(pmc->vcpu)) {
+		pmc->counter = val & pmc_bitmask(pmc);
+		return;
+	}
+
 	/*
 	 * Drop any unconsumed accumulated counts, the WRMSR is a write, not a
 	 * read-modify-write.  Adjust the counter value so that its value is
@@ -455,6 +460,23 @@ static int reprogram_counter(struct kvm_pmc *pmc)
 	bool emulate_overflow;
 	u8 fixed_ctr_ctrl;
 
+	if (kvm_mediated_pmu_enabled(pmu_to_vcpu(pmu))) {
+		if (!check_pmu_event_filter(pmc)) {
+			pmc->counter = 0;
+
+			if (pmc_is_gp(pmc)) {
+				pmc->eventsel = 0;
+			} else {
+				int idx = pmc->idx - KVM_FIXED_PMC_BASE_IDX;
+
+				pmu->fixed_ctr_ctrl &=
+					~intel_fixed_bits_by_idx(idx, 0xf);
+			}
+		}
+
+		return 0;
+	}
+
 	emulate_overflow = pmc_pause_counter(pmc);
 
 	if (!pmc_event_is_allowed(pmc))
@@ -604,12 +626,60 @@ int kvm_pmu_rdpmc(struct kvm_vcpu *vcpu, unsigned idx, u64 *data)
 	return 0;
 }
 
+inline bool kvm_rdpmc_in_guest(struct kvm_vcpu *vcpu)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+
+	if (!kvm_mediated_pmu_enabled(vcpu))
+		return false;
+
+	/*
+	 * VMware allows access to these Pseduo-PMCs even when read via RDPMC
+	 * in Ring3 when CR4.PCE=0.
+	 */
+	if (enable_vmware_backdoor)
+		return false;
+
+	return gp_ctrs_bitmap(pmu) == kvm_pmu_cap.cntr_mask64 &&
+	       fixed_ctrs_bitmap(pmu) == kvm_pmu_cap.fixed_cntr_mask64 &&
+	       vcpu_has_perf_metrics(vcpu) == kvm_host_has_perf_metrics() &&
+	       pmu->counter_bitmask[KVM_PMC_GP] ==
+				(BIT_ULL(kvm_pmu_cap.bit_width_gp) - 1) &&
+	       pmu->counter_bitmask[KVM_PMC_FIXED] ==
+				(BIT_ULL(kvm_pmu_cap.bit_width_fixed) - 1);
+}
+EXPORT_SYMBOL_GPL(kvm_rdpmc_in_guest);
+
 void kvm_pmu_deliver_pmi(struct kvm_vcpu *vcpu)
 {
 	if (lapic_in_kernel(vcpu)) {
 		kvm_pmu_call(deliver_pmi)(vcpu);
 		kvm_apic_local_deliver(vcpu->arch.apic, APIC_LVTPC);
 	}
+}
+
+static void kvm_pmu_sync_global_ctrl_from_vmcs(struct kvm_vcpu *vcpu)
+{
+	struct msr_data msr_info = { .index = MSR_CORE_PERF_GLOBAL_CTRL };
+
+	if (!kvm_mediated_pmu_enabled(vcpu))
+		return;
+
+	/* Sync pmu->global_ctrl from GUEST_IA32_PERF_GLOBAL_CTRL. */
+	kvm_pmu_call(get_msr)(vcpu, &msr_info);
+}
+
+static void kvm_pmu_sync_global_ctrl_to_vmcs(struct kvm_vcpu *vcpu, u64 global_ctrl)
+{
+	struct msr_data msr_info = {
+		.index = MSR_CORE_PERF_GLOBAL_CTRL,
+		.data = global_ctrl };
+
+	if (!kvm_mediated_pmu_enabled(vcpu))
+		return;
+
+	/* Sync pmu->global_ctrl to GUEST_IA32_PERF_GLOBAL_CTRL. */
+	kvm_pmu_call(set_msr)(vcpu, &msr_info);
 }
 
 bool kvm_pmu_is_valid_msr(struct kvm_vcpu *vcpu, u32 msr)
@@ -646,7 +716,6 @@ int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		msr_info->data = pmu->global_status;
 		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_CTL:
-	case MSR_CORE_PERF_GLOBAL_CTRL:
 		msr_info->data = pmu->global_ctrl;
 		break;
 	case MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR:
@@ -697,6 +766,9 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			diff = pmu->global_ctrl ^ data;
 			pmu->global_ctrl = data;
 			reprogram_counters(pmu, diff);
+
+			/* Propagate guest global_ctrl to GUEST_IA32_PERF_GLOBAL_CTRL. */
+			kvm_pmu_sync_global_ctrl_to_vmcs(vcpu, data);
 		}
 		break;
 	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
@@ -733,6 +805,7 @@ static void kvm_pmu_reset(struct kvm_vcpu *vcpu)
 		pmc_stop_counter(pmc);
 		pmc->counter = 0;
 		pmc->emulated_counter = 0;
+		pmc->arch_pebs_cfg_c = 0;
 
 		if (pmc_is_gp(pmc))
 			pmc->eventsel = 0;
@@ -743,6 +816,10 @@ static void kvm_pmu_reset(struct kvm_vcpu *vcpu)
 	kvm_pmu_call(reset)(vcpu);
 }
 
+inline bool vcpu_pmu_can_enable(struct kvm_vcpu *vcpu)
+{
+	return vcpu->kvm->arch.enable_pmu && lapic_in_kernel(vcpu);
+}
 
 /*
  * Refresh the PMU configuration for the vCPU, e.g. if userspace changes CPUID
@@ -763,10 +840,11 @@ void kvm_pmu_refresh(struct kvm_vcpu *vcpu)
 
 	pmu->version = 0;
 	pmu->nr_arch_gp_counters = 0;
-	pmu->nr_arch_fixed_counters = 0;
 	pmu->counter_bitmask[KVM_PMC_GP] = 0;
 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
-	pmu->reserved_bits = 0xffffffff00200000ull;
+
+	/* KVM is not able to emulate the AnyThread bit */
+	pmu->eventsel_rsvd = GENMASK_ULL(63, 32) | ARCH_PERFMON_EVENTSEL_ANY;
 	pmu->raw_event_mask = X86_RAW_EVENT_MASK;
 	pmu->global_ctrl_rsvd = ~0ull;
 	pmu->global_status_rsvd = ~0ull;
@@ -775,20 +853,10 @@ void kvm_pmu_refresh(struct kvm_vcpu *vcpu)
 	pmu->pebs_data_cfg_rsvd = ~0ull;
 	bitmap_zero(pmu->all_valid_pmc_idx, X86_PMC_IDX_MAX);
 
-	if (!vcpu->kvm->arch.enable_pmu)
+	if (!vcpu_pmu_can_enable(vcpu))
 		return;
 
 	kvm_pmu_call(refresh)(vcpu);
-
-	/*
-	 * At RESET, both Intel and AMD CPUs set all enable bits for general
-	 * purpose counters in IA32_PERF_GLOBAL_CTRL (so that software that
-	 * was written for v1 PMUs don't unknowingly leave GP counters disabled
-	 * in the global controls).  Emulate that behavior when refreshing the
-	 * PMU so that userspace doesn't need to manually set PERF_GLOBAL_CTRL.
-	 */
-	if (kvm_pmu_has_perf_global_ctrl(pmu) && pmu->nr_arch_gp_counters)
-		pmu->global_ctrl = GENMASK_ULL(pmu->nr_arch_gp_counters - 1, 0);
 }
 
 void kvm_pmu_init(struct kvm_vcpu *vcpu)
@@ -825,12 +893,55 @@ void kvm_pmu_cleanup(struct kvm_vcpu *vcpu)
 void kvm_pmu_destroy(struct kvm_vcpu *vcpu)
 {
 	kvm_pmu_reset(vcpu);
+
+	if (kvm_pmu_ops.destroy)
+		kvm_pmu_call(destroy)(vcpu);
+}
+
+static bool pmc_pmi_enabled(struct kvm_pmc *pmc)
+{
+	struct kvm_pmu *pmu = pmc_to_pmu(pmc);
+	u8 fixed_ctr_ctrl;
+	bool pmi_enabled;
+
+	if (pmc_is_gp(pmc)) {
+		pmi_enabled = pmc->eventsel & ARCH_PERFMON_EVENTSEL_INT;
+	} else {
+		fixed_ctr_ctrl = fixed_ctrl_field(pmu->fixed_ctr_ctrl,
+						  pmc->idx - KVM_FIXED_PMC_BASE_IDX);
+		pmi_enabled = fixed_ctr_ctrl & INTEL_FIXED_0_ENABLE_PMI;
+	}
+
+	return pmi_enabled;
 }
 
 static void kvm_pmu_incr_counter(struct kvm_pmc *pmc)
 {
-	pmc->emulated_counter++;
-	kvm_pmu_request_counter_reprogram(pmc);
+	struct kvm_vcpu *vcpu = pmc->vcpu;
+
+	/*
+	 * For perf-based PMUs, accumulate software-emulated events separately
+	 * from pmc->counter, as pmc->counter is offset by the count of the
+	 * associated perf event. Request reprogramming, which will consult
+	 * both emulated and hardware-generated events to detect overflow.
+	 */
+	if (!kvm_mediated_pmu_enabled(vcpu)) {
+		pmc->emulated_counter++;
+		kvm_pmu_request_counter_reprogram(pmc);
+		return;
+	}
+
+	/*
+	 * For mediated PMUs, pmc->counter is updated when the vCPU's PMU is
+	 * put, and will be loaded into hardware when the PMU is loaded. Simply
+	 * increment the counter and signal overflow if it wraps to zero.
+	 */
+	pmc->counter = (pmc->counter + 1) & pmc_bitmask(pmc);
+	if (!pmc->counter) {
+		pmc_to_pmu(pmc)->global_status |= BIT_ULL(pmc->idx);
+		if (pmc_pmi_enabled(pmc))
+			kvm_make_request(KVM_REQ_PMI, vcpu);
+	}
 }
 
 static inline bool cpl_is_matched(struct kvm_pmc *pmc)
@@ -868,6 +979,8 @@ void kvm_pmu_trigger_event(struct kvm_vcpu *vcpu, u64 eventsel)
 	int i;
 
 	BUILD_BUG_ON(sizeof(pmu->global_ctrl) * BITS_PER_BYTE != X86_PMC_IDX_MAX);
+
+	kvm_pmu_sync_global_ctrl_from_vmcs(vcpu);
 
 	if (!kvm_pmu_has_perf_global_ctrl(pmu))
 		bitmap_copy(bitmap, pmu->all_valid_pmc_idx, X86_PMC_IDX_MAX);
@@ -1040,4 +1153,144 @@ int kvm_vm_ioctl_set_pmu_event_filter(struct kvm *kvm, void __user *argp)
 cleanup:
 	kfree(filter);
 	return r;
+}
+
+void kvm_pmu_init_lbr_msr_to_save(void)
+{
+	struct x86_pmu_lbr lbr_cap;
+	int i;
+
+	if (!kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+		return;
+
+	x86_perf_get_lbr(&lbr_cap);
+	if (lbr_cap.nr == 0)
+		return;
+
+	kvm_probe_msr_to_save(MSR_ARCH_LBR_CTL);
+	kvm_probe_msr_to_save(MSR_ARCH_LBR_DEPTH);
+
+	for (i = 0; i < lbr_cap.nr; i++) {
+		kvm_probe_msr_to_save(lbr_cap.from + i);
+		kvm_probe_msr_to_save(lbr_cap.to + i);
+
+		if (lbr_cap.info)
+			kvm_probe_msr_to_save(lbr_cap.info + i);
+	}
+}
+
+void kvm_pmu_put_guest_pmcs(struct kvm_vcpu *vcpu)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
+	struct kvm_pmc *pmc;
+	u32 eventsel_msr;
+	u32 counter_msr;
+	u32 i;
+
+	/*
+	 * Clear hardware selector MSR content and its counter to avoid
+	 * leakage and also avoid this guest GP counter get accidentally
+	 * enabled during host running when host enable global ctrl.
+	 */
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_GP_COUNTERS) {
+		pmc = &pmu->gp_counters[i];
+		eventsel_msr = pmc_msr_addr(pmu, pmu->gp_eventsel_base, i);
+		counter_msr = pmc_msr_addr(pmu, pmu->gp_counter_base, i);
+
+		rdpmcl(i, pmc->counter);
+		rdmsrl(eventsel_msr, pmc->eventsel);
+		if (pmc->counter)
+			wrmsrl(counter_msr, 0);
+		if (pmc->eventsel)
+			wrmsrl(eventsel_msr, 0);
+	}
+
+	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_FIXED_COUNTERS) {
+		pmc = &pmu->fixed_counters[i];
+		counter_msr = pmc_msr_addr(pmu, pmu->fixed_base, i);
+
+		rdpmcl(INTEL_PMC_FIXED_RDPMC_BASE | i, pmc->counter);
+		if (pmc->counter)
+			wrmsrl(counter_msr, 0);
+	}
+
+}
+EXPORT_SYMBOL_GPL(kvm_pmu_put_guest_pmcs);
+
+void kvm_pmu_load_guest_pmcs(struct kvm_vcpu *vcpu)
+{
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	u64 gp_bits = gp_ctrs_bitmap(pmu);
+	struct kvm_pmc *pmc;
+	u32 eventsel_msr;
+	u32 counter_msr;
+	u32 i;
+
+	/*
+	 * No need to zero out unexposed GP/fixed counters/selectors since RDPMC
+	 * in this case will be intercepted. Accessing to these counters and
+	 * selectors will cause #GP in the guest.
+	 */
+	for_each_set_bit(i, (unsigned long*)&gp_bits, KVM_MAX_NR_GP_COUNTERS) {
+		pmc = &pmu->gp_counters[i];
+		eventsel_msr = pmc_msr_addr(pmu, pmu->gp_eventsel_base, i);
+		counter_msr = pmc_msr_addr(pmu, pmu->gp_counter_base, i);
+
+		wrmsrl(counter_msr, pmc->counter);
+		wrmsrl(eventsel_msr, pmc->eventsel);
+	}
+
+	for_each_set_bit(i, (unsigned long*)&fixed_bits, KVM_MAX_NR_FIXED_COUNTERS) {
+		pmc = &pmu->fixed_counters[i];
+		counter_msr = pmc_msr_addr(pmu, pmu->fixed_base, i);
+
+		wrmsrl(counter_msr, pmc->counter);
+	}
+}
+EXPORT_SYMBOL_GPL(kvm_pmu_load_guest_pmcs);
+
+static bool kvm_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
+{
+	if (!kvm_pmu_ops.context_switch_need_skip)
+		return false;
+
+	return kvm_pmu_call(context_switch_need_skip)(vcpu);
+}
+
+void kvm_pmu_put_guest_context(struct kvm_vcpu *vcpu)
+{
+	if (!kvm_mediated_pmu_enabled(vcpu))
+		return;
+
+	lockdep_assert_irqs_disabled();
+
+	kvm_pmu_call(put_guest_context)(vcpu);
+
+	if (!kvm_pmu_context_switch_need_skip(vcpu))
+		perf_guest_exit();
+}
+
+void kvm_pmu_load_guest_context(struct kvm_vcpu *vcpu)
+{
+	u32 guest_lvtpc;
+
+	if (!kvm_mediated_pmu_enabled(vcpu))
+		return;
+
+	lockdep_assert_irqs_disabled();
+
+	guest_lvtpc = APIC_DM_FIXED | KVM_GUEST_PMI_VECTOR |
+		(kvm_lapic_get_reg(vcpu->arch.apic, APIC_LVTPC) & APIC_LVT_MASKED);
+
+	if (!kvm_pmu_context_switch_need_skip(vcpu)) {
+		perf_guest_enter(guest_lvtpc);
+	} else {
+		/* Update guest LVTPC value into HW. */
+		perf_switch_guest_ctx(true, guest_lvtpc);
+	}
+
+	kvm_pmu_call(load_guest_context)(vcpu);
 }

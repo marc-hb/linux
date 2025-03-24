@@ -22,6 +22,7 @@
 #include <asm/fpu/xstate.h>
 #include <asm/sgx.h>
 #include <asm/cpuid.h>
+#include <asm/intel_pt.h>
 #include "cpuid.h"
 #include "lapic.h"
 #include "mmu.h"
@@ -156,6 +157,41 @@ struct kvm_cpuid_entry2 *kvm_find_cpuid_entry(struct kvm_vcpu *vcpu,
 }
 EXPORT_SYMBOL_GPL(kvm_find_cpuid_entry);
 
+static int kvm_check_intel_pt_cpuid(struct kvm_vcpu *vcpu)
+{
+	struct kvm_cpuid_entry2 *best;
+	u32 eax, ebx, ecx, edx;
+
+	best = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
+	if (!best)
+		return 0;
+
+	if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    (best->ebx || best->ecx))
+		return -EINVAL;
+
+	/* Guest can't have more Intel PT capabilities than host has. */
+	cpuid_count(0x14, 0, &eax, &ebx, &ecx, &edx);
+	if (best->ebx & ~ebx || best->ecx & ~ecx)
+		return -EINVAL;
+
+	best = kvm_find_cpuid_entry_index(vcpu, 0x14, 1);
+	if (!best)
+		return 0;
+
+	if (!kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    (best->eax || best->ebx || best->ecx))
+		return -EINVAL;
+
+	cpuid_count(0x14, 1, &eax, &ebx, &ecx, &edx);
+	if (((best->eax & 0x7) > (eax & 0x7)) ||
+	    ((best->eax & 0x700) > (eax & 0x700)) ||
+	    ((best->eax & ~eax) >> 16) ||
+	    (best->ebx & ~ebx) || (best->ecx & ~ecx))
+		return -EINVAL;
+
+	return 0;
+}
 /*
  * cpuid_entry2_find() and KVM_CPUID_INDEX_NOT_SIGNIFICANT should never be used
  * directly outside of kvm_find_cpuid_entry() and kvm_find_cpuid_entry_index().
@@ -165,6 +201,7 @@ EXPORT_SYMBOL_GPL(kvm_find_cpuid_entry);
 static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 {
 	struct kvm_cpuid_entry2 *best;
+	struct x86_pmu_lbr lbr_cap;
 	u64 xfeatures;
 
 	/*
@@ -178,6 +215,49 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 		if (vaddr_bits != 48 && vaddr_bits != 57 && vaddr_bits != 0)
 			return -EINVAL;
 	}
+
+	best = kvm_find_cpuid_entry(vcpu, 0xa);
+	if (vcpu->kvm->arch.enable_pmu && best) {
+		union cpuid10_eax eax;
+		union cpuid10_edx edx;
+
+		eax.full = best->eax;
+		edx.full = best->edx;
+		if (enable_mediated_pmu &&
+		    eax.split.version_id > kvm_pmu_cap.version)
+			return -EINVAL;
+		if (eax.split.version_id > 0 && !vcpu_pmu_can_enable(vcpu))
+			return -EINVAL;
+		if (eax.split.version_id > 1 && eax.split.version_id < 5 &&
+		    best->ecx != 0)
+			return -EINVAL;
+		if (eax.split.version_id >= 5) {
+			int mask_all = (1 << edx.split.num_counters_fixed) - 1;
+
+			if ((best->ecx & mask_all) != mask_all)
+				return -EINVAL;
+		}
+	}
+
+	x86_perf_get_lbr(&lbr_cap);
+	best = kvm_find_cpuid_entry(vcpu, 0x1c);
+
+	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR)) {
+		/*
+		 * If KVM has Arch LBR capability, userspace can choose not to
+		 * enable it by without presenting CPUID.1CH leaf, or have it
+		 * with zero LBR depth.
+		 */
+		if (best && best->eax &&
+		    (best->eax & 0xff) != (1 << (lbr_cap.nr / 8 - 1)))
+			return -EINVAL;
+	} else if (best && (best->eax & 0xff)) {
+		/* It's legal to have a CPUID.1CH leaf with zero LBR depth. */
+		return -EINVAL;
+	}
+
+	if (kvm_check_intel_pt_cpuid(vcpu))
+		return -EINVAL;
 
 	/*
 	 * Exposing dynamic xfeatures to the guest requires additional
@@ -331,7 +411,7 @@ void kvm_update_cpuid_runtime(struct kvm_vcpu *vcpu)
 	best = kvm_find_cpuid_entry_index(vcpu, 0xD, 1);
 	if (best && (cpuid_entry_has(best, X86_FEATURE_XSAVES) ||
 		     cpuid_entry_has(best, X86_FEATURE_XSAVEC)))
-		best->ebx = xstate_required_size(vcpu->arch.xcr0, true);
+		best->ebx = xstate_required_size(vcpu->arch.xcr0 | vcpu->arch.ia32_xss, true);
 }
 EXPORT_SYMBOL_GPL(kvm_update_cpuid_runtime);
 
@@ -972,6 +1052,7 @@ void kvm_set_cpu_caps(void)
 		F(AMX_INT8),
 		F(AMX_BF16),
 		F(FLUSH_L1D),
+		F(ARCH_LBR),
 	);
 
 	if (boot_cpu_has(X86_FEATURE_AMD_IBPB_RET) &&
@@ -991,6 +1072,7 @@ void kvm_set_cpu_caps(void)
 		F(AVX512_BF16),
 		F(LASS),
 		F(CMPCCXADD),
+		F(ARCH_PERFMON_EXT),
 		F(FZRM),
 		F(FSRS),
 		F(FSRC),
@@ -1451,12 +1533,18 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 			break;
 		}
 
-		eax.split.version_id = kvm_pmu_cap.version;
-		eax.split.num_counters = kvm_pmu_cap.num_counters_gp;
-		eax.split.bit_width = kvm_pmu_cap.bit_width_gp;
-		eax.split.mask_length = kvm_pmu_cap.events_mask_len;
-		edx.split.num_counters_fixed = kvm_pmu_cap.num_counters_fixed;
-		edx.split.bit_width_fixed = kvm_pmu_cap.bit_width_fixed;
+		eax.full = entry->eax;
+		eax.split.version_id = umin(eax.split.version_id, kvm_pmu_cap.version);
+		eax.split.num_counters = umin(eax.split.num_counters,
+					      hweight64(kvm_pmu_cap.cntr_mask64));
+		eax.split.bit_width = umin(eax.split.bit_width, kvm_pmu_cap.bit_width_gp);
+		eax.split.mask_length = umin(eax.split.mask_length, kvm_pmu_cap.events_mask_len);
+
+		edx.full = entry->edx;
+		edx.split.num_counters_fixed = umin(edx.split.num_counters_fixed,
+			find_first_zero_bit(kvm_pmu_cap.fixed_cntr_mask, X86_PMC_IDX_MAX));
+		edx.split.bit_width_fixed = umin(edx.split.bit_width_fixed,
+						 kvm_pmu_cap.bit_width_fixed);
 
 		if (kvm_pmu_cap.version)
 			edx.split.anythread_deprecated = 1;
@@ -1464,8 +1552,11 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		edx.split.reserved2 = 0;
 
 		entry->eax = eax.full;
-		entry->ebx = kvm_pmu_cap.events_mask;
-		entry->ecx = 0;
+		entry->ebx |= kvm_pmu_cap.events_mask;
+		if (kvm_pmu_cap.version < 5)
+			entry->ecx = 0;
+		else
+			entry->ecx &= kvm_pmu_cap.fixed_cntr_mask64;
 		entry->edx = edx.full;
 		break;
 	}
@@ -1577,6 +1668,27 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 				goto out;
 		}
 		break;
+	/* Architectural LBR */
+	case 0x1c: {
+		struct x86_pmu_lbr lbr_cap;
+
+		x86_perf_get_lbr(&lbr_cap);
+
+		if (!kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR) || !lbr_cap.nr) {
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+			break;
+		}
+
+		/*
+		 * For simplicity, support only the host's chosen LBR depth.
+		 * This allows KVM to reject guest/userspace attempts to use a
+		 * different LBR depth without violating Intel's architecture.
+		 * See also guest_can_use_lbrs().
+		 */
+		entry->eax &= ~0xff;
+		entry->eax |= (u32)1 << (lbr_cap.nr / 8 - 1);
+		break;
+	}
 	/* Intel AMX TILE */
 	case 0x1d:
 		if (!kvm_cpu_cap_has(X86_FEATURE_AMX_TILE)) {
@@ -1595,6 +1707,73 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 			break;
 		}
 		break;
+	/* Intel archPerfmon extended leaf */
+	case 0x23: {
+		union cpuid35_eax eax;
+		union cpuid35_ebx ebx;
+
+		if (!enable_pmu || !static_cpu_has(X86_FEATURE_ARCH_PERFMON_EXT)) {
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+			break;
+		}
+
+		eax.full = entry->eax;
+
+		/* subleaf 0 */
+		ebx.full = 0;
+		if (kvm_pmu_cap.config_mask & ARCH_PERFMON_EVENTSEL_UMASK2)
+			ebx.split.umask2 = 1;
+		if (kvm_pmu_cap.config_mask & ARCH_PERFMON_EVENTSEL_EQ)
+			ebx.split.eq = 1;
+		entry->ebx = ebx.full;
+		entry->ecx = 0;
+		entry->edx = 0;
+
+		/* subleaf 1 */
+		if (eax.split.cntr_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_NUM_COUNTER_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = (u32)kvm_pmu_cap.cntr_mask64;
+			entry->ebx = (u32)kvm_pmu_cap.fixed_cntr_mask64;
+			entry->ecx = 0;
+			entry->edx = 0;
+		}
+
+		/* subleaf 2 */
+		if (eax.split.acr_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_ACR_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
+		}
+
+		/* subleaf 3 */
+		if (eax.split.events_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_ARCH_EVENTS_LEAF);
+			if (!entry)
+				goto out;
+			entry->eax = (u32)kvm_pmu_cap.events_mask_ext;
+			entry->ebx = 0;
+			entry->ecx = 0;
+			entry->edx = 0;
+		}
+
+		/* subleaf 4 */
+		if (kvm_pmu_cap.arch_pebs && eax.split.pebs_caps_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_PEBS_CAP_LEAF);
+			if (!entry)
+				goto out;
+		}
+
+		/* subleaf 5 */
+		if (kvm_pmu_cap.arch_pebs && eax.split.pebs_cnts_subleaf) {
+			entry = do_host_cpuid(array, function, ARCH_PERFMON_PEBS_COUNTER_LEAF);
+			if (!entry)
+				goto out;
+		}
+		break;
+	}
 	case 0x24: {
 		u8 avx10_version;
 
@@ -1790,7 +1969,7 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		cpuid_entry_override(entry, CPUID_8000_0022_EAX);
 
 		if (kvm_cpu_cap_has(X86_FEATURE_PERFMON_V2))
-			ebx.split.num_core_pmc = kvm_pmu_cap.num_counters_gp;
+			ebx.split.num_core_pmc = hweight64(kvm_pmu_cap.cntr_mask64);
 		else if (kvm_cpu_cap_has(X86_FEATURE_PERFCTR_CORE))
 			ebx.split.num_core_pmc = AMD64_NUM_COUNTERS_CORE;
 		else

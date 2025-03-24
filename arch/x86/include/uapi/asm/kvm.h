@@ -189,6 +189,7 @@ struct kvm_msr_entry {
 
 /* for KVM_GET_MSRS and KVM_SET_MSRS */
 struct kvm_msrs {
+#define KVM_MAX_IO_MSRS 255
 	__u32 nmsrs; /* number of msrs in entries */
 	__u32 pad;
 
