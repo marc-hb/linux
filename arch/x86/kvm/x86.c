@@ -318,6 +318,9 @@ static const u32 msrs_to_save_base[] = {
 	MSR_STAR,
 #ifdef CONFIG_X86_64
 	MSR_CSTAR, MSR_KERNEL_GS_BASE, MSR_SYSCALL_MASK, MSR_LSTAR,
+	MSR_IA32_FRED_RSP0, MSR_IA32_FRED_RSP1, MSR_IA32_FRED_RSP2,
+	MSR_IA32_FRED_RSP3, MSR_IA32_FRED_STKLVLS, MSR_IA32_FRED_SSP1,
+	MSR_IA32_FRED_SSP2, MSR_IA32_FRED_SSP3, MSR_IA32_FRED_CONFIG,
 #endif
 	MSR_IA32_TSC, MSR_IA32_CR_PAT, MSR_VM_HSAVE_PA,
 	MSR_IA32_FEAT_CTL, MSR_IA32_BNDCFGS, MSR_TSC_AUX,
@@ -774,9 +777,22 @@ void kvm_deliver_exception_payload(struct kvm_vcpu *vcpu,
 		 * breakpoint), it is reserved and must be zero in DR6.
 		 */
 		vcpu->arch.dr6 &= ~BIT(12);
+
+		/*
+		 * FRED #DB event data matches DR6, but follows the polarity of
+		 * VMX's pending debug exceptions, not DR6.
+		 */
+		ex->event_data = ex->payload & ~BIT(12);
+		break;
+	case NM_VECTOR:
+		ex->event_data = ex->payload;
 		break;
 	case PF_VECTOR:
 		vcpu->arch.cr2 = ex->payload;
+		ex->event_data = ex->payload;
+		break;
+	default:
+		ex->event_data = 0;
 		break;
 	}
 
@@ -800,9 +816,9 @@ static void kvm_queue_exception_vmexit(struct kvm_vcpu *vcpu, unsigned int vecto
 	ex->payload = payload;
 }
 
-static void kvm_multiple_exception(struct kvm_vcpu *vcpu,
-		unsigned nr, bool has_error, u32 error_code,
-	        bool has_payload, unsigned long payload, bool reinject)
+static void kvm_multiple_exception(struct kvm_vcpu *vcpu, unsigned int nr,
+				   bool has_error, u32 error_code,
+				   bool has_payload, unsigned long payload)
 {
 	u32 prev_nr;
 	int class1, class2;
@@ -810,13 +826,10 @@ static void kvm_multiple_exception(struct kvm_vcpu *vcpu,
 	kvm_make_request(KVM_REQ_EVENT, vcpu);
 
 	/*
-	 * If the exception is destined for L2 and isn't being reinjected,
-	 * morph it to a VM-Exit if L1 wants to intercept the exception.  A
-	 * previously injected exception is not checked because it was checked
-	 * when it was original queued, and re-checking is incorrect if _L1_
-	 * injected the exception, in which case it's exempt from interception.
+	 * If the exception is destined for L2, morph it to a VM-Exit if L1
+	 * wants to intercept the exception.
 	 */
-	if (!reinject && is_guest_mode(vcpu) &&
+	if (is_guest_mode(vcpu) &&
 	    kvm_x86_ops.nested_ops->is_exception_vmexit(vcpu, nr, error_code)) {
 		kvm_queue_exception_vmexit(vcpu, nr, has_error, error_code,
 					   has_payload, payload);
@@ -825,28 +838,13 @@ static void kvm_multiple_exception(struct kvm_vcpu *vcpu,
 
 	if (!vcpu->arch.exception.pending && !vcpu->arch.exception.injected) {
 	queue:
-		if (reinject) {
-			/*
-			 * On VM-Entry, an exception can be pending if and only
-			 * if event injection was blocked by nested_run_pending.
-			 * In that case, however, vcpu_enter_guest() requests an
-			 * immediate exit, and the guest shouldn't proceed far
-			 * enough to need reinjection.
-			 */
-			WARN_ON_ONCE(kvm_is_exception_pending(vcpu));
-			vcpu->arch.exception.injected = true;
-			if (WARN_ON_ONCE(has_payload)) {
-				/*
-				 * A reinjected event has already
-				 * delivered its payload.
-				 */
-				has_payload = false;
-				payload = 0;
-			}
-		} else {
-			vcpu->arch.exception.pending = true;
-			vcpu->arch.exception.injected = false;
-		}
+		vcpu->arch.exception.pending = true;
+		vcpu->arch.exception.injected = false;
+
+		vcpu->arch.exception.nested = vcpu->arch.exception.nested ||
+					      vcpu->arch.nmi_injected ||
+					      vcpu->arch.interrupt.injected;
+
 		vcpu->arch.exception.has_error_code = has_error;
 		vcpu->arch.exception.vector = nr;
 		vcpu->arch.exception.error_code = error_code;
@@ -876,8 +874,13 @@ static void kvm_multiple_exception(struct kvm_vcpu *vcpu,
 		vcpu->arch.exception.injected = false;
 		vcpu->arch.exception.pending = false;
 
+		/* #DF is NOT a nested event, per its definition. */
+		vcpu->arch.exception.nested = false;
+
 		kvm_queue_exception_e(vcpu, DF_VECTOR, 0);
 	} else {
+		vcpu->arch.exception.nested = true;
+
 		/* replace previous exception with a new one in a hope
 		   that instruction re-execution will regenerate lost
 		   exception */
@@ -887,29 +890,54 @@ static void kvm_multiple_exception(struct kvm_vcpu *vcpu,
 
 void kvm_queue_exception(struct kvm_vcpu *vcpu, unsigned nr)
 {
-	kvm_multiple_exception(vcpu, nr, false, 0, false, 0, false);
+	kvm_multiple_exception(vcpu, nr, false, 0, false, 0);
 }
 EXPORT_SYMBOL_GPL(kvm_queue_exception);
 
-void kvm_requeue_exception(struct kvm_vcpu *vcpu, unsigned nr)
-{
-	kvm_multiple_exception(vcpu, nr, false, 0, false, 0, true);
-}
-EXPORT_SYMBOL_GPL(kvm_requeue_exception);
 
 void kvm_queue_exception_p(struct kvm_vcpu *vcpu, unsigned nr,
 			   unsigned long payload)
 {
-	kvm_multiple_exception(vcpu, nr, false, 0, true, payload, false);
+	kvm_multiple_exception(vcpu, nr, false, 0, true, payload);
 }
 EXPORT_SYMBOL_GPL(kvm_queue_exception_p);
 
 static void kvm_queue_exception_e_p(struct kvm_vcpu *vcpu, unsigned nr,
 				    u32 error_code, unsigned long payload)
 {
-	kvm_multiple_exception(vcpu, nr, true, error_code,
-			       true, payload, false);
+	kvm_multiple_exception(vcpu, nr, true, error_code, true, payload);
 }
+
+void kvm_requeue_exception(struct kvm_vcpu *vcpu, unsigned int nr,
+			   bool has_error_code, u32 error_code, bool nested,
+			   u64 event_data)
+{
+	/*
+	 * On VM-Entry, an exception can be pending if and only if event
+	 * injection was blocked by nested_run_pending.  In that case, however,
+	 * vcpu_enter_guest() requests an immediate exit, and the guest
+	 * shouldn't proceed far enough to need reinjection.
+	 */
+	WARN_ON_ONCE(kvm_is_exception_pending(vcpu));
+
+	/*
+	 * Do not check for interception when injecting an event for L2, as the
+	 * exception was checked for intercept when it was original queued, and
+	 * re-checking is incorrect if _L1_ injected the exception, in which
+	 * case it's exempt from interception.
+	 */
+	kvm_make_request(KVM_REQ_EVENT, vcpu);
+
+	vcpu->arch.exception.injected = true;
+	vcpu->arch.exception.has_error_code = has_error_code;
+	vcpu->arch.exception.vector = nr;
+	vcpu->arch.exception.error_code = error_code;
+	vcpu->arch.exception.has_payload = false;
+	vcpu->arch.exception.payload = 0;
+	vcpu->arch.exception.nested = nested;
+	vcpu->arch.exception.event_data = event_data;
+}
+EXPORT_SYMBOL_GPL(kvm_requeue_exception);
 
 int kvm_complete_insn_gp(struct kvm_vcpu *vcpu, int err)
 {
@@ -980,15 +1008,9 @@ void kvm_inject_nmi(struct kvm_vcpu *vcpu)
 
 void kvm_queue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code)
 {
-	kvm_multiple_exception(vcpu, nr, true, error_code, false, 0, false);
+	kvm_multiple_exception(vcpu, nr, true, error_code, false, 0);
 }
 EXPORT_SYMBOL_GPL(kvm_queue_exception_e);
-
-void kvm_requeue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code)
-{
-	kvm_multiple_exception(vcpu, nr, true, error_code, false, 0, true);
-}
-EXPORT_SYMBOL_GPL(kvm_requeue_exception_e);
 
 /*
  * Checks if cpl <= required_cpl; if true, return true.  Otherwise queue
@@ -1854,6 +1876,23 @@ static int __kvm_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data,
 
 		data = (u32)data;
 		break;
+	case MSR_IA32_FRED_RSP0 ... MSR_IA32_FRED_CONFIG:
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+			return 1;
+
+		/* Bit 11, bits 5:4, and bit 2 of the IA32_FRED_CONFIG must be zero */
+		if (index == MSR_IA32_FRED_CONFIG && data & (BIT_ULL(11) | GENMASK_ULL(5, 4) | BIT_ULL(2)))
+			return 1;
+		if (index != MSR_IA32_FRED_STKLVLS && is_noncanonical_msr_address(data, vcpu))
+			return 1;
+		if ((index >= MSR_IA32_FRED_RSP0 && index <= MSR_IA32_FRED_RSP3) &&
+		    (data & GENMASK_ULL(5, 0)))
+			return 1;
+		if ((index >= MSR_IA32_FRED_SSP1 && index <= MSR_IA32_FRED_SSP3) &&
+		    (data & GENMASK_ULL(2, 0)))
+			return 1;
+
+		break;
 	}
 
 	msr.data = data;
@@ -1896,6 +1935,10 @@ int __kvm_get_msr(struct kvm_vcpu *vcpu, u32 index, u64 *data,
 		if (!host_initiated &&
 		    !guest_cpu_cap_has(vcpu, X86_FEATURE_RDTSCP) &&
 		    !guest_cpu_cap_has(vcpu, X86_FEATURE_RDPID))
+			return 1;
+		break;
+	case MSR_IA32_FRED_RSP0 ... MSR_IA32_FRED_CONFIG:
+		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
 			return 1;
 		break;
 	}
@@ -4632,6 +4675,7 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
 	case KVM_CAP_GET_MSR_FEATURES:
 	case KVM_CAP_MSR_PLATFORM_INFO:
 	case KVM_CAP_EXCEPTION_PAYLOAD:
+	case KVM_CAP_EXCEPTION_NESTED_FLAG:
 	case KVM_CAP_X86_TRIPLE_FAULT_EVENT:
 	case KVM_CAP_SET_GUEST_DEBUG:
 	case KVM_CAP_LAST_CPU:
@@ -5358,6 +5402,7 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
 	events->exception.error_code = ex->error_code;
 	events->exception_has_payload = ex->has_payload;
 	events->exception_payload = ex->payload;
+	events->exception_is_nested = ex->nested;
 
 	events->interrupt.injected =
 		vcpu->arch.interrupt.injected && !vcpu->arch.interrupt.soft;
@@ -5383,6 +5428,8 @@ static void kvm_vcpu_ioctl_x86_get_vcpu_events(struct kvm_vcpu *vcpu,
 			 | KVM_VCPUEVENT_VALID_SMM);
 	if (vcpu->kvm->arch.exception_payload_enabled)
 		events->flags |= KVM_VCPUEVENT_VALID_PAYLOAD;
+	if (vcpu->kvm->arch.exception_nested_flag_enabled)
+		events->flags |= KVM_VCPUEVENT_VALID_NESTED_FLAG;
 	if (vcpu->kvm->arch.triple_fault_event) {
 		events->triple_fault.pending = kvm_test_request(KVM_REQ_TRIPLE_FAULT, vcpu);
 		events->flags |= KVM_VCPUEVENT_VALID_TRIPLE_FAULT;
@@ -5397,7 +5444,8 @@ static int kvm_vcpu_ioctl_x86_set_vcpu_events(struct kvm_vcpu *vcpu,
 			      | KVM_VCPUEVENT_VALID_SHADOW
 			      | KVM_VCPUEVENT_VALID_SMM
 			      | KVM_VCPUEVENT_VALID_PAYLOAD
-			      | KVM_VCPUEVENT_VALID_TRIPLE_FAULT))
+			      | KVM_VCPUEVENT_VALID_TRIPLE_FAULT
+			      | KVM_VCPUEVENT_VALID_NESTED_FLAG))
 		return -EINVAL;
 
 	if (events->flags & KVM_VCPUEVENT_VALID_PAYLOAD) {
@@ -5410,6 +5458,13 @@ static int kvm_vcpu_ioctl_x86_set_vcpu_events(struct kvm_vcpu *vcpu,
 	} else {
 		events->exception.pending = 0;
 		events->exception_has_payload = 0;
+	}
+
+	if (events->flags & KVM_VCPUEVENT_VALID_NESTED_FLAG) {
+		if (!vcpu->kvm->arch.exception_nested_flag_enabled)
+			return -EINVAL;
+	} else {
+		events->exception_is_nested = 0;
 	}
 
 	if ((events->exception.injected || events->exception.pending) &&
@@ -5443,6 +5498,7 @@ static int kvm_vcpu_ioctl_x86_set_vcpu_events(struct kvm_vcpu *vcpu,
 	vcpu->arch.exception.error_code = events->exception.error_code;
 	vcpu->arch.exception.has_payload = events->exception_has_payload;
 	vcpu->arch.exception.payload = events->exception_payload;
+	vcpu->arch.exception.nested = events->exception_is_nested;
 
 	vcpu->arch.interrupt.injected = events->interrupt.injected;
 	vcpu->arch.interrupt.nr = events->interrupt.nr;
@@ -6566,6 +6622,10 @@ disable_exits_unlock:
 		kvm->arch.exception_payload_enabled = cap->args[0];
 		r = 0;
 		break;
+	case KVM_CAP_EXCEPTION_NESTED_FLAG:
+		kvm->arch.exception_nested_flag_enabled = cap->args[0];
+		r = 0;
+		break;
 	case KVM_CAP_X86_TRIPLE_FAULT_EVENT:
 		kvm->arch.triple_fault_event = cap->args[0];
 		r = 0;
@@ -7432,6 +7492,10 @@ static void kvm_probe_msr_to_save(u32 msr_index)
 		break;
 	case MSR_IA32_TSX_CTRL:
 		if (!(kvm_get_arch_capabilities() & ARCH_CAP_TSX_CTRL_MSR))
+			return;
+		break;
+	case MSR_IA32_FRED_RSP0 ... MSR_IA32_FRED_CONFIG:
+		if (!kvm_cpu_cap_has(X86_FEATURE_FRED))
 			return;
 		break;
 	default:

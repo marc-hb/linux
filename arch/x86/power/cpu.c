@@ -27,6 +27,7 @@
 #include <asm/mmu_context.h>
 #include <asm/cpu_device_id.h>
 #include <asm/microcode.h>
+#include <asm/fred.h>
 
 #ifdef CONFIG_X86_32
 __visible unsigned long saved_context_ebx;
@@ -196,6 +197,8 @@ static void notrace __restore_processor_state(struct saved_context *ctxt)
 {
 	struct cpuinfo_x86 *c;
 
+	c = &cpu_data(smp_processor_id());
+
 	if (ctxt->misc_enable_saved)
 		wrmsrl(MSR_IA32_MISC_ENABLE, ctxt->misc_enable);
 	/*
@@ -231,6 +234,21 @@ static void notrace __restore_processor_state(struct saved_context *ctxt)
 	 */
 #ifdef CONFIG_X86_64
 	wrmsrl(MSR_GS_BASE, ctxt->kernelmode_gs_base);
+
+	/*
+	 * Restore FRED configs.
+	 *
+	 * FRED configs are completely derived from current kernel text and
+	 * data mappings, thus nothing needs to be saved and restored.
+	 *
+	 * As such, simply re-initialize FRED to restore FRED configs.
+	 *
+	 * Note, FRED RSPs setup needs to access percpu data structures.
+	 */
+	if (cpu_has(c, X86_FEATURE_FRED)) {
+		cpu_init_fred_exceptions();
+		cpu_init_fred_rsps();
+	}
 #else
 	loadsegment(fs, __KERNEL_PERCPU);
 #endif
@@ -265,7 +283,6 @@ static void notrace __restore_processor_state(struct saved_context *ctxt)
 	cache_bp_restore();
 	perf_restore_debug_store();
 
-	c = &cpu_data(smp_processor_id());
 	if (cpu_has(c, X86_FEATURE_MSR_IA32_FEAT_CTL))
 		init_ia32_feat_ctl(c);
 
