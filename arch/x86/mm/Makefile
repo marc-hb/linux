@@ -28,6 +28,7 @@ endif
 obj-y				:=  init.o init_$(BITS).o fault.o ioremap.o extable.o mmap.o \
 				    pgtable.o physaddr.o tlb.o cpu_entry_area.o maccess.o pgprot.o
 
+obj-$(CONFIG_X86_CPU_RESCTRL)	+= mrrm.o
 obj-y				+= pat/
 
 # Make sure __phys_addr has no stackprotector

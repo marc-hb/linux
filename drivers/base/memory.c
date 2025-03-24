@@ -954,6 +954,186 @@ static const struct attribute_group *memory_root_attr_groups[] = {
 	NULL,
 };
 
+#define MEMORY_RANGE_CLASS_NAME	"range"
+
+#define to_memory_entry(dev) container_of(dev,				\
+					  struct acpi_mrrm_mem_range_entry, dev)
+
+/* The device lock serializes operations on memory_subsys_[online|offline] */
+static int memory_range_subsys_online(struct device *dev)
+{
+	struct acpi_mrrm_mem_range_entry *mem = to_memory_entry(dev);
+
+	if (mem->state == MEM_ONLINE)
+		return 0;
+
+	return 0;
+}
+
+static int memory_range_subsys_offline(struct device *dev)
+{
+	struct acpi_mrrm_mem_range_entry *mem = to_memory_entry(dev);
+
+	if (mem->state == MEM_OFFLINE)
+		return 0;
+
+	return 0;
+}
+
+static const struct bus_type memory_range_subsys = {
+	.name = MEMORY_RANGE_CLASS_NAME,
+	.dev_name = MEMORY_RANGE_CLASS_NAME,
+	.online = memory_range_subsys_online,
+	.offline = memory_range_subsys_offline,
+};
+
+#ifdef CONFIG_X86_CPU_RESCTRL
+
+/*
+ * Memory entries are cached in a local radix tree to avoid
+ * a costly linear search for the corresponding device on
+ * the subsystem bus.
+ */
+static DEFINE_XARRAY(memory_entries);
+
+#define mem_range_show(name)						\
+	sysfs_emit(buf, "%lx\n", (unsigned long)(to_memory_entry(dev)->name))
+
+static ssize_t
+base_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(base);
+}
+static DEVICE_ATTR_RO(base);
+
+static ssize_t length_show(struct device *dev,
+			   struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(length);
+}
+static DEVICE_ATTR_RO(length);
+
+static ssize_t local_region_id_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(local_region_id);
+}
+static DEVICE_ATTR_RO(local_region_id);
+
+static ssize_t remote_region_id_show(struct device *dev,
+				     struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(remote_region_id);
+}
+static DEVICE_ATTR_RO(remote_region_id);
+
+static ssize_t
+proximity_domain_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(proximity_domain);
+}
+static DEVICE_ATTR_RO(proximity_domain);
+
+static ssize_t
+enabled_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(enabled);
+}
+static DEVICE_ATTR_RO(enabled);
+
+static ssize_t
+hotplugable_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(hotplugable);
+}
+static DEVICE_ATTR_RO(hotplugable);
+
+static ssize_t
+volatile_mem_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(volatile_mem);
+}
+static DEVICE_ATTR_RO(volatile_mem);
+
+static ssize_t
+cfmws_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(cfmws);
+}
+static DEVICE_ATTR_RO(cfmws);
+
+static ssize_t
+type_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return mem_range_show(type);
+}
+static DEVICE_ATTR_RO(type);
+
+static struct attribute *memory_range_attrs[] = {
+	&dev_attr_base.attr,
+	&dev_attr_length.attr,
+	&dev_attr_local_region_id.attr,
+	&dev_attr_remote_region_id.attr,
+	&dev_attr_proximity_domain.attr,
+	&dev_attr_enabled.attr,
+	&dev_attr_hotplugable.attr,
+	&dev_attr_volatile_mem.attr,
+	&dev_attr_cfmws.attr,
+	&dev_attr_type.attr,
+	NULL
+};
+
+static const struct attribute_group memory_range_attr_group = {
+	.attrs = memory_range_attrs,
+};
+
+static const struct attribute_group *memory_range_attr_groups[] = {
+	&memory_range_attr_group,
+	NULL,
+};
+
+static void memory_range_release(struct device *dev)
+{
+//	struct acpi_mrrm_mem_range_entry *mem = to_memory_entry(dev);
+//	kfree(mem);
+}
+
+static __init int add_boot_memory_ranges(void)
+{
+	int i, ret;
+
+	ret = subsys_system_register(&memory_range_subsys, memory_range_attr_groups);
+	if (ret)
+		panic("%s() failed to register subsystem: %d\n", __func__, ret);
+
+	for (i = 0; i < mrrm_mem_entry_num; i++) {
+		struct acpi_mrrm_mem_range_entry *entry;
+
+		entry = mrrm_mem_range_entry + i;
+
+		entry->dev.bus = &memory_range_subsys;
+		entry->dev.id = i;
+		entry->dev.release = memory_range_release;
+		entry->dev.groups = memory_range_attr_groups;
+		entry->dev.offline = MEM_OFFLINE;
+
+		ret = device_register(&entry->dev);
+		if (ret) {
+			put_device(&entry->dev);
+			return ret;
+		}
+		ret = xa_err(xa_store(&memory_entries, entry->dev.id, entry,
+				      GFP_KERNEL));
+		if (ret)
+			device_unregister(&entry->dev);
+	}
+
+	return ret;
+}
+late_initcall(add_boot_memory_ranges);
+
+#endif /* CONFIG_X86_CPU_RESCTRL */
+
 /*
  * Initialize the sysfs support for memory devices. At the time this function
  * is called, we cannot have concurrent creation/deletion of memory block

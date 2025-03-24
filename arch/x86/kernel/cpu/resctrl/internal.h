@@ -112,6 +112,8 @@ static inline struct rdt_fs_context *rdt_fc2context(struct fs_context *fc)
 	return container_of(kfc, struct rdt_fs_context, kfc);
 }
 
+#define MAX_MON_EVT_NAME_WIDTH	32
+
 /**
  * struct mon_evt - Entry in the event list of a resource
  * @evtid:		event id
@@ -121,7 +123,7 @@ static inline struct rdt_fs_context *rdt_fc2context(struct fs_context *fc)
  */
 struct mon_evt {
 	enum resctrl_event_id	evtid;
-	char			*name;
+	char			name[MAX_MON_EVT_NAME_WIDTH];
 	bool			configurable;
 	struct list_head	list;
 };
@@ -517,6 +519,7 @@ enum resctrl_res_level {
 	RDT_RESOURCE_L2,
 	RDT_RESOURCE_MBA,
 	RDT_RESOURCE_SMBA,
+	RDT_RESOURCE_RMBA,
 
 	/* Must be the last */
 	RDT_NUM_RESOURCES,

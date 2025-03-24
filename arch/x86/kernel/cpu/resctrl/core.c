@@ -117,6 +117,18 @@ struct rdt_hw_resource rdt_resources_all[] = {
 			.fflags			= RFTYPE_RES_MB,
 		},
 	},
+	[RDT_RESOURCE_RMBA] =
+	{
+		.r_resctrl = {
+			.rid			= RDT_RESOURCE_RMBA,
+			.name			= "RMB",
+			.ctrl_scope		= RESCTRL_L3_CACHE,
+			.ctrl_domains		= ctrl_domain_init(RDT_RESOURCE_RMBA),
+			.parse_ctrlval		= parse_bw,
+			.format_str		= "%d=%*u",
+			.fflags			= RFTYPE_RES_MB,
+		},
+	},
 };
 
 u32 resctrl_arch_system_num_rmid_idx(void)
@@ -207,12 +219,46 @@ static inline bool rdt_get_mb_table(struct rdt_resource *r)
 	return false;
 }
 
+static bool __get_mem_config_intel_region(struct rdt_resource *r)
+{
+	struct rdt_hw_resource *hw_res = resctrl_to_arch_res(r);
+	u32 max_delay;
+
+	hw_res->num_closid = enhanced_rdt.max_clos + 1;
+//	max_delay = eax.split.max_delay + 1;
+	max_delay = 99;
+	r->default_ctrl = MAX_MBA_BW;
+	r->membw.arch_needs_linear = true;
+//	if (ecx & MBA_IS_LINEAR) {
+		r->membw.delay_linear = true;
+		r->membw.min_bw = MAX_MBA_BW - max_delay;
+		r->membw.bw_gran = MAX_MBA_BW - max_delay;
+//	} else {
+//		if (!rdt_get_mb_table(r))
+//			return false;
+//		r->membw.arch_needs_linear = false;
+//	}
+	r->data_width = 3;
+
+	if (boot_cpu_has(X86_FEATURE_PER_THREAD_MBA))
+		r->membw.throttle_mode = THREAD_THROTTLE_PER_THREAD;
+	else
+		r->membw.throttle_mode = THREAD_THROTTLE_MAX;
+
+	r->alloc_capable = true;
+
+	return true;
+}
+
 static __init bool __get_mem_config_intel(struct rdt_resource *r)
 {
 	struct rdt_hw_resource *hw_res = resctrl_to_arch_res(r);
 	union cpuid_0x10_3_eax eax;
 	union cpuid_0x10_x_edx edx;
 	u32 ebx, ecx, max_delay;
+
+	if (hw_res == &rdt_resources_all[RDT_RESOURCE_RMBA])
+		return __get_mem_config_intel_region(r);
 
 	cpuid_count(0x00000010, 3, &eax.full, &ebx, &ecx, &edx.full);
 	hw_res->num_closid = edx.split.cos_max + 1;
@@ -477,6 +523,10 @@ static int domain_setup_ctrlval(struct rdt_resource *r, struct rdt_ctrl_domain *
 	hw_dom->ctrl_val = dc;
 	setup_default_ctrlval(r, dc);
 
+	/* Fixme: add mmio reg write */
+	if (is_enhanced_rdt())
+		return 0;
+
 	m.res = r;
 	m.dom = d;
 	m.low = 0;
@@ -528,6 +578,45 @@ static int get_domain_id_from_scope(int cpu, enum resctrl_scope scope)
 	return -EINVAL;
 }
 
+static __init void domain_add_mm_region_ctrl(struct rdt_resource *r)
+{
+//	int id = get_domain_id_from_scope(cpu, r->ctrl_scope);
+	int id = 0;
+	struct rdt_hw_ctrl_domain *hw_dom;
+	struct list_head *add_pos = NULL;
+	struct rdt_domain_hdr *hdr;
+	struct rdt_ctrl_domain *d;
+
+//	lockdep_assert_held(&domain_list_lock);
+
+	if (!is_enhanced_rdt() || r->rid != RDT_RESOURCE_RMBA)
+		return;
+
+for (id = 0; id < enhanced_rdt.max_mem_region; id++) {
+	hdr = rdt_find_domain(&r->ctrl_domains, id, &add_pos);
+	if (hdr) {
+		WARN_ONCE(1, "domain %d already exists\n", id);
+		continue;
+	}
+//	hw_dom = kzalloc_node(sizeof(*hw_dom), GFP_KERNEL, cpu_to_node(cpu));
+	hw_dom = kzalloc_node(sizeof(*hw_dom), GFP_KERNEL, cpu_to_node(0));
+	if (!hw_dom)
+		return;
+
+	d = &hw_dom->d_resctrl;
+	d->hdr.id = id;
+	d->hdr.type = RESCTRL_CTRL_DOMAIN;
+//	cpumask_set_cpu(cpu, &d->hdr.cpu_mask);
+
+	if (domain_setup_ctrlval(r, d)) {
+		ctrl_domain_free(hw_dom);
+		return;
+	}
+
+	list_add_tail_rcu(&d->hdr.list, add_pos);
+}
+}
+
 static void domain_add_cpu_ctrl(int cpu, struct rdt_resource *r)
 {
 	int id = get_domain_id_from_scope(cpu, r->ctrl_scope);
@@ -538,6 +627,9 @@ static void domain_add_cpu_ctrl(int cpu, struct rdt_resource *r)
 	int err;
 
 	lockdep_assert_held(&domain_list_lock);
+
+	if (is_enhanced_rdt() && r->rid == RDT_RESOURCE_RMBA)
+		return;
 
 	if (id < 0) {
 		pr_warn_once("Can't find control domain id for CPU:%d scope:%d for resource %s\n",
@@ -658,6 +750,9 @@ static void domain_remove_cpu_ctrl(int cpu, struct rdt_resource *r)
 	struct rdt_ctrl_domain *d;
 
 	lockdep_assert_held(&domain_list_lock);
+
+	if (is_enhanced_rdt() && r->rid == RDT_RESOURCE_RMBA)
+		return;
 
 	if (id < 0) {
 		pr_warn_once("Can't find control domain id for CPU:%d scope:%d for resource %s\n",
@@ -811,6 +906,7 @@ enum {
 	RDT_FLAG_MBA,
 	RDT_FLAG_SMBA,
 	RDT_FLAG_BMEC,
+	RDT_FLAG_ERDT,
 };
 
 #define RDT_OPT(idx, n, f)	\
@@ -825,6 +921,10 @@ struct rdt_options {
 	bool	force_off, force_on;
 };
 
+/* features that are not defined in cpufeatures.h and are specific to RDT */
+#define RDT_FEATURE		((NCAPINTS + NBUGINTS) * 32)
+#define RDT_FEATURE_ERDT	RDT_FEATURE
+
 static struct rdt_options rdt_options[]  __initdata = {
 	RDT_OPT(RDT_FLAG_CMT,	    "cmt",	X86_FEATURE_CQM_OCCUP_LLC),
 	RDT_OPT(RDT_FLAG_MBM_TOTAL, "mbmtotal", X86_FEATURE_CQM_MBM_TOTAL),
@@ -836,6 +936,7 @@ static struct rdt_options rdt_options[]  __initdata = {
 	RDT_OPT(RDT_FLAG_MBA,	    "mba",	X86_FEATURE_MBA),
 	RDT_OPT(RDT_FLAG_SMBA,	    "smba",	X86_FEATURE_SMBA),
 	RDT_OPT(RDT_FLAG_BMEC,	    "bmec",	X86_FEATURE_BMEC),
+	RDT_OPT(RDT_FLAG_ERDT,	    "erdt",	RDT_FEATURE_ERDT),
 };
 #define NUM_RDT_OPTIONS ARRAY_SIZE(rdt_options)
 
@@ -865,9 +966,19 @@ static int __init set_rdt_options(char *str)
 }
 __setup("rdt", set_rdt_options);
 
+static bool rdt_has(int flag)
+{
+	switch (flag) {
+	case RDT_FEATURE_ERDT:
+		return true;
+	}
+
+	return false;
+}
+
 bool __init rdt_cpu_has(int flag)
 {
-	bool ret = boot_cpu_has(flag);
+	bool ret = boot_cpu_has(flag) || rdt_has(flag);
 	struct rdt_options *o;
 
 	if (!ret)
@@ -887,11 +998,21 @@ bool __init rdt_cpu_has(int flag)
 
 static __init bool get_mem_config(void)
 {
-	struct rdt_hw_resource *hw_res = &rdt_resources_all[RDT_RESOURCE_MBA];
+	struct rdt_hw_resource *hw_res;
+
+	if (!rdt_cpu_has(RDT_FEATURE_ERDT))
+		enhanced_rdt.valid = false;
+
+	if (is_enhanced_rdt()) {
+		hw_res = &rdt_resources_all[RDT_RESOURCE_RMBA];
+
+		return __get_mem_config_intel(&hw_res->r_resctrl);
+	}
 
 	if (!rdt_cpu_has(X86_FEATURE_MBA))
 		return false;
 
+	hw_res = &rdt_resources_all[RDT_RESOURCE_MBA];
 	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
 		return __get_mem_config_intel(&hw_res->r_resctrl);
 	else if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD)
@@ -945,6 +1066,8 @@ static __init bool get_rdt_alloc_resources(void)
 
 	if (get_slow_mem_config())
 		ret = true;
+
+	domain_add_mm_region_ctrl(&rdt_resources_all[RDT_RESOURCE_RMBA].r_resctrl);
 
 	return ret;
 }
@@ -1019,6 +1142,8 @@ static __init void rdt_init_res_defs_intel(void)
 		} else if (r->rid == RDT_RESOURCE_MBA) {
 			hw_res->msr_base = MSR_IA32_MBA_THRTL_BASE;
 			hw_res->msr_update = mba_wrmsr_intel;
+		} else if (r->rid == RDT_RESOURCE_RMBA) {
+			// Fixme: add mmio reg
 		}
 	}
 }
