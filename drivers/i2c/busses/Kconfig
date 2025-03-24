@@ -165,6 +165,8 @@ config I2C_I801
 	    Birch Stream (SOC)
 	    Arrow Lake (SOC)
 	    Panther Lake (SOC)
+	    Diamond Rapids (SOC)
+	    Wildcat Lake (SOC)
 
 	  This driver can also be built as a module.  If so, the module
 	  will be called i2c-i801.
@@ -563,6 +565,7 @@ config I2C_DAVINCI
 config I2C_DESIGNWARE_CORE
 	tristate "Synopsys DesignWare I2C adapter"
 	select REGMAP
+	select I2C_SMBUS
 	help
 	  This option enables support for the Synopsys DesignWare I2C adapter.
 	  This driver includes support for the I2C host on the Synopsys
