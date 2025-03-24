@@ -246,6 +246,9 @@ struct nested_vmx {
 	 */
 	u64 pre_vmenter_debugctl;
 	u64 pre_vmenter_bndcfgs;
+	u64 pre_vmenter_ssp;
+	u64 pre_vmenter_s_cet;
+	u64 pre_vmenter_ssp_tbl;
 
 	/* to migrate it to L1 if L2 writes to L1's CR8 directly */
 	int l1_tpr_threshold;
@@ -517,7 +520,8 @@ static inline u8 vmx_get_rvi(void)
 	 VM_ENTRY_PT_CONCEAL_PIP |					\
 	 VM_ENTRY_LOAD_IA32_RTIT_CTL |					\
 	 VM_ENTRY_LOAD_IA32_FRED |					\
-	 VM_ENTRY_LOAD_IA32_LBR_CTL)
+	 VM_ENTRY_LOAD_IA32_LBR_CTL |					\
+	 VM_ENTRY_LOAD_CET_STATE)
 
 #define __KVM_REQUIRED_VMX_VM_EXIT_CONTROLS				\
 	(VM_EXIT_SAVE_DEBUG_CONTROLS |					\
@@ -542,7 +546,8 @@ static inline u8 vmx_get_rvi(void)
 	       VM_EXIT_CLEAR_IA32_RTIT_CTL |				\
 	       VM_EXIT_ACTIVATE_SECONDARY_CONTROLS |			\
 	       VM_EXIT_CLEAR_IA32_LBR_CTL |				\
-	       VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL)
+	       VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL |			\
+	       VM_EXIT_LOAD_CET_STATE)
 
 #define KVM_REQUIRED_VMX_SECONDARY_VM_EXIT_CONTROLS (0)
 #define KVM_OPTIONAL_VMX_SECONDARY_VM_EXIT_CONTROLS			\
