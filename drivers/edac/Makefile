@@ -33,6 +33,7 @@ obj-$(CONFIG_EDAC_I7CORE)		+= i7core_edac.o
 obj-$(CONFIG_EDAC_SBRIDGE)		+= sb_edac.o
 obj-$(CONFIG_EDAC_PND2)			+= pnd2_edac.o
 obj-$(CONFIG_EDAC_IGEN6)			+= igen6_edac.o
+obj-$(CONFIG_EDAC_IEH)			+= ieh_edac.o
 obj-$(CONFIG_EDAC_E7XXX)		+= e7xxx_edac.o
 obj-$(CONFIG_EDAC_E752X)		+= e752x_edac.o
 obj-$(CONFIG_EDAC_I82443BXGX)		+= i82443bxgx_edac.o
@@ -61,6 +62,9 @@ obj-$(CONFIG_EDAC_SKX)			+= skx_edac.o skx_edac_common.o
 
 i10nm_edac-y				:= i10nm_base.o
 obj-$(CONFIG_EDAC_I10NM)		+= i10nm_edac.o skx_edac_common.o
+
+imh_edac-y				:= imh_base.o
+obj-$(CONFIG_EDAC_IMH)			+= imh_edac.o skx_edac_common.o
 
 obj-$(CONFIG_EDAC_HIGHBANK_MC)		+= highbank_mc_edac.o
 obj-$(CONFIG_EDAC_HIGHBANK_L2)		+= highbank_l2_edac.o

@@ -263,6 +263,16 @@ config EDAC_I10NM
 	  system has non-volatile DIMMs you should also manually
 	  select CONFIG_ACPI_NFIT.
 
+config EDAC_IMH
+	tristate "Intel Integrated Memory/IO Hub MC"
+	depends on X86_64 && X86_MCE_INTEL && ACPI
+	select ACPI_ADXL
+	help
+	  Support for error detection and correction the Intel
+	  Integrated Memory/IO Hub Memory Controller. This MC IP is
+	  first used on the Diamond Rapids servers but may appear on
+	  others in the future.
+
 config EDAC_PND2
 	tristate "Intel Pondicherry2"
 	depends on PCI && X86_64 && X86_MCE_INTEL
@@ -282,6 +292,16 @@ config EDAC_IGEN6
 	  client SoC Integrated Memory Controller using In-Band ECC IP.
 	  This In-Band ECC is first used on the Elkhart Lake SoC but
 	  may appear on others in the future.
+
+config EDAC_IEH
+	tristate "Intel Integrated Error Handler"
+	depends on PCI && X86_64
+	help
+	  Support for error detection and correction on the Intel
+	  CPU using I/O IEH (Integrated Error Handler). IEHs are PCIe
+	  devices which aggregate and report error events of different
+	  severities from various I/O devices, e.g., PCIe devices and
+	  legacy PCI devices.
 
 config EDAC_MPC85XX
 	bool "Freescale MPC83xx / MPC85xx"
