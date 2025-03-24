@@ -26,6 +26,7 @@
 #include <linux/pgtable.h>
 #include <linux/stackprotector.h>
 #include <linux/utsname.h>
+#include <linux/efi.h>
 
 #include <asm/alternative.h>
 #include <asm/cmdline.h>
@@ -399,9 +400,16 @@ out:
 	cr4_clear_bits(X86_CR4_UMIP);
 }
 
+static __always_inline void setup_lass(struct cpuinfo_x86 *c)
+{
+	if (cpu_feature_enabled(X86_FEATURE_LASS))
+		cr4_set_bits(X86_CR4_LASS);
+}
+
 /* These bits should not change their value after CPU init is finished. */
 static const unsigned long cr4_pinned_mask = X86_CR4_SMEP | X86_CR4_SMAP | X86_CR4_UMIP |
-					     X86_CR4_FSGSBASE | X86_CR4_CET | X86_CR4_FRED;
+					     X86_CR4_FSGSBASE | X86_CR4_CET | X86_CR4_FRED |
+					     X86_CR4_LASS;
 static DEFINE_STATIC_KEY_FALSE_RO(cr_pinning);
 static unsigned long cr4_pinned_bits __ro_after_init;
 
@@ -1851,10 +1859,10 @@ static void identify_cpu(struct cpuinfo_x86 *c)
 	/* Disable the PN if appropriate */
 	squash_the_stupid_serial_number(c);
 
-	/* Set up SMEP/SMAP/UMIP */
 	setup_smep(c);
 	setup_smap(c);
 	setup_umip(c);
+	setup_lass(c);
 
 	/* Enable FSGSBASE instructions if available. */
 	if (cpu_has(c, X86_FEATURE_FSGSBASE)) {
@@ -1955,7 +1963,6 @@ static __init void identify_boot_cpu(void)
 	enable_sep_cpu();
 #endif
 	cpu_detect_tlb(&boot_cpu_data);
-	setup_cr_pinning();
 
 	tsx_init();
 	tdx_init();
@@ -2388,6 +2395,18 @@ void __init arch_cpu_finalize_init(void)
 	fpu__init_cpu();
 
 	/*
+	 * This needs to follow the FPU initializtion, since EFI depends on it.
+	 * It also needs to precede the CR pinning setup, because we need to be
+	 * able to temporarily clear the CR4.LASS bit in order to execute the
+	 * set_virtual_address_map call, which resides in lower addresses and
+	 * would trip LASS if enabled.
+	 */
+	if (efi_enabled(EFI_RUNTIME_SERVICES))
+		efi_enter_virtual_mode();
+
+	setup_cr_pinning();
+
+	/*
 	 * Ensure that access to the per CPU representation has the initial
 	 * boot CPU configuration.
 	 */
@@ -2399,11 +2418,8 @@ void __init arch_cpu_finalize_init(void)
 	if (IS_ENABLED(CONFIG_X86_64)) {
 		unsigned long USER_PTR_MAX = TASK_SIZE_MAX;
 
-		/*
-		 * Enable this when LAM is gated on LASS support
 		if (cpu_feature_enabled(X86_FEATURE_LAM))
 			USER_PTR_MAX = (1ul << 63) - PAGE_SIZE;
-		 */
 		runtime_const_init(ptr, USER_PTR_MAX);
 
 		/*

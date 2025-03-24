@@ -68,6 +68,7 @@
 #include <asm/vdso.h>
 #include <asm/tdx.h>
 #include <asm/cfi.h>
+#include <asm/vsyscall.h>
 
 #ifdef CONFIG_X86_64
 #include <asm/x86_init.h>
@@ -334,12 +335,6 @@ DEFINE_IDTENTRY_ERRORCODE(exc_segment_not_present)
 		      SIGBUS, 0, NULL);
 }
 
-DEFINE_IDTENTRY_ERRORCODE(exc_stack_segment)
-{
-	do_error_trap(regs, error_code, "stack segment", X86_TRAP_SS, SIGBUS,
-		      0, NULL);
-}
-
 DEFINE_IDTENTRY_ERRORCODE(exc_alignment_check)
 {
 	char *str = "alignment check";
@@ -536,7 +531,14 @@ DEFINE_IDTENTRY(exc_bounds)
 enum kernel_gp_hint {
 	GP_NO_HINT,
 	GP_NON_CANONICAL,
-	GP_CANONICAL
+	GP_CANONICAL,
+	GP_LASS_VIOLATION
+};
+
+static char *kernel_gp_hint_help[] = {
+	[GP_NON_CANONICAL]	= "probably for non-canonical address",
+	[GP_CANONICAL]		= "maybe for address",
+	[GP_LASS_VIOLATION]	= "LASS prevented access to address"
 };
 
 /*
@@ -572,6 +574,8 @@ static enum kernel_gp_hint get_kernel_gp_address(struct pt_regs *regs,
 	if (*addr < ~__VIRTUAL_MASK &&
 	    *addr + insn.opnd_bytes - 1 > __VIRTUAL_MASK)
 		return GP_NON_CANONICAL;
+	else if (*addr < ~__VIRTUAL_MASK && cpu_feature_enabled(X86_FEATURE_LASS))
+		return GP_LASS_VIOLATION;
 #endif
 
 	return GP_CANONICAL;
@@ -701,11 +705,6 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 
 	cond_local_irq_enable(regs);
 
-	if (static_cpu_has(X86_FEATURE_UMIP)) {
-		if (user_mode(regs) && fixup_umip_exception(regs))
-			goto exit;
-	}
-
 	if (v8086_mode(regs)) {
 		local_irq_enable();
 		handle_vm86_fault((struct kernel_vm86_regs *) regs, error_code);
@@ -718,6 +717,12 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 			goto exit;
 
 		if (fixup_vdso_exception(regs, X86_TRAP_GP, error_code, 0))
+			goto exit;
+
+		if (cpu_feature_enabled(X86_FEATURE_UMIP) && fixup_umip_exception(regs))
+			goto exit;
+
+		if (cpu_feature_enabled(X86_FEATURE_LASS) && emulate_vsyscall_gp(regs))
 			goto exit;
 
 		gp_user_force_sig_segv(regs, X86_TRAP_GP, error_code, desc);
@@ -734,9 +739,7 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 
 	if (hint != GP_NO_HINT)
 		snprintf(desc, sizeof(desc), GPFSTR ", %s 0x%lx",
-			 (hint == GP_NON_CANONICAL) ? "probably for non-canonical address"
-						    : "maybe for address",
-			 gp_addr);
+			 kernel_gp_hint_help[hint], gp_addr);
 
 	/*
 	 * KASAN is interested only in the non-canonical case, clear it
@@ -749,6 +752,33 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 
 exit:
 	cond_local_irq_disable(regs);
+}
+
+DEFINE_IDTENTRY_ERRORCODE(exc_stack_segment)
+{
+	if (cpu_feature_enabled(X86_FEATURE_LASS)) {
+		enum kernel_gp_hint hint = GP_NO_HINT;
+		unsigned long gp_addr;
+
+		if (user_mode(regs)) {
+			gp_user_force_sig_segv(regs, X86_TRAP_GP, error_code, GPFSTR);
+			return;
+		}
+
+		hint = get_kernel_gp_address(regs, &gp_addr);
+		if (hint != GP_NO_HINT)
+			printk(GPFSTR ", %s 0x%lx", kernel_gp_hint_help[hint],
+				gp_addr);
+
+		if (hint != GP_NON_CANONICAL)
+			gp_addr = 0;
+
+		die_addr(GPFSTR, regs, error_code, gp_addr);
+		return;
+	}
+
+	do_error_trap(regs, error_code, "stack segment", X86_TRAP_SS, SIGBUS,
+		0, NULL);
 }
 
 static bool do_int3(struct pt_regs *regs)
