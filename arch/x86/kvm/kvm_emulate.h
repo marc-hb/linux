@@ -237,6 +237,7 @@ struct x86_emulate_ops {
 	int (*leave_smm)(struct x86_emulate_ctxt *ctxt);
 	void (*triple_fault)(struct x86_emulate_ctxt *ctxt);
 	int (*set_xcr)(struct x86_emulate_ctxt *ctxt, u32 index, u64 xcr);
+	u64 (*get_xcr)(struct x86_emulate_ctxt *ctx, u32 index);
 
 	gva_t (*get_untagged_addr)(struct x86_emulate_ctxt *ctxt, gva_t addr,
 				   unsigned int flags);
@@ -244,6 +245,13 @@ struct x86_emulate_ops {
 				  unsigned int size, unsigned int flags);
 	bool (*is_canonical_addr)(struct x86_emulate_ctxt *ctxt, gva_t addr,
 				  unsigned int flags);
+
+	/* Read EGRP(r16 ~r31), return < 0 on error.*/
+	int (*read_egpr)(struct x86_emulate_ctxt *ctxt, unsigned int reg, ulong *val);
+	/* Get EGRP(r16 ~r31) memory pointer for later EGPR write directly,
+	 * return NULL on error.
+	 */
+	ulong* (*get_egpr_ptr)(struct x86_emulate_ctxt *ctxt, unsigned int reg);
 };
 
 /* Type, address-of, and value of an instruction's operand. */
@@ -355,6 +363,7 @@ struct x86_emulate_ctxt {
 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
 
 	bool rip_relative;
+	bool has_rex2_prefix;
 	u8 rex_prefix;
 	u8 lock_prefix;
 	u8 rep_prefix;
@@ -529,6 +538,13 @@ bool emulator_can_use_gpa(struct x86_emulate_ctxt *ctxt);
 
 static inline ulong reg_read(struct x86_emulate_ctxt *ctxt, unsigned nr)
 {
+	if (nr >= NR_EMULATOR_GPRS && ctxt->has_rex2_prefix) {
+		ulong val;
+
+		if (ctxt->ops->read_egpr(ctxt, nr, &val) == 0)
+			return val;
+	}
+
 	if (KVM_EMULATOR_BUG_ON(nr >= NR_EMULATOR_GPRS, ctxt))
 		nr &= NR_EMULATOR_GPRS - 1;
 
@@ -541,6 +557,14 @@ static inline ulong reg_read(struct x86_emulate_ctxt *ctxt, unsigned nr)
 
 static inline ulong *reg_write(struct x86_emulate_ctxt *ctxt, unsigned nr)
 {
+	if (nr >= NR_EMULATOR_GPRS && ctxt->has_rex2_prefix) {
+		ulong *egpr;
+
+		egpr = ctxt->ops->get_egpr_ptr(ctxt, nr);
+		if (egpr)
+			return egpr;
+	}
+
 	if (KVM_EMULATOR_BUG_ON(nr >= NR_EMULATOR_GPRS, ctxt))
 		nr &= NR_EMULATOR_GPRS - 1;
 

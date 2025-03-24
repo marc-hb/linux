@@ -559,6 +559,11 @@ static int kvm_set_cpuid(struct kvm_vcpu *vcpu, struct kvm_cpuid_entry2 *e2,
 #endif
 	kvm_vcpu_after_set_cpuid(vcpu);
 
+	if (guest_cpu_cap_has(vcpu, X86_FEATURE_MPX) && guest_cpu_cap_has(vcpu, X86_FEATURE_APX)) {
+		r = 1;
+		goto err;
+	}
+
 success:
 	kvfree(e2);
 	return 0;
@@ -1013,6 +1018,7 @@ void kvm_set_cpu_caps(void)
 		F(PREFETCHITI),
 		F(AVX10),
 		F(AMX_MOVRS),
+		F(APX),
 	);
 
 	kvm_cpu_cap_init(CPUID_7_2_EDX,

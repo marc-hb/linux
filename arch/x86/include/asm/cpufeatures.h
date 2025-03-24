@@ -13,7 +13,7 @@
 /*
  * Defines x86 CPU feature bits
  */
-#define NCAPINTS			22	   /* N 32-bit words worth of info */
+#define NCAPINTS			23	   /* N 32-bit words worth of info */
 #define NBUGINTS			2	   /* N 32-bit bug flags */
 
 /*
@@ -486,6 +486,9 @@
 #define X86_FEATURE_AMD_HETEROGENEOUS_CORES (21*32 + 6) /* Heterogeneous Core Topology */
 #define X86_FEATURE_AMD_WORKLOAD_CLASS	(21*32 + 7) /* Workload Classification */
 #define X86_FEATURE_SGX256		(21*32+ 8) /* SGX supports EREPORT2 and EGETKEY256 */
+
+/* Intel-defined CPU features, CPUID level 0x00000007:1 (EDX), word 22 */
+#define X86_FEATURE_APX			(22*32+21) /* "apx" Advanced Performance Extensions */
 
 /*
  * BUG word(s)

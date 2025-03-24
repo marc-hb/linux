@@ -5043,6 +5043,10 @@ static void __vmx_vcpu_reset(struct kvm_vcpu *vcpu)
 	 */
 	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
 	__pi_set_sn(&vmx->pi_desc);
+
+	if (vcpu->arch.guest_fpu.fpstate && kvm_apx_supported())
+		fpstate_clear_xstate_component(vcpu->arch.guest_fpu.fpstate,
+					       XFEATURE_APX);
 }
 
 void vmx_vcpu_reset(struct kvm_vcpu *vcpu, bool init_event)
@@ -5667,7 +5671,11 @@ static int handle_cr(struct kvm_vcpu *vcpu)
 
 	exit_qualification = vmx_get_exit_qual(vcpu);
 	cr = exit_qualification & 15;
-	reg = (exit_qualification >> 8) & 15;
+	if (!kvm_apx_supported())
+		reg = (exit_qualification >> 8) & 0xf;
+	else
+		reg = (exit_qualification >> 8) & 0x1f;
+
 	switch ((exit_qualification >> 4) & 3) {
 	case 0: /* mov to cr */
 		val = kvm_register_read(vcpu, reg);
@@ -5785,7 +5793,10 @@ static int handle_dr(struct kvm_vcpu *vcpu)
 		return 1;
 	}
 
-	reg = DEBUG_REG_ACCESS_REG(exit_qualification);
+	if (!kvm_apx_supported())
+		reg = DEBUG_REG_ACCESS_REG(exit_qualification);
+	else
+		reg = (exit_qualification >> 8) & 0x1f;
 	if (exit_qualification & TYPE_MOV_FROM_DR) {
 		kvm_register_write(vcpu, reg, kvm_get_dr(vcpu, dr));
 		err = 0;
@@ -6126,9 +6137,22 @@ static int handle_monitor_trap(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+void vmx_get_instr_info(struct kvm_vcpu *vcpu, struct vmx_instr_info *instr_info)
+{
+	if (kvm_apx_supported()) {
+		instr_info->is_extended = true;
+		instr_info->extend_info =
+			vmcs_read64(VMX_EXTENDED_INSTRUCTION_INFO);
+	} else {
+		instr_info->is_extended = false;
+		instr_info->info =
+			vmcs_read32(VMX_INSTRUCTION_INFO);
+	}
+}
+
 static int handle_invpcid(struct kvm_vcpu *vcpu)
 {
-	u32 vmx_instruction_info;
+	struct vmx_instr_info instr_info;
 	unsigned long type;
 	gva_t gva;
 	struct {
@@ -6142,15 +6166,15 @@ static int handle_invpcid(struct kvm_vcpu *vcpu)
 		return 1;
 	}
 
-	vmx_instruction_info = vmcs_read32(VMX_INSTRUCTION_INFO);
-	gpr_index = vmx_get_instr_info_reg2(vmx_instruction_info);
+	vmx_get_instr_info(vcpu, &instr_info);
+	gpr_index = vmx_get_instr_info_reg2(&instr_info);
 	type = kvm_register_read(vcpu, gpr_index);
 
 	/* According to the Intel instruction reference, the memory operand
 	 * is read even if it isn't needed (e.g., for type==all)
 	 */
 	if (get_vmx_mem_address(vcpu, vmx_get_exit_qual(vcpu),
-				vmx_instruction_info, false,
+				&instr_info, false,
 				sizeof(operand), &gva))
 		return 1;
 

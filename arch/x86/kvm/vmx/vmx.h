@@ -756,9 +756,22 @@ static inline bool vmx_guest_state_valid(struct kvm_vcpu *vcpu)
 
 void dump_vmcs(struct kvm_vcpu *vcpu);
 
-static inline int vmx_get_instr_info_reg2(u32 vmx_instr_info)
+struct vmx_instr_info {
+	bool is_extended;
+	union {
+		u32   info;
+		u64   extend_info;
+	};
+};
+
+void vmx_get_instr_info(struct kvm_vcpu *vcpu, struct vmx_instr_info *instr_info);
+
+static inline int vmx_get_instr_info_reg2(struct vmx_instr_info *instr_info)
 {
-	return (vmx_instr_info >> 28) & 0xf;
+	if (!instr_info->is_extended)
+		return (instr_info->info >> 28) & 0xf;
+	else
+		return (instr_info->extend_info >> 40) & 0x1f;
 }
 
 static inline bool vmx_can_use_ipiv(struct kvm_vcpu *vcpu)

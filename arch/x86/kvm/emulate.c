@@ -989,7 +989,9 @@ static void *decode_register(struct x86_emulate_ctxt *ctxt, u8 modrm_reg,
 			     int byteop)
 {
 	void *p;
-	int highbyte_regs = (ctxt->rex_prefix == 0) && byteop;
+	int highbyte_regs = (ctxt->rex_prefix == 0) &&
+			    !ctxt->has_rex2_prefix  &&
+			    byteop;
 
 	if (highbyte_regs && modrm_reg >= 4 && modrm_reg < 8)
 		p = (unsigned char *)reg_rmw(ctxt, modrm_reg & 3) + 1;
@@ -1152,10 +1154,13 @@ static void decode_register_operand(struct x86_emulate_ctxt *ctxt,
 {
 	unsigned int reg;
 
-	if (ctxt->d & ModRM)
+	if (ctxt->d & ModRM) {
 		reg = ctxt->modrm_reg;
-	else
+	} else {
 		reg = (ctxt->b & 7) | ((ctxt->rex_prefix & 1) << 3);
+		if (ctxt->has_rex2_prefix)
+			reg |= ctxt->rex_prefix & 0x10;
+	}
 
 	if (ctxt->d & Sse) {
 		op->type = OP_XMM;
@@ -1194,9 +1199,15 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
 	int rc = X86EMUL_CONTINUE;
 	ulong modrm_ea = 0;
 
-	ctxt->modrm_reg = ((ctxt->rex_prefix << 1) & 8); /* REX.R */
-	index_reg = (ctxt->rex_prefix << 2) & 8; /* REX.X */
-	base_reg = (ctxt->rex_prefix << 3) & 8; /* REX.B */
+	ctxt->modrm_reg = ((ctxt->rex_prefix << 1) & 8); /* REX.R or REX2.R3 */
+	index_reg = (ctxt->rex_prefix << 2) & 8; /* REX.X or REX2.X3*/
+	base_reg = (ctxt->rex_prefix << 3) & 8; /* REX.B or REX2.B4*/
+
+	if (ctxt->has_rex2_prefix) {
+		ctxt->modrm_reg |= ((ctxt->rex_prefix >> 2) & 0x10); /* REX2.R4 */
+		index_reg |= ((ctxt->rex_prefix >> 1) & 0x10); /* REX2.X4 */
+		base_reg |= (ctxt->rex_prefix & 0x10); /* REX.B4 */
+	}
 
 	ctxt->modrm_mod = (ctxt->modrm & 0xc0) >> 6;
 	ctxt->modrm_reg |= (ctxt->modrm & 0x38) >> 3;
@@ -4837,6 +4848,22 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len, int
 				goto done_prefixes;
 			ctxt->rex_prefix = ctxt->b;
 			continue;
+		case 0xd5: /* REX2 */
+			if (mode != X86EMUL_MODE_PROT64)
+				goto done_prefixes;
+
+			/* REX2 is valid when APX is enabled with
+			 *  CR4.OSXSAVE = 1 and XCR0[19] = 1.
+			 */
+			if (!(ctxt->ops->get_cr(ctxt, 4) & X86_CR4_OSXSAVE))
+				return EMULATION_FAILED;
+
+			if ((ctxt->ops->get_xcr(ctxt, 0) & XFEATURE_MASK_APX) == 0)
+				return EMULATION_FAILED;
+
+			ctxt->has_rex2_prefix = true;
+			ctxt->rex_prefix = insn_fetch(u8, ctxt);
+			continue;
 		case 0xf0:	/* LOCK */
 			ctxt->lock_prefix = 1;
 			break;
@@ -4851,6 +4878,7 @@ int x86_decode_insn(struct x86_emulate_ctxt *ctxt, void *insn, int insn_len, int
 		/* Any legacy prefix after a REX prefix nullifies its effect. */
 
 		ctxt->rex_prefix = 0;
+		ctxt->has_rex2_prefix = false;
 	}
 
 done_prefixes:
@@ -5105,6 +5133,7 @@ void init_decode_cache(struct x86_emulate_ctxt *ctxt)
 {
 	/* Clear fields that are set conditionally but read without a guard. */
 	ctxt->rip_relative = false;
+	ctxt->has_rex2_prefix = false;
 	ctxt->rex_prefix = 0;
 	ctxt->lock_prefix = 0;
 	ctxt->rep_prefix = 0;

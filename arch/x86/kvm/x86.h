@@ -430,6 +430,11 @@ static inline bool kvm_mpx_supported(void)
 		== (XFEATURE_MASK_BNDREGS | XFEATURE_MASK_BNDCSR);
 }
 
+static inline bool kvm_apx_supported(void)
+{
+	return !!(kvm_caps.supported_xcr0 & XFEATURE_MASK_APX);
+}
+
 extern unsigned int min_timer_period_us;
 
 extern bool enable_vmware_backdoor;

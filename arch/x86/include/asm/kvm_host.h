@@ -752,7 +752,6 @@ struct kvm_queued_exception {
  */
 enum kvm_only_cpuid_leafs {
 	CPUID_12_EAX	 = NCAPINTS,
-	CPUID_7_1_EDX,
 	CPUID_8000_0007_EDX,
 	CPUID_8000_0022_EAX,
 	CPUID_7_2_EDX,
@@ -856,6 +855,8 @@ struct kvm_vcpu_arch {
 	 * host PRKU bits.
 	 */
 	struct fpu_guest guest_fpu;
+	bool guest_fpu_state_available;
+	bool guest_fpu_state_dirty;
 
 	u64 xcr0;
 	u64 guest_supported_xcr0;
