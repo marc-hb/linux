@@ -2154,12 +2154,23 @@ int vmx_get_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 	case MSR_IA32_FEAT_CTL:
 		msr_info->data = vmx->msr_ia32_feature_control;
 		break;
-	case MSR_IA32_SGXLEPUBKEYHASH0 ... MSR_IA32_SGXLEPUBKEYHASH3:
+	case MSR_IA32_SGXLEPUBKEYHASH0 ... MSR_IA32_SGXLEPUBKEYHASH5:
 		if (!msr_info->host_initiated &&
 		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX_LC))
 			return 1;
+		if (!msr_info->host_initiated &&
+		    msr_info->index >= MSR_IA32_SGXLEPUBKEYHASH4 &&
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256))
+			return 1;
 		msr_info->data = to_vmx(vcpu)->msr_ia32_sgxlepubkeyhash
 			[msr_info->index - MSR_IA32_SGXLEPUBKEYHASH0];
+		break;
+	case MSR_IA32_SGXLECONFIG:
+		if (!msr_info->host_initiated &&
+		    (!guest_cpu_cap_has(vcpu, X86_FEATURE_SGX_LC) ||
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256)))
+			return 1;
+		msr_info->data = vmx->msr_ia32_sgxleconfig;
 		break;
 	case KVM_FIRST_EMULATED_VMX_MSR ... KVM_LAST_EMULATED_VMX_MSR:
 		if (!guest_cpu_cap_has(vcpu, X86_FEATURE_VMX))
@@ -2455,7 +2466,7 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		/* SGX may be enabled/disabled by guest's firmware */
 		vmx_write_encls_bitmap(vcpu, NULL);
 		break;
-	case MSR_IA32_SGXLEPUBKEYHASH0 ... MSR_IA32_SGXLEPUBKEYHASH3:
+	case MSR_IA32_SGXLEPUBKEYHASH0 ... MSR_IA32_SGXLEPUBKEYHASH5:
 		/*
 		 * On real hardware, the LE hash MSRs are writable before
 		 * the firmware sets bit 0 in MSR 0x7a ("activating" SGX),
@@ -2472,8 +2483,22 @@ int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		    ((vmx->msr_ia32_feature_control & FEAT_CTL_LOCKED) &&
 		    !(vmx->msr_ia32_feature_control & FEAT_CTL_SGX_LC_ENABLED))))
 			return 1;
+		if (!msr_info->host_initiated &&
+		    msr_info->index >= MSR_IA32_SGXLEPUBKEYHASH4 &&
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256))
+			return 1;
 		vmx->msr_ia32_sgxlepubkeyhash
 			[msr_index - MSR_IA32_SGXLEPUBKEYHASH0] = data;
+		break;
+	case MSR_IA32_SGXLECONFIG:
+		if (!msr_info->host_initiated &&
+		    (!guest_cpu_cap_has(vcpu, X86_FEATURE_SGX_LC) ||
+		    !guest_cpu_cap_has(vcpu, X86_FEATURE_SGX256) ||
+		    ((vmx->msr_ia32_feature_control & FEAT_CTL_LOCKED) &&
+		    !(vmx->msr_ia32_feature_control & FEAT_CTL_SGX_LC_ENABLED)) ||
+		    (data & ~MSR_IA32_SGXLECONFIG_SHA384_ENABLE)))
+			return 1;
+		vmx->msr_ia32_sgxleconfig = data;
 		break;
 	case KVM_FIRST_EMULATED_VMX_MSR ... KVM_LAST_EMULATED_VMX_MSR:
 		if (!msr_info->host_initiated)
@@ -5010,6 +5035,7 @@ static void __vmx_vcpu_reset(struct kvm_vcpu *vcpu)
 	if (kvm_check_has_quirk(vcpu->kvm, KVM_X86_QUIRK_STUFF_FEATURE_MSRS))
 		vcpu->arch.microcode_version = 0x100000000ULL;
 	vmx->msr_ia32_feature_control_valid_bits = FEAT_CTL_LOCKED;
+	vmx->msr_ia32_sgxleconfig = 0;
 
 	/*
 	 * Enforce invariant: pi_desc.nv is always either POSTED_INTR_VECTOR
@@ -8186,6 +8212,7 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_clear(X86_FEATURE_SGX_LC);
 		kvm_cpu_cap_clear(X86_FEATURE_SGX1);
 		kvm_cpu_cap_clear(X86_FEATURE_SGX2);
+		kvm_cpu_cap_clear(X86_FEATURE_SGX256);
 		kvm_cpu_cap_clear(X86_FEATURE_SGX_EDECCSSA);
 	}
 

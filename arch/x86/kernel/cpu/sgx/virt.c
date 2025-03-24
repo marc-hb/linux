@@ -394,6 +394,7 @@ static int __sgx_virt_einit(void __user *sigstruct, void __user *token,
  * @token:		Userspace pointer to EINITTOKEN structure
  * @secs:		Userspace pointer to SECS page
  * @lepubkeyhash:	Pointer to guest's *virtual* SGX_LEPUBKEYHASH MSR values
+ * @leconfig:		Guest's *virtual* SGX_LECONFIG MSR value
  * @trapnr:		trap number injected to guest in case of EINIT error
  *
  * Run EINIT on behalf of guest after KVM traps EINIT. If SGX_LC is available
@@ -406,16 +407,41 @@ static int __sgx_virt_einit(void __user *sigstruct, void __user *token,
  * - <0:	on error.
  */
 int sgx_virt_einit(void __user *sigstruct, void __user *token,
-		   void __user *secs, u64 *lepubkeyhash, int *trapnr)
+		   void __user *secs, u64 *lepubkeyhash, u64 leconfig,
+		   int *trapnr)
 {
+	struct sgx_sighash *sighash __free(kfree) = NULL;
+	struct sgx_sigstruct_header header;
+	struct sgx_sighashalg *hashalg;
 	int ret;
 
 	if (!cpu_feature_enabled(X86_FEATURE_SGX_LC)) {
 		ret = __sgx_virt_einit(sigstruct, token, secs);
 	} else {
+		if (copy_from_user(&header, sigstruct, sizeof(header))) {
+			*trapnr = X86_TRAP_GP;
+			return -EFAULT;
+		}
+
+		switch (header.sighashtype) {
+		case SGX_SIGHASHTYPE_SHA256:
+		case SGX_SIGHASHTYPE_SHA384:
+			break;
+		default:
+			return -EINVAL;
+		}
+		hashalg = &sgx_sighashes[header.sighashtype];
+		sighash = kzalloc(struct_size(sighash, digest, hashalg->h_len), GFP_KERNEL);
+		if (!sighash)
+			return -ENOMEM;
+
+		sighash->hashalg = hashalg;
+
+		memcpy(sighash->digest, lepubkeyhash, hashalg->h_len * sizeof(u64));
+
 		preempt_disable();
 
-		sgx_update_lepubkeyhash(lepubkeyhash);
+		sgx_update_lepubkeyhash(sighash);
 
 		ret = __sgx_virt_einit(sigstruct, token, secs);
 		preempt_enable();

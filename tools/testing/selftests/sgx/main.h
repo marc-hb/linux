@@ -31,13 +31,28 @@ struct encl {
 	struct sgx_sigstruct sigstruct;
 };
 
+/**
+ * struct opt_in - fields that should be retained and not zeroed out by
+ * encl_measure(), encl_build().
+ * @body_attributes:		Value from encl->sigstruct.body.attributes.
+ * @sighashtype:		Value from encl->sigstruct.header.sighashtype.
+ *
+ * Some scenario-specific values need to be kept between when the test is
+ * started and when enclave is initialized since they will be checked by the
+ * hardware.
+ */
+struct opt_in {
+	u64 body_attributes;
+	u32 sighashtype;
+};
+
 extern unsigned char sign_key[];
 extern unsigned char sign_key_end[];
 
 void encl_delete(struct encl *ctx);
 bool encl_load(const char *path, struct encl *encl, unsigned long heap_size);
-bool encl_measure(struct encl *encl);
-bool encl_build(struct encl *encl);
+bool encl_measure(struct encl *encl, struct opt_in *opt_param);
+bool encl_build(struct encl *encl, struct opt_in *opt_param);
 uint64_t encl_get_entry(struct encl *encl, const char *symbol);
 
 int sgx_enter_enclave(void *rdi, void *rsi, long rdx, u32 function, void *r8, void *r9,

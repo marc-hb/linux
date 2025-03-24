@@ -349,7 +349,8 @@ struct vcpu_vmx {
 	u64 msr_ia32_feature_control;
 	u64 msr_ia32_feature_control_valid_bits;
 	/* SGX Launch Control public key hash */
-	u64 msr_ia32_sgxlepubkeyhash[4];
+	u64 msr_ia32_sgxlepubkeyhash[6];
+	u64 msr_ia32_sgxleconfig;
 	u64 msr_ia32_mcu_opt_ctrl;
 	bool disable_fb_clear;
 

@@ -117,6 +117,8 @@ enum sgx_miscselect {
  *				EINIT as an authorization to run an enclave.
  * %SGX_ATTR_ASYNC_EXIT_NOTIFY:	Allow enclaves to be notified after an
  *				asynchronous exit has occurred.
+ * %SGX_ATTR_SHA_384:		Allow enclaves to opt-in for use of SHA384
+ *				hashes instead of legacy SHA256.
  */
 enum sgx_attribute {
 	SGX_ATTR_INIT		   = BIT(0),
@@ -130,18 +132,20 @@ enum sgx_attribute {
 				  /* BIT(8) is reserved */
 				  /* BIT(9) is reserved */
 	SGX_ATTR_ASYNC_EXIT_NOTIFY = BIT(10),
+	SGX_ATTR_SHA_384	   = BIT(11),
 };
 
 #define SGX_ATTR_RESERVED_MASK	(BIT_ULL(3) | \
 				 BIT_ULL(6) | \
 				 BIT_ULL(8) | \
 				 BIT_ULL(9) | \
-				 GENMASK_ULL(63, 11))
+				 GENMASK_ULL(63, 12))
 
 #define SGX_ATTR_UNPRIV_MASK	(SGX_ATTR_DEBUG	    | \
 				 SGX_ATTR_MODE64BIT | \
 				 SGX_ATTR_KSS	    | \
-				 SGX_ATTR_ASYNC_EXIT_NOTIFY)
+				 SGX_ATTR_ASYNC_EXIT_NOTIFY | \
+				 SGX_ATTR_SHA_384)
 
 #define SGX_ATTR_PRIV_MASK	(SGX_ATTR_PROVISIONKEY	| \
 				 SGX_ATTR_EINITTOKENKEY)
@@ -160,6 +164,8 @@ enum sgx_attribute {
  * @isv_prod_id:	a user-defined value that is used in key derivation
  * @isv_svn:		a user-defined value that is used in key derivation
  * @config_svn:		a user-defined value that is used in key derivation
+ * @mrenclave384:	SHA384-hash of the enclave contents
+ * @mrsigner384:	SHA384-hash of the public key used to sign the SIGSTRUCT
  *
  * SGX Enclave Control Structure (SECS) is a special enclave page that is not
  * visible in the address space. In fact, this structure defines the address
@@ -183,7 +189,9 @@ struct sgx_secs {
 	u16 isv_prod_id;
 	u16 isv_svn;
 	u16 config_svn;
-	u8  reserved4[3834];
+	u32 mrenclave384[12];
+	u32 mrsigner384[12];
+	u8  reserved4[3738];
 } __packed;
 
 /**
@@ -343,6 +351,7 @@ struct sgx_pcmd {
  * @date:		YYYYMMDD in BCD
  * @header2:		constant byte string
  * @swdefined:		software defined value
+ * @sighashtype:	SHA256 or SHA384 used
  */
 struct sgx_sigstruct_header {
 	u64 header1[2];
@@ -350,7 +359,8 @@ struct sgx_sigstruct_header {
 	u32 date;
 	u64 header2[2];
 	u32 swdefined;
-	u8  reserved1[84];
+	u32 sighashtype;
+	u8  reserved1[80];
 } __packed;
 
 /**
@@ -361,7 +371,7 @@ struct sgx_sigstruct_header {
  * @xfrm:		XSave-Feature Request Mask (subset of XCR0)
  * @attributes_mask:	required attributes in SECS
  * @xfrm_mask:		required XFRM in SECS
- * @mrenclave:		SHA256-hash of the enclave contents
+ * @mrenclave:		SHA256 or SHA384 hash of the enclave contents
  * @isvprodid:		a user-defined value that is used in key derivation
  * @isvsvn:		a user-defined value that is used in key derivation
  */
@@ -373,8 +383,8 @@ struct sgx_sigstruct_body {
 	u64 xfrm;
 	u64 attributes_mask;
 	u64 xfrm_mask;
-	u8  mrenclave[32];
-	u8  reserved3[32];
+	u8  mrenclave[48];
+	u8  reserved3[16];
 	u16 isvprodid;
 	u16 isvsvn;
 } __packed;
@@ -410,11 +420,26 @@ struct sgx_sigstruct {
  * comment!
  */
 
+enum sgx_sighashtype {
+	SGX_SIGHASHTYPE_SHA256 = 0,
+	SGX_SIGHASHTYPE_SHA384 = 1,
+};
+
+struct sgx_sighash {
+	struct sgx_sighashalg {
+		unsigned int h_len;
+		char name[128];
+		u64 le_config;
+	} *hashalg;
+	u64 digest[] __counted_by(h_len);
+};
+
 #ifdef CONFIG_X86_SGX_KVM
 int sgx_virt_ecreate(struct sgx_pageinfo *pageinfo, void __user *secs,
 		     int *trapnr);
 int sgx_virt_einit(void __user *sigstruct, void __user *token,
-		   void __user *secs, u64 *lepubkeyhash, int *trapnr);
+		   void __user *secs, u64 *lepubkeyhash, u64 leconfig,
+		   int *trapnr);
 #endif
 
 int sgx_set_attribute(unsigned long *allowed_attributes,

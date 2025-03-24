@@ -14,7 +14,7 @@ bool __read_mostly enable_sgx = 1;
 module_param_named(sgx, enable_sgx, bool, 0444);
 
 /* Initial value of guest's virtual SGX_LEPUBKEYHASHn MSRs */
-static u64 sgx_pubkey_hash[4] __ro_after_init;
+static u64 sgx_pubkey_hash[6] __ro_after_init;
 
 /*
  * ENCLS's memory operands use a fixed segment (DS) and a fixed
@@ -329,7 +329,8 @@ static int handle_encls_einit(struct kvm_vcpu *vcpu)
 
 	ret = sgx_virt_einit((void __user *)sig_hva, (void __user *)token_hva,
 			     (void __user *)secs_hva,
-			     vmx->msr_ia32_sgxlepubkeyhash, &trapnr);
+			     vmx->msr_ia32_sgxlepubkeyhash,
+			     vmx->msr_ia32_sgxleconfig, &trapnr);
 
 	if (ret == -EFAULT)
 		return sgx_inject_fault(vcpu, secs_gva, trapnr);
@@ -417,11 +418,18 @@ void setup_default_sgx_lepubkeyhash(void)
 		sgx_pubkey_hash[1] = 0x6cfbe8ba8b3b413dULL;
 		sgx_pubkey_hash[2] = 0xc4916d99f2b3735dULL;
 		sgx_pubkey_hash[3] = 0xd4f8c05909f9bb3bULL;
+		sgx_pubkey_hash[4] = 0;
+		sgx_pubkey_hash[5] = 0;
 	} else {
 		/* MSR_IA32_SGXLEPUBKEYHASH0 is read above */
 		rdmsrl(MSR_IA32_SGXLEPUBKEYHASH1, sgx_pubkey_hash[1]);
 		rdmsrl(MSR_IA32_SGXLEPUBKEYHASH2, sgx_pubkey_hash[2]);
 		rdmsrl(MSR_IA32_SGXLEPUBKEYHASH3, sgx_pubkey_hash[3]);
+
+		if (boot_cpu_has(X86_FEATURE_SGX256)) {
+			rdmsrl(MSR_IA32_SGXLEPUBKEYHASH4, sgx_pubkey_hash[4]);
+			rdmsrl(MSR_IA32_SGXLEPUBKEYHASH5, sgx_pubkey_hash[5]);
+		}
 	}
 }
 

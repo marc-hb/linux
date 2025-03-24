@@ -1036,6 +1036,7 @@ void kvm_set_cpu_caps(void)
 		SCATTERED_F(SGX1),
 		SCATTERED_F(SGX2),
 		SCATTERED_F(SGX_EDECCSSA),
+		SCATTERED_F(SGX256),
 	);
 
 	kvm_cpu_cap_init(CPUID_24_0_EBX,

@@ -46,6 +46,19 @@ static struct sgx_numa_node *sgx_numa_nodes;
 
 static LIST_HEAD(sgx_dirty_page_list);
 
+struct sgx_sighashalg sgx_sighashes[] = {
+	{
+		.h_len     = 4,
+		.name      = "sha256",
+		.le_config = 0,
+	},
+	{
+		.h_len     = 6,
+		.name      = "sha384",
+		.le_config = MSR_IA32_SGXLECONFIG_SHA384_ENABLE,
+	},
+};
+
 /*
  * Reset post-kexec EPC pages to the uninitialized state. The pages are removed
  * from the input list, and made available for the page allocator. SECS pages
@@ -863,15 +876,25 @@ static bool __init sgx_page_cache_init(void)
  * Bare-metal driver requires to update them to hash of enclave's signer
  * before EINIT. KVM needs to update them to guest's virtual MSR values
  * before doing EINIT from guest.
+ * Also MSR_IA_32_SGXLECONFIG needs to be updated to reflect whether the
+ * enclave was launched in SHA-256, or SHA-384 mode.
  */
-void sgx_update_lepubkeyhash(u64 *lepubkeyhash)
+void sgx_update_lepubkeyhash(struct sgx_sighash *sighash)
 {
 	int i;
 
 	WARN_ON_ONCE(preemptible());
 
-	for (i = 0; i < 4; i++)
-		wrmsrl(MSR_IA32_SGXLEPUBKEYHASH0 + i, lepubkeyhash[i]);
+	for (i = 0; i < sighash->hashalg->h_len; i++)
+		wrmsrl(MSR_IA32_SGXLEPUBKEYHASH0 + i, sighash->digest[i]);
+
+	if (cpu_feature_enabled(X86_FEATURE_SGX256)) {
+		if (sighash->hashalg->h_len == 4) {
+			wrmsrl(MSR_IA32_SGXLEPUBKEYHASH4, 0);
+			wrmsrl(MSR_IA32_SGXLEPUBKEYHASH5, 0);
+		}
+		wrmsrl(MSR_IA32_SGXLECONFIG, sighash->hashalg->le_config);
+	}
 }
 
 const struct file_operations sgx_provision_fops = {

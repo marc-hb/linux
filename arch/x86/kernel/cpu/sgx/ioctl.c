@@ -473,16 +473,19 @@ static int __sgx_get_key_hash(struct crypto_shash *tfm, const void *modulus,
 	return crypto_shash_digest(shash, modulus, SGX_MODULUS_SIZE, hash);
 }
 
-static int sgx_get_key_hash(const void *modulus, void *hash)
+static int sgx_get_key_hash(const void *modulus, struct sgx_sighash *sighash)
 {
 	struct crypto_shash *tfm;
 	int ret;
 
-	tfm = crypto_alloc_shash("sha256", 0, CRYPTO_ALG_ASYNC);
+	tfm = crypto_alloc_shash(sighash->hashalg->name, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(tfm))
 		return PTR_ERR(tfm);
 
-	ret = __sgx_get_key_hash(tfm, modulus, hash);
+	if (crypto_shash_digestsize(tfm) != (8 * sighash->hashalg->h_len))
+		return -EINVAL;
+
+	ret = __sgx_get_key_hash(tfm, modulus, sighash->digest);
 
 	crypto_free_shash(tfm);
 	return ret;
@@ -491,10 +494,28 @@ static int sgx_get_key_hash(const void *modulus, void *hash)
 static int sgx_encl_init(struct sgx_encl *encl, struct sgx_sigstruct *sigstruct,
 			 void *token)
 {
-	u64 mrsigner[4];
-	int i, j;
+	struct sgx_sighash *sighash __free(kfree) = NULL;
+	int i, j, sighashtype;
+	struct sgx_sighashalg *hashalg;
 	void *addr;
 	int ret;
+
+	sighashtype = sigstruct->header.sighashtype;
+	switch (sighashtype) {
+	case SGX_SIGHASHTYPE_SHA256:
+	case SGX_SIGHASHTYPE_SHA384:
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	hashalg = &sgx_sighashes[sighashtype];
+	sighash = kzalloc(struct_size(sighash, digest, hashalg->h_len),
+			  GFP_KERNEL);
+	if (!sighash)
+		return -ENOMEM;
+
+	sighash->hashalg = hashalg;
 
 	/*
 	 * Deny initializing enclaves with attributes (namely provisioning)
@@ -523,7 +544,8 @@ static int sgx_encl_init(struct sgx_encl *encl, struct sgx_sigstruct *sigstruct,
 	    sgx_xfrm_reserved_mask)
 		return -EINVAL;
 
-	ret = sgx_get_key_hash(sigstruct->modulus, mrsigner);
+	ret = sgx_get_key_hash(sigstruct->modulus, sighash);
+
 	if (ret)
 		return ret;
 
@@ -541,7 +563,7 @@ static int sgx_encl_init(struct sgx_encl *encl, struct sgx_sigstruct *sigstruct,
 
 			preempt_disable();
 
-			sgx_update_lepubkeyhash(mrsigner);
+			sgx_update_lepubkeyhash(sighash);
 
 			ret = __einit(sigstruct, token, addr);
 
