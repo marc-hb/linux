@@ -136,6 +136,36 @@ Description:	The last executed device administrative command's status/error.
 		Also last configuration error overloaded.
 		Writing to it will clear the status.
 
+What:		/sys/bus/dsa/devices/dsa<m>/dsacap0
+Date:		Mar 12, 2025
+KernelVersion:	6.14.0
+Contact:	dmaengine@vger.kernel.org
+Description:	DSA capability mask including scatter-gather list(SGL) formats
+		and max size, maximum gather-reduce, block size, etc.
+		Exported to user space for application consumption.
+		This attribute should only be visible on DSA device that are
+		version 3 or later.
+
+What:		/sys/bus/dsa/devices/dsa<m>/dsacap1
+Date:		Mar 12, 2025
+KernelVersion:	6.14.0
+Contact:	dmaengine@vger.kernel.org
+Description:	DSA capability mask including supported data types,
+		floating-point conversion capabilities, and compute operation
+		acceleration features.
+		This attribute should only be visible on DSA device that are
+		version 3 or later.
+
+What:		/sys/bus/dsa/devices/dsa<m>/dsacap2
+Date:		Mar 12, 2025
+KernelVersion:	6.14.0
+Contact:	dmaengine@vger.kernel.org
+Description:	DSA capability mask including Numerical processing
+		configurations including rounding modes, saturation behavior,
+		denormal handling, etc.
+		This attribute should only be visible on DSA device that are
+		version 3 or later.
+
 What:		/sys/bus/dsa/devices/dsa<m>/iaa_cap
 Date:		Sept 14, 2022
 KernelVersion: 6.0.0
