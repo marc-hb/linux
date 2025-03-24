@@ -1097,6 +1097,7 @@ void kvm_set_cpu_caps(void)
 		F(AVX_IFMA),
 		F(LAM),
 		F(MOVRS),
+		F(NMI_SOURCE),
 	);
 
 	kvm_cpu_cap_init(CPUID_7_1_ECX,

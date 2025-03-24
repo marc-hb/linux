@@ -88,6 +88,7 @@ static const struct cpuid_dep cpuid_deps[] = {
 	{ X86_FEATURE_LASS,			X86_FEATURE_SMAP      },
 	{ X86_FEATURE_LAM,			X86_FEATURE_LASS      },
 	{ X86_FEATURE_APX,			X86_FEATURE_XSAVE     },
+	{ X86_FEATURE_NMI_SOURCE,		X86_FEATURE_FRED      },
 	{}
 };
 

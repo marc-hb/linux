@@ -1267,8 +1267,8 @@ static void check_parms(void)
 		}
 	}
 	if (do_nmi && !nmi_handler_registered) {
-		rv = register_nmi_handler(NMI_UNKNOWN, ipmi_nmi, 0,
-						"ipmi");
+		rv = register_nmi_handler(NMI_UNKNOWN, ipmi_nmi, NMI_FLAG_NONE,
+					  "ipmi", 0);
 		if (rv) {
 			pr_warn("Can't register nmi handler\n");
 			return;

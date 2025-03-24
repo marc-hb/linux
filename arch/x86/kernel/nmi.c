@@ -45,26 +45,19 @@ struct nmi_desc {
 	struct list_head head;
 };
 
-static struct nmi_desc nmi_desc[NMI_MAX] = 
-{
-	{
-		.lock = __RAW_SPIN_LOCK_UNLOCKED(&nmi_desc[0].lock),
-		.head = LIST_HEAD_INIT(nmi_desc[0].head),
-	},
-	{
-		.lock = __RAW_SPIN_LOCK_UNLOCKED(&nmi_desc[1].lock),
-		.head = LIST_HEAD_INIT(nmi_desc[1].head),
-	},
-	{
-		.lock = __RAW_SPIN_LOCK_UNLOCKED(&nmi_desc[2].lock),
-		.head = LIST_HEAD_INIT(nmi_desc[2].head),
-	},
-	{
-		.lock = __RAW_SPIN_LOCK_UNLOCKED(&nmi_desc[3].lock),
-		.head = LIST_HEAD_INIT(nmi_desc[3].head),
-	},
+#define NMI_DESC_INIT(type) { \
+	.lock = __RAW_SPIN_LOCK_UNLOCKED(&nmi_desc[type].lock), \
+	.head = LIST_HEAD_INIT(nmi_desc[type].head), \
+}
 
+static struct nmi_desc nmi_desc[NMI_MAX] = {
+	NMI_DESC_INIT(NMI_LOCAL),
+	NMI_DESC_INIT(NMI_UNKNOWN),
+	NMI_DESC_INIT(NMI_SERR),
+	NMI_DESC_INIT(NMI_IO_CHECK),
 };
+
+#define nmi_to_desc(type) (&nmi_desc[type])
 
 struct nmi_stats {
 	unsigned int normal;
@@ -86,6 +79,9 @@ static DEFINE_PER_CPU(struct nmi_stats, nmi_stats);
 
 static int ignore_nmis __read_mostly;
 
+/* NMI actions registered by originators with source vector. */
+static struct nmiaction *nmiaction_src_table[NR_NMI_SOURCE_VECTORS];
+
 int unknown_nmi_panic;
 /*
  * Prevent NMI reason port (0x61) being accessed simultaneously, can
@@ -99,8 +95,6 @@ static int __init setup_unknown_nmi_panic(char *str)
 	return 1;
 }
 __setup("unknown_nmi_panic", setup_unknown_nmi_panic);
-
-#define nmi_to_desc(type) (&nmi_desc[type])
 
 static u64 nmi_longest_ns = 1 * NSEC_PER_MSEC;
 
@@ -121,19 +115,100 @@ static void nmi_check_duration(struct nmiaction *action, u64 duration)
 
 	action->max_duration = duration;
 
-	remainder_ns = do_div(duration, (1000 * 1000));
-	decimal_msecs = remainder_ns / 1000;
+	/* Convert duration from nsec to msec */
+	remainder_ns = do_div(duration, NSEC_PER_MSEC);
+	decimal_msecs = remainder_ns / NSEC_PER_USEC;
 
-	printk_ratelimited(KERN_INFO
-		"INFO: NMI handler (%ps) took too long to run: %lld.%03d msecs\n",
-		action->handler, duration, decimal_msecs);
+	pr_info_ratelimited("INFO: NMI handler (%ps) took too long to run: %lld.%03d msecs\n",
+			    action->handler, duration, decimal_msecs);
 }
 
+static inline int do_handle_nmi(struct nmiaction *a, struct pt_regs *regs, unsigned int type)
+{
+	int thishandled;
+	u64 delta;
+
+	delta = sched_clock();
+	thishandled = a->handler(type, regs);
+	delta = sched_clock() - delta;
+	trace_nmi_handler(a->handler, (int)delta, thishandled);
+	nmi_check_duration(a, delta);
+
+	return thishandled;
+}
+
+static int nmi_handle_src(unsigned int type, struct pt_regs *regs, unsigned long *partial_handled_mask)
+{
+	static bool nmi_source_disabled;
+	bool has_unknown_src = false;
+	unsigned long source_bitmap;
+	struct nmiaction *a;
+	int handled = 0;
+	int vec;
+
+	if (!cpu_feature_enabled(X86_FEATURE_NMI_SOURCE) || type != NMI_LOCAL || nmi_source_disabled)
+		return 0;
+
+	source_bitmap = fred_event_data(regs);
+	if (unlikely(!source_bitmap)) {
+		pr_warn("Buggy hardware! Disable NMI-source handling.\n");
+		nmi_source_disabled = true;
+		return 0;
+	}
+
+	if (unlikely(source_bitmap & BIT(NMI_SOURCE_VEC_UNKNOWN))) {
+		pr_warn_ratelimited("NMI received with unknown sources\n");
+		has_unknown_src = true;
+	}
+
+	rcu_read_lock();
+
+	/* Bit 0 is for unknown NMI sources, skip it. */
+	vec = 1;
+	for_each_set_bit_from(vec, &source_bitmap, NR_NMI_SOURCE_VECTORS) {
+		a = rcu_dereference(nmiaction_src_table[vec]);
+		if (!a) {
+			pr_warn_ratelimited("NMI-source vector %d has no handler!", vec);
+			continue;
+		}
+
+		handled += do_handle_nmi(a, regs, type);
+
+		/*
+		 * Need polling if bit 0, i.e., the unknown source bit, is set.
+		 *
+		 * partial_handled_mask is used to tell the polling code which
+		 * NMIs have already been handled based thus can be skipped.
+		 */
+		if (has_unknown_src)
+			*partial_handled_mask |= BIT(vec);
+	}
+
+	rcu_read_unlock();
+
+	return handled;
+}
+
+/*
+ * There is no guarantee that a valid NMI-source vector is always delivered,
+ * thus run all NMI handlers but skip those have been handled with source
+ * information when bit 0 of the NMI-source bitmap is set.
+ */
 static int nmi_handle(unsigned int type, struct pt_regs *regs)
 {
 	struct nmi_desc *desc = nmi_to_desc(type);
+	unsigned long partial_handled_mask = 0;
 	struct nmiaction *a;
 	int handled=0;
+
+	/*
+	 * Check if the NMI source handling is complete, otherwise polling is
+	 * required.  partial_handled_mask is non-zero if NMI source handling
+	 * is partial due to unknown NMI sources.
+	 */
+	handled = nmi_handle_src(type, regs, &partial_handled_mask);
+	if (handled && !partial_handled_mask)
+		return handled;
 
 	rcu_read_lock();
 
@@ -144,16 +219,10 @@ static int nmi_handle(unsigned int type, struct pt_regs *regs)
 	 * to handle those situations.
 	 */
 	list_for_each_entry_rcu(a, &desc->head, list) {
-		int thishandled;
-		u64 delta;
-
-		delta = sched_clock();
-		thishandled = a->handler(type, regs);
-		handled += thishandled;
-		delta = sched_clock() - delta;
-		trace_nmi_handler(a->handler, (int)delta, thishandled);
-
-		nmi_check_duration(a, delta);
+		/* Skip NMIs handled earlier with source info */
+		if (BIT(a->source_vec) & partial_handled_mask)
+			continue;
+		handled += do_handle_nmi(a, regs, type);
 	}
 
 	rcu_read_unlock();
@@ -162,6 +231,12 @@ static int nmi_handle(unsigned int type, struct pt_regs *regs)
 	return handled;
 }
 NOKPROBE_SYMBOL(nmi_handle);
+
+static inline bool use_nmi_source(unsigned int type, struct nmiaction *a)
+{
+	return (cpu_feature_enabled(X86_FEATURE_NMI_SOURCE) &&
+		type == NMI_LOCAL && a->source_vec);
+}
 
 int __register_nmi_handler(unsigned int type, struct nmiaction *action)
 {
@@ -172,6 +247,11 @@ int __register_nmi_handler(unsigned int type, struct nmiaction *action)
 		return -EINVAL;
 
 	raw_spin_lock_irqsave(&desc->lock, flags);
+
+	if (use_nmi_source(type, action)) {
+		rcu_assign_pointer(nmiaction_src_table[action->source_vec], action);
+		pr_info("NMI source %d registered for %s\n", action->source_vec, action->name);
+	}
 
 	/*
 	 * Indicate if there are multiple registrations on the
@@ -210,6 +290,11 @@ void unregister_nmi_handler(unsigned int type, const char *name)
 		if (!strcmp(n->name, name)) {
 			WARN(in_nmi(),
 				"Trying to free NMI (%s) from NMI context!\n", n->name);
+			if (use_nmi_source(type, n)) {
+				rcu_assign_pointer(nmiaction_src_table[n->source_vec], NULL);
+				pr_info("NMI source %d unregistered for %s\n", n->source_vec, n->name);
+			}
+
 			list_del_rcu(&n->list);
 			found = n;
 			break;
@@ -324,16 +409,15 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 	bool b2b = false;
 
 	/*
-	 * CPU-specific NMI must be processed before non-CPU-specific
-	 * NMI, otherwise we may lose it, because the CPU-specific
-	 * NMI can not be detected/processed on other CPUs.
-	 */
-
-	/*
-	 * Back-to-back NMIs are interesting because they can either
-	 * be two NMI or more than two NMIs (any thing over two is dropped
-	 * due to NMI being edge-triggered).  If this is the second half
-	 * of the back-to-back NMI, assume we dropped things and process
+	 * Back-to-back NMIs are detected by comparing the RIP of the current
+	 * NMI with that of the previous NMI. If it is the same, it is assumed
+	 * that CPU did not have a chance to jump back into a non-NMI context
+	 * and execute code in between the two NMIs.
+	 *
+	 * Back-to-back NMIs are interesting because even if there are more
+	 * than two only a maximum of two can be detected (any thing over two
+	 * is dropped due to NMI being edge-triggered).  If this is the second
+	 * half of the back-to-back NMI, assume we dropped things and process
 	 * more handlers.  Otherwise reset the 'swallow' NMI behaviour
 	 */
 	if (regs->ip == __this_cpu_read(last_nmi_rip))
@@ -348,6 +432,11 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 	if (microcode_nmi_handler_enabled() && microcode_nmi_handler())
 		goto out;
 
+	/*
+	 * CPU-specific NMI must be processed before non-CPU-specific
+	 * NMI, otherwise we may lose it, because the CPU-specific
+	 * NMI can not be detected/processed on other CPUs.
+	 */
 	handled = nmi_handle(NMI_LOCAL, regs);
 	__this_cpu_add(nmi_stats.normal, handled);
 	if (handled) {
@@ -384,13 +473,14 @@ static noinstr void default_do_nmi(struct pt_regs *regs)
 			pci_serr_error(reason, regs);
 		else if (reason & NMI_REASON_IOCHK)
 			io_check_error(reason, regs);
-#ifdef CONFIG_X86_32
+
 		/*
 		 * Reassert NMI in case it became active
 		 * meanwhile as it's edge-triggered:
 		 */
-		reassert_nmi();
-#endif
+		if (IS_ENABLED(CONFIG_X86_32))
+			reassert_nmi();
+
 		__this_cpu_add(nmi_stats.external, 1);
 		raw_spin_unlock(&nmi_reason_lock);
 		goto out;
@@ -709,4 +799,3 @@ void local_touch_nmi(void)
 {
 	__this_cpu_write(last_nmi_rip, 0);
 }
-EXPORT_SYMBOL_GPL(local_touch_nmi);

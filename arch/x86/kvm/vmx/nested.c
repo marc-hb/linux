@@ -49,6 +49,21 @@ static unsigned long *vmx_bitmap[VMX_BITMAP_NR];
 #define vmx_vmread_bitmap                    (vmx_bitmap[VMX_VMREAD_BITMAP])
 #define vmx_vmwrite_bitmap                   (vmx_bitmap[VMX_VMWRITE_BITMAP])
 
+static bool nested_cpu_has_vmcs_field(struct kvm_vcpu *vcpu, u16 vmcs_field_encoding)
+{
+	switch (vmcs_field_encoding) {
+#define HAS_VMCS_FIELD(x, c)			\
+	case x:					\
+		return c;
+#define HAS_VMCS_FIELD_RANGE(x, y, c)		\
+	case x...y:				\
+		return c;
+#include "nested_vmcs_fields.h"
+	default:
+		return true;
+	}
+}
+
 struct shadow_vmcs_field {
 	u16	encoding;
 	u16	offset;
@@ -5911,7 +5926,7 @@ static int handle_vmread(struct kvm_vcpu *vcpu)
 			return nested_vmx_failInvalid(vcpu);
 
 		offset = get_vmcs12_field_offset(field);
-		if (offset < 0)
+		if (offset < 0 || !nested_cpu_has_vmcs_field(vcpu, field))
 			return nested_vmx_fail(vcpu, VMXERR_UNSUPPORTED_VMCS_COMPONENT);
 
 		if (!is_guest_mode(vcpu) && is_vmcs12_ext_field(field))
@@ -6055,7 +6070,7 @@ static int handle_vmwrite(struct kvm_vcpu *vcpu)
 	field = kvm_register_read(vcpu, vmx_get_instr_info_reg2(&instr_info));
 
 	offset = get_vmcs12_field_offset(field);
-	if (offset < 0)
+	if (offset < 0 || !nested_cpu_has_vmcs_field(vcpu, field))
 		return nested_vmx_fail(vcpu, VMXERR_UNSUPPORTED_VMCS_COMPONENT);
 
 	/*

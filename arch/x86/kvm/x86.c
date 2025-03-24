@@ -4326,6 +4326,10 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		vcpu->arch.guest_fpu.xfd_err = data;
 		break;
 #endif
+	case MSR_IA32_U_CET:
+	case MSR_IA32_PL0_SSP ... MSR_IA32_PL3_SSP:
+		kvm_set_xstate_msr(vcpu, msr_info);
+		break;
 	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
 	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
 	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
@@ -4344,10 +4348,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			break;
 		}
 		fallthrough;
-	case MSR_IA32_U_CET:
-	case MSR_IA32_PL0_SSP ... MSR_IA32_PL3_SSP:
-		kvm_set_xstate_msr(vcpu, msr_info);
-		break;
 	default:
 		if (kvm_pmu_is_valid_msr(vcpu, msr))
 			return kvm_pmu_set_msr(vcpu, msr_info);
@@ -4689,6 +4689,10 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 		msr_info->data = vcpu->arch.guest_fpu.xfd_err;
 		break;
 #endif
+	case MSR_IA32_U_CET:
+	case MSR_IA32_PL0_SSP ... MSR_IA32_PL3_SSP:
+		kvm_get_xstate_msr(vcpu, msr_info);
+		break;
 	case MSR_K7_EVNTSEL0 ... MSR_K7_EVNTSEL3:
 	case MSR_K7_PERFCTR0 ... MSR_K7_PERFCTR3:
 	case MSR_P6_PERFCTR0 ... MSR_P6_PERFCTR1:
@@ -4706,10 +4710,6 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
 			break;
 		}
 		fallthrough;
-	case MSR_IA32_U_CET:
-	case MSR_IA32_PL0_SSP ... MSR_IA32_PL3_SSP:
-		kvm_get_xstate_msr(vcpu, msr_info);
-		break;
 	default:
 		if (kvm_pmu_is_valid_msr(vcpu, msr_info->index))
 			return kvm_pmu_get_msr(vcpu, msr_info);
@@ -11066,6 +11066,11 @@ out:
 	return r;
 }
 
+static inline bool kvm_is_nmi_source_enabled(struct kvm_vcpu *vcpu)
+{
+	return is_fred_enabled(vcpu) && guest_cpu_cap_has(vcpu, X86_FEATURE_NMI_SOURCE);
+}
+
 static void process_nmi(struct kvm_vcpu *vcpu)
 {
 	unsigned int limit;
@@ -11080,7 +11085,8 @@ static void process_nmi(struct kvm_vcpu *vcpu)
 	 * blocks NMIs).  KVM will immediately inject one of the two NMIs, and
 	 * will request an NMI window to handle the second NMI.
 	 */
-	if (kvm_x86_call(get_nmi_mask)(vcpu) || vcpu->arch.nmi_injected)
+	if (kvm_x86_call(get_nmi_mask)(vcpu) || vcpu->arch.nmi_injected ||
+	    kvm_is_nmi_source_enabled(vcpu))
 		limit = 1;
 	else
 		limit = 2;
@@ -11094,13 +11100,22 @@ static void process_nmi(struct kvm_vcpu *vcpu)
 
 	vcpu->arch.nmi_pending += atomic_xchg(&vcpu->arch.nmi_queued, 0);
 	vcpu->arch.nmi_pending = min(vcpu->arch.nmi_pending, limit);
+	vcpu->arch.nmi_source_inject |= atomic_xchg(&vcpu->arch.nmi_source_pending, 0);
 
 	if (vcpu->arch.nmi_pending &&
 	    (kvm_x86_call(set_vnmi_pending)(vcpu)))
 		vcpu->arch.nmi_pending--;
 
-	if (vcpu->arch.nmi_pending)
+	if (vcpu->arch.nmi_pending) {
 		kvm_make_request(KVM_REQ_EVENT, vcpu);
+		/*
+		 * In case nmi source supported, if new NMI arrives when vCPU is
+		 * trying NMI injection, it can be coalesced together and requires
+		 * one elimination of nmi_pending.
+		 */
+		if (vcpu->arch.nmi_injected && kvm_is_nmi_source_enabled(vcpu))
+			vcpu->arch.nmi_pending--;
+	}
 }
 
 /* Return total number of NMIs pending injection to the VM */
@@ -13048,6 +13063,8 @@ void kvm_vcpu_reset(struct kvm_vcpu *vcpu, bool init_event)
 	vcpu->arch.smi_pending = 0;
 	vcpu->arch.smi_count = 0;
 	atomic_set(&vcpu->arch.nmi_queued, 0);
+	atomic_set(&vcpu->arch.nmi_source_pending, 0);
+	vcpu->arch.nmi_source_inject = 0;
 	vcpu->arch.nmi_pending = 0;
 	vcpu->arch.nmi_injected = false;
 	kvm_clear_interrupt_queue(vcpu);

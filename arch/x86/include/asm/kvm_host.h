@@ -796,7 +796,6 @@ enum kvm_only_cpuid_leafs {
 	CPUID_8000_0022_EAX,
 	CPUID_7_2_EDX,
 	CPUID_24_0_EBX,
-	CPUID_7_1_ECX,
 	NR_KVM_CPU_CAPS,
 
 	NKVMCAPINTS = NR_KVM_CPU_CAPS - NCAPINTS,
@@ -987,6 +986,8 @@ struct kvm_vcpu_arch {
 	u64 tsc_scaling_ratio; /* current scaling ratio */
 
 	atomic_t nmi_queued;  /* unprocessed asynchronous NMIs */
+	atomic_t nmi_source_pending;  /* unprocessed NMI Source */
+	unsigned int nmi_source_inject;  /* NMI Source to inject */
 	/* Number of NMIs pending injection, not including hardware vNMIs. */
 	unsigned int nmi_pending;
 	bool nmi_injected;    /* Trying to inject an NMI this entry */

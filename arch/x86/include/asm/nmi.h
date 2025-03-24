@@ -18,6 +18,8 @@ extern int unknown_nmi_panic;
 
 #endif /* CONFIG_X86_LOCAL_APIC */
 
+/* nmiaction flags*/
+#define NMI_FLAG_NONE	0
 #define NMI_FLAG_FIRST	1
 
 enum {
@@ -39,15 +41,17 @@ struct nmiaction {
 	u64			max_duration;
 	unsigned long		flags;
 	const char		*name;
+	u8			source_vec;
 };
 
-#define register_nmi_handler(t, fn, fg, n, init...)	\
+#define register_nmi_handler(t, fn, fg, n, src, init...)	\
 ({							\
 	static struct nmiaction init fn##_na = {	\
 		.list = LIST_HEAD_INIT(fn##_na.list),	\
 		.handler = (fn),			\
 		.name = (n),				\
 		.flags = (fg),				\
+		.source_vec = (src),			\
 	};						\
 	__register_nmi_handler((t), &fn##_na);		\
 })

@@ -4647,6 +4647,11 @@ static u32 vmx_get_initial_vmexit_ctrl(void)
 		  VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL | VM_EXIT_CLEAR_IA32_LBR_CTL);
 }
 
+static u64 vmx_secondary_vmexit_ctrl(void)
+{
+	return vmcs_config.secondary_vmexit_ctrl;
+}
+
 void vmx_refresh_apicv_exec_ctrl(struct kvm_vcpu *vcpu)
 {
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
@@ -4995,6 +5000,9 @@ static void init_vmcs(struct vcpu_vmx *vmx)
 	if (cpu_has_secondary_vmexit_ctrls())
 		secondary_vm_exit_controls_set(vmx, vmx_secondary_vmexit_ctrl());
 
+	if (cpu_has_secondary_vmexit_ctrls())
+		secondary_vm_exit_controls_set(vmx, vmx_secondary_vmexit_ctrl());
+
 	/* 22.2.1, 20.8.1 */
 	vm_entry_controls_set(vmx, vmx_get_initial_vmentry_ctrl());
 
@@ -5228,6 +5236,13 @@ void vmx_inject_nmi(struct kvm_vcpu *vcpu)
 
 	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD,
 			INTR_TYPE_NMI_INTR | INTR_INFO_VALID_MASK | NMI_VECTOR);
+
+	if (is_fred_enabled(vcpu)) {
+		vmcs_write64(INJECTED_EVENT_DATA,
+			     guest_cpu_cap_has(vcpu, X86_FEATURE_NMI_SOURCE) ?
+			     vcpu->arch.nmi_source_inject : 0);
+		vcpu->arch.nmi_source_inject = 0;
+	}
 
 	vmx_clear_hlt(vcpu);
 }
@@ -7337,7 +7352,7 @@ static void handle_external_interrupt_irqoff(struct kvm_vcpu *vcpu,
 
 	kvm_before_interrupt(vcpu, KVM_HANDLING_IRQ);
 	if (cpu_feature_enabled(X86_FEATURE_FRED))
-		fred_entry_from_kvm(EVENT_TYPE_EXTINT, vector);
+		fred_entry_from_kvm(EVENT_TYPE_EXTINT, vector, 0);
 	else
 		vmx_do_interrupt_irqoff(gate_offset((gate_desc *)host_idt_base + vector));
 	kvm_after_interrupt(vcpu);
@@ -7451,6 +7466,9 @@ static void __vmx_complete_interrupts(struct kvm_vcpu *vcpu,
 	switch (type) {
 	case INTR_TYPE_NMI_INTR:
 		vcpu->arch.nmi_injected = true;
+
+		if (is_fred_enabled(vcpu))
+			vcpu->arch.nmi_source_inject = vmcs_read64(event_data_field);
 		/*
 		 * SDM 3: 27.7.1.2 (September 2008)
 		 * Clear bit "block by NMI" before VM entry if a NMI
@@ -7666,7 +7684,8 @@ static noinstr void vmx_vcpu_enter_exit(struct kvm_vcpu *vcpu,
 	    is_nmi(vmx_get_intr_info(vcpu))) {
 		kvm_before_interrupt(vcpu, KVM_HANDLING_NMI);
 		if (cpu_feature_enabled(X86_FEATURE_FRED))
-			fred_entry_from_kvm(EVENT_TYPE_NMI, NMI_VECTOR);
+			fred_entry_from_kvm(EVENT_TYPE_NMI, NMI_VECTOR,
+					    vmx_get_exit_qual(vcpu));
 		else
 			vmx_do_nmi_irqoff();
 		kvm_after_interrupt(vcpu);
@@ -8182,6 +8201,28 @@ static void vmx_update_intercept_for_cet_msr(struct kvm_vcpu *vcpu)
 		vmx_set_intercept_for_msr(vcpu, MSR_IA32_S_CET,
 					  MSR_TYPE_RW, incpt);
 	}
+}
+
+static void vmx_set_intercept_for_fred_msr(struct kvm_vcpu *vcpu)
+{
+	bool flag = !guest_cpu_cap_has(vcpu, X86_FEATURE_FRED);
+
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP0, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP1, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP2, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP3, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_STKLVLS, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP1, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP2, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP3, MSR_TYPE_RW, flag);
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_CONFIG, MSR_TYPE_RW, flag);
+
+	/*
+	 * flag = !(CET.SUPERVISOR_SHADOW_STACK || FRED)
+	 *
+	 * A possible optimization is to intercept SSPs when FRED && !CET.SUPERVISOR_SHADOW_STACK.
+	 */
+	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP0, MSR_TYPE_RW, flag);
 }
 
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
@@ -9057,6 +9098,11 @@ __init int vmx_hardware_setup(void)
 		nested_vmx_hardware_unsetup();
 
 	x86_set_kvm_irq_handler(POSTED_INTR_WAKEUP_VECTOR, pi_wakeup_handler);
+
+	if (kvm_cpu_cap_has(X86_FEATURE_FRED)) {
+		rdmsrl(MSR_IA32_FRED_CONFIG, kvm_host.fred_config);
+		rdmsrl(MSR_IA32_FRED_STKLVLS, kvm_host.fred_stklvls);
+	}
 
 	if (kvm_cpu_cap_has(X86_FEATURE_FRED)) {
 		rdmsrl(MSR_IA32_FRED_CONFIG, kvm_host.fred_config);

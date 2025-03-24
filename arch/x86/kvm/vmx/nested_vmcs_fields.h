@@ -1,0 +1,25 @@
+#if !defined(HAS_VMCS_FIELD) && !defined(HAS_VMCS_FIELD_RANGE)
+BUILD_BUG_ON(1)
+#endif
+
+#ifndef HAS_VMCS_FIELD
+#define HAS_VMCS_FIELD(x, c)
+#endif
+#ifndef HAS_VMCS_FIELD_RANGE
+#define HAS_VMCS_FIELD_RANGE(x, y, c)
+#endif
+
+HAS_VMCS_FIELD(SECONDARY_VM_EXIT_CONTROLS, nested_cpu_has_secondary_vm_exit_controls(get_vmcs12(vcpu)))
+HAS_VMCS_FIELD(SECONDARY_VM_EXIT_CONTROLS_HIGH, nested_cpu_has_secondary_vm_exit_controls(get_vmcs12(vcpu)))
+
+HAS_VMCS_FIELD_RANGE(GUEST_IA32_FRED_CONFIG, GUEST_IA32_FRED_SSP3, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+HAS_VMCS_FIELD_RANGE(HOST_IA32_FRED_CONFIG, HOST_IA32_FRED_SSP3, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+
+HAS_VMCS_FIELD(INJECTED_EVENT_DATA, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+HAS_VMCS_FIELD(INJECTED_EVENT_DATA_HIGH, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+
+HAS_VMCS_FIELD(ORIGINAL_EVENT_DATA, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+HAS_VMCS_FIELD(ORIGINAL_EVENT_DATA_HIGH, guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
+
+#undef HAS_VMCS_FIELD
+#undef HAS_VMCS_FIELD_RANGE
