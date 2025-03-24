@@ -98,6 +98,7 @@ struct x86_instruction_info {
 #define X86EMUL_F_INVLPG		BIT(3)
 #define X86EMUL_F_MSR			BIT(4)
 #define X86EMUL_F_DT_LOAD		BIT(5)
+#define X86EMUL_F_BRANCH		BIT(6)
 
 struct x86_emulate_ops {
 	void (*vm_bugged)(struct x86_emulate_ctxt *ctxt);
@@ -239,7 +240,8 @@ struct x86_emulate_ops {
 
 	gva_t (*get_untagged_addr)(struct x86_emulate_ctxt *ctxt, gva_t addr,
 				   unsigned int flags);
-
+	bool (*is_lass_violation)(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+				  unsigned int size, unsigned int flags);
 	bool (*is_canonical_addr)(struct x86_emulate_ctxt *ctxt, gva_t addr,
 				  unsigned int flags);
 };

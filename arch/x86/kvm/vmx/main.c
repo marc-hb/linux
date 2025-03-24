@@ -159,6 +159,8 @@ struct kvm_x86_ops vt_x86_ops __initdata = {
 	.vcpu_deliver_sipi_vector = kvm_vcpu_deliver_sipi_vector,
 
 	.get_untagged_addr = vmx_get_untagged_addr,
+
+	.is_lass_violation = vmx_is_lass_violation,
 };
 
 struct kvm_x86_init_ops vt_init_ops __initdata = {
