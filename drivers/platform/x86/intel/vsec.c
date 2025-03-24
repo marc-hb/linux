@@ -13,6 +13,8 @@
  * endpoints that exist primarily to expose them.
  */
 
+#include <asm/cpu_device_id.h>
+#include <asm/intel-family.h>
 #include <linux/auxiliary_bus.h>
 #include <linux/bits.h>
 #include <linux/cleanup.h>
@@ -44,11 +46,17 @@ static const char *intel_vsec_name(enum intel_vsec_id id)
 	case VSEC_ID_CRASHLOG:
 		return "crashlog";
 
+	case VSEC_ID_S3M:
+		return "s3m";
+
 	case VSEC_ID_SDSI:
 		return "sdsi";
 
 	case VSEC_ID_TPMI:
 		return "tpmi";
+
+	case VSEC_ID_DISCOVERY:
+		return "discovery";
 
 	default:
 		return NULL;
@@ -64,10 +72,14 @@ static bool intel_vsec_supported(u16 id, unsigned long caps)
 		return !!(caps & VSEC_CAP_WATCHER);
 	case VSEC_ID_CRASHLOG:
 		return !!(caps & VSEC_CAP_CRASHLOG);
+	case VSEC_ID_S3M:
+		return !!(caps & VSEC_CAP_S3M);
 	case VSEC_ID_SDSI:
 		return !!(caps & VSEC_CAP_SDSI);
 	case VSEC_ID_TPMI:
 		return !!(caps & VSEC_CAP_TPMI);
+	case VSEC_ID_DISCOVERY:
+		return !!(caps & VSEC_CAP_DISCOVERY);
 	default:
 		return false;
 	}
@@ -342,11 +354,146 @@ void intel_vsec_register(struct pci_dev *pdev,
 }
 EXPORT_SYMBOL_NS_GPL(intel_vsec_register, "INTEL_VSEC");
 
+int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
+			      struct intel_vsec_device *vsec_dev,
+			      enum oobmsm_supplier_type type)
+{
+	struct oobmsm_mapping_supplier *supplier;
+
+	supplier = pci_get_drvdata(vsec_dev->pcidev);
+	if (!supplier)
+		return -EINVAL;
+
+	if (plat_info)
+		supplier->plat_info = *plat_info;
+
+	supplier->supplier_dev[type] = &vsec_dev->auxdev.dev;
+
+	dev_dbg(&vsec_dev->pcidev->dev, "%s: supplier set for %s\n",
+		__func__, dev_name(&vsec_dev->auxdev.dev));
+
+	return 0;
+}
+EXPORT_SYMBOL_NS_GPL(intel_oobmsm_set_supplier, "INTEL_VSEC");
+
+int intel_vsec_suppliers_ready(struct intel_vsec_device *ivdev,
+			       unsigned long needs)
+{
+	struct oobmsm_mapping_supplier *mapping;
+	unsigned long oobmsm_features;
+	int i;
+
+	mapping = pci_get_drvdata(ivdev->pcidev);
+	if (!mapping) {
+		dev_dbg(&ivdev->auxdev.dev, "No mapping\n");
+		return 0;
+	}
+
+	oobmsm_features = mapping->features;
+	if (oobmsm_features == 0)
+		return 0;
+
+	for (i = 0; i < OOBMSM_SUP_TYPE_MAX; i++) {
+		struct device *supplier_dev = mapping->supplier_dev[i];
+
+		/*
+		 * Check to see that the device we need is present.
+		 * If not, ignore it.
+		 */
+		if (!((BIT(i) & needs) && ((BIT(i) & oobmsm_features)))) {
+			dev_dbg(&ivdev->auxdev.dev, "Ignoring feature %d\n", i);
+			continue;
+		}
+
+		if (!supplier_dev || !device_is_bound(supplier_dev)) {
+#if !IS_ENABLED(CONFIG_INTEL_TPMI)
+			if (i == OOBMSM_SUP_PLAT_INFO)
+				continue;
+#endif
+#if !IS_ENABLED(CONFIG_INTEL_PMT_DISCOVERY)
+			if (i == OOBMSM_SUP_DISC_INFO)
+				continue;
+#endif
+			if (!supplier_dev)
+				dev_dbg(&ivdev->auxdev.dev,
+					"Supplier device %d exists but is not bound\n", i);
+			else
+				dev_dbg(&ivdev->auxdev.dev,
+					"Supplier device %s on %s is not yet bound\n",
+					dev_name(supplier_dev), dev_name(&ivdev->pcidev->dev));
+			return -EPROBE_DEFER;
+		}
+
+		dev_dbg(&ivdev->auxdev.dev, "Found supplier device %s on %s\n",
+			dev_name(supplier_dev), dev_name(&ivdev->pcidev->dev));
+	}
+
+	dev_dbg(&ivdev->auxdev.dev, "Found all suppliers ... continuing probe\n");
+
+	return 0;
+}
+EXPORT_SYMBOL_NS_GPL(intel_vsec_suppliers_ready, "INTEL_VSEC");
+
+#define PCI_EXT_CAP_START 0x100
+
+static void
+intel_vsec_prewalk(struct pci_dev *pdev, struct intel_vsec_platform_info *info)
+{
+	struct oobmsm_mapping_supplier *supplier;
+	u32 pos = PCI_EXT_CAP_START;
+	u32 cap_id;
+
+	supplier = pci_get_drvdata(pdev);
+
+	while (pos) {
+		struct intel_vsec_header header;
+		u32 hdr;
+
+		pci_read_config_dword(pdev, pos, &cap_id);
+
+		u16 cap = cap_id & 0xFFFF;
+		u16 next = (cap_id >> 20) & 0xFFF;
+
+		if (cap == PCI_EXT_CAP_ID_VNDR) {
+			pci_read_config_dword(pdev, pos + PCI_VNDR_HEADER, &hdr);
+			header.id = PCI_VNDR_HEADER_ID(hdr);
+		} else if (cap == PCI_EXT_CAP_ID_DVSEC) {
+			pci_read_config_dword(pdev, pos + PCI_DVSEC_HEADER2, &hdr);
+			header.id = PCI_DVSEC_HEADER2_ID(hdr);
+		}
+
+		switch (header.id) {
+			case VSEC_ID_DISCOVERY:
+				pci_dbg(pdev, "%s: Found discovery\n", __func__);
+				supplier->features |= BIT(OOBMSM_SUP_DISC_INFO);
+				break;
+			case VSEC_ID_TPMI:
+				pci_dbg(pdev, "%s: Found tpmi\n", __func__);
+				supplier->features |= BIT(OOBMSM_SUP_PLAT_INFO);
+				break;
+			case VSEC_ID_S3M:
+				supplier->features |= BIT(OOBMSM_SUP_S3M_SIMICS);
+				break;
+			default:
+				break;
+		}
+
+		pos = next;
+	}
+}
+
 static int intel_vsec_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
+	struct oobmsm_mapping_supplier *supplier;
 	struct intel_vsec_platform_info *info;
 	bool have_devices = false;
 	int ret;
+
+	supplier = devm_kzalloc(&pdev->dev, sizeof(*supplier), GFP_KERNEL);
+	if (!supplier)
+		return -ENOMEM;
+
+	pci_set_drvdata(pdev, supplier);
 
 	ret = pcim_enable_device(pdev);
 	if (ret)
@@ -356,6 +503,9 @@ static int intel_vsec_pci_probe(struct pci_dev *pdev, const struct pci_device_id
 	info = (struct intel_vsec_platform_info *)id->driver_data;
 	if (!info)
 		return -EINVAL;
+	pci_set_drvdata(pdev, supplier);
+
+	intel_vsec_prewalk(pdev, info);
 
 	if (intel_vsec_walk_dvsec(pdev, info))
 		have_devices = true;
@@ -394,6 +544,13 @@ static const struct intel_vsec_platform_info dg1_info = {
 	.quirks = VSEC_QUIRK_NO_DVSEC | VSEC_QUIRK_EARLY_HW,
 };
 
+/* DMR OOBMSM info */
+static const struct intel_vsec_platform_info dmr_oobmsm_info = {
+	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_TPMI | VSEC_CAP_DISCOVERY |
+		VSEC_CAP_S3M,
+	.quirks = VSEC_QUIRK_OOBMSM,
+};
+
 /* MTL info */
 static const struct intel_vsec_platform_info mtl_info = {
 	.caps = VSEC_CAP_TELEMETRY,
@@ -401,7 +558,9 @@ static const struct intel_vsec_platform_info mtl_info = {
 
 /* OOBMSM info */
 static const struct intel_vsec_platform_info oobmsm_info = {
-	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_SDSI | VSEC_CAP_TPMI,
+	.caps = VSEC_CAP_TELEMETRY | VSEC_CAP_SDSI | VSEC_CAP_TPMI |
+		VSEC_CAP_DISCOVERY | VSEC_CAP_S3M,
+	.quirks = VSEC_QUIRK_OOBMSM,
 };
 
 /* DMR OOBMSM info */

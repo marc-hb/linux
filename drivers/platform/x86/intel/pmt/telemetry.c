@@ -10,6 +10,7 @@
 
 #include <linux/auxiliary_bus.h>
 #include <linux/intel_vsec.h>
+#include <linux/intel_pmt_features.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -206,6 +207,93 @@ unlock:
 }
 EXPORT_SYMBOL_NS_GPL(pmt_telem_get_endpoint_info, "INTEL_PMT_TELEMETRY");
 
+static int pmt_copy_region(struct telemetry_region *region,
+			   struct intel_pmt_entry *entry)
+{
+	struct oobmsm_mapping_supplier *mapping_supplier;
+
+	mapping_supplier = dev_get_drvdata(&entry->ep->pcidev->dev);
+	if (!mapping_supplier)
+		return -ENODEV;
+
+	region->plat_info = mapping_supplier->plat_info;
+	region->guid = entry->guid;
+	region->addr = entry->ep->base;
+	region->size = entry->size;
+	region->num_rmids = entry->num_rmids;
+
+	return 0;
+}
+
+static void pmt_feature_group_release(struct kref *kref)
+{
+	struct pmt_feature_group *feature_group;
+
+	feature_group = container_of(kref, struct pmt_feature_group, kref);
+	kfree(feature_group);
+}
+
+struct pmt_feature_group *intel_pmt_get_regions_by_feature(enum pmt_feature_id id)
+{
+	struct pmt_feature_group *feature_group;
+	struct telemetry_region *region;
+	struct intel_pmt_entry *entry;
+	unsigned long idx;
+	int count = 0;
+	size_t size;
+
+	if (!pmt_feature_id_is_valid(id))
+		return ERR_PTR(-EINVAL);
+
+	mutex_lock(&ep_lock);
+	xa_for_each(&telem_array, idx, entry)
+		if (entry->feature_flags & BIT(id))
+			++count;
+
+	if (!count) {
+		mutex_unlock(&ep_lock);
+		return ERR_PTR(-ENOENT);
+	}
+
+	size = struct_size(feature_group, regions, count);
+	feature_group = kmalloc(size, GFP_KERNEL);
+	if (!feature_group) {
+		mutex_unlock(&ep_lock);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	feature_group->count = count;
+
+	region = feature_group->regions;
+	xa_for_each(&telem_array, idx, entry) {
+		int ret;
+
+		if (!(entry->feature_flags & BIT(id)))
+			continue;
+
+		ret = pmt_copy_region(region, entry);
+		if (ret) {
+			kfree(feature_group);
+			mutex_unlock(&ep_lock);
+			return ERR_PTR(ret);
+		}
+		++region;
+	}
+
+	kref_init(&feature_group->kref);
+
+	mutex_unlock(&ep_lock);
+
+	return feature_group;
+}
+EXPORT_SYMBOL(intel_pmt_get_regions_by_feature);
+
+void intel_pmt_put_feature_group(struct pmt_feature_group *feature_group)
+{
+	kref_put(&feature_group->kref, pmt_feature_group_release);
+}
+EXPORT_SYMBOL(intel_pmt_put_feature_group);
+
 int pmt_telem_read(struct telem_endpoint *ep, u32 id, u64 *data, u32 count)
 {
 	u32 offset, size;
@@ -283,15 +371,25 @@ static void pmt_telem_remove(struct auxiliary_device *auxdev)
 		intel_pmt_dev_destroy(entry, &pmt_telem_ns);
 	}
 	mutex_unlock(&ep_lock);
-};
+}
 
 static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxiliary_device_id *id)
 {
 	struct intel_vsec_device *intel_vsec_dev = auxdev_to_ivdev(auxdev);
 	struct pmt_telem_priv *priv;
+	unsigned long needs;
 	size_t size;
 	int i, ret;
 
+	needs = BIT(OOBMSM_SUP_PLAT_INFO) |
+		BIT(OOBMSM_SUP_DISC_INFO) |
+		BIT(OOBMSM_SUP_S3M_SIMICS);
+
+	ret = intel_vsec_suppliers_ready(intel_vsec_dev, needs);
+	if (ret)
+		return ret;
+
+	dev_info(&auxdev->dev, "starting probe\n");
 	size = struct_size(priv, entry, intel_vsec_dev->num_resources);
 	priv = devm_kzalloc(&auxdev->dev, size, GFP_KERNEL);
 	if (!priv)
@@ -302,6 +400,9 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 	for (i = 0; i < intel_vsec_dev->num_resources; i++) {
 		struct intel_pmt_entry *entry = &priv->entry[priv->num_entries];
 
+		dev_info(&auxdev->dev, "getting resource %d of %d\n", i + 1,
+			 intel_vsec_dev->num_resources);
+
 		mutex_lock(&ep_lock);
 		ret = intel_pmt_dev_create(entry, &pmt_telem_ns, intel_vsec_dev, i);
 		mutex_unlock(&ep_lock);
@@ -311,11 +412,15 @@ static int pmt_telem_probe(struct auxiliary_device *auxdev, const struct auxilia
 			continue;
 
 		priv->num_entries++;
+
+		intel_pmt_get_features(entry);
 	}
 
+	dev_info(&auxdev->dev, "probe success\n");
 	return 0;
 abort_probe:
 	pmt_telem_remove(auxdev);
+	dev_info(&auxdev->dev, "probe returning %d\n", ret);
 	return ret;
 }
 
@@ -348,3 +453,4 @@ MODULE_AUTHOR("David E. Box <david.e.box@linux.intel.com>");
 MODULE_DESCRIPTION("Intel PMT Telemetry driver");
 MODULE_LICENSE("GPL v2");
 MODULE_IMPORT_NS("INTEL_PMT");
+MODULE_IMPORT_NS("INTEL_VSEC");

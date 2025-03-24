@@ -4,12 +4,15 @@
 
 #include <linux/auxiliary_bus.h>
 #include <linux/bits.h>
+#include <linux/intel_pmt_features.h>
 
 #define VSEC_CAP_TELEMETRY	BIT(0)
 #define VSEC_CAP_WATCHER	BIT(1)
 #define VSEC_CAP_CRASHLOG	BIT(2)
 #define VSEC_CAP_SDSI		BIT(3)
 #define VSEC_CAP_TPMI		BIT(4)
+#define VSEC_CAP_DISCOVERY	BIT(5)
+#define VSEC_CAP_S3M		BIT(6)
 
 /* Intel DVSEC offsets */
 #define INTEL_DVSEC_ENTRIES		0xA
@@ -26,8 +29,10 @@ enum intel_vsec_id {
 	VSEC_ID_TELEMETRY	= 2,
 	VSEC_ID_WATCHER		= 3,
 	VSEC_ID_CRASHLOG	= 4,
+	VSEC_ID_DISCOVERY	= 12,
 	VSEC_ID_SDSI		= 65,
 	VSEC_ID_TPMI		= 66,
+	VSEC_ID_S3M		= 71,
 };
 
 /**
@@ -65,6 +70,9 @@ enum intel_vsec_quirks {
 
 	/* Platforms requiring quirk in the auxiliary driver */
 	VSEC_QUIRK_EARLY_HW     = BIT(4),
+
+	/* OOBMSM */
+	VSEC_QUIRK_OOBMSM       = BIT(5),
 };
 
 /**
@@ -124,10 +132,62 @@ struct intel_vsec_device {
 	u64 base_addr;
 };
 
+/**
+ * struct oobmsm_plat_info - Platform information for a device instance
+ * @cdie_mask:       Mask of all compute dies in the partition
+ * @package_id:      CPU Package id
+ * @partition:       Package partition id when multiple VSEC PCI devices per package
+ * @segment:         PCI segment ID
+ * @bus_number:      PCI bus number
+ * @device_number:   PCI device number
+ * @function_number: PCI function number
+ *
+ * Structure to store platform data for a OOBMSM device instance.
+ */
+struct oobmsm_plat_info {
+	u16 cdie_mask;
+	u8 package_id;
+	u8 partition;
+	u8 segment;
+	u8 bus_number;
+	u8 device_number;
+	u8 function_number;
+};
+
+enum oobmsm_supplier_type {
+	OOBMSM_SUP_PLAT_INFO,
+	OOBMSM_SUP_DISC_INFO,
+	OOBMSM_SUP_S3M_SIMICS,
+	OOBMSM_SUP_TYPE_MAX
+};
+
+struct oobmsm_mapping_supplier {
+	struct device *supplier_dev[OOBMSM_SUP_TYPE_MAX];
+	struct oobmsm_plat_info plat_info;
+	unsigned long features;
+};
+
+struct telemetry_region {
+	struct oobmsm_plat_info	plat_info;
+	void __iomem		*addr;
+	size_t			size;
+	u32			guid;
+	u32			num_rmids;
+};
+
+struct pmt_feature_group {
+	enum pmt_feature_id	id;
+	int			count;
+	struct kref		kref;
+	struct telemetry_region	regions[];
+};
+
 int intel_vsec_add_aux(struct pci_dev *pdev, struct device *parent,
 		       struct intel_vsec_device *intel_vsec_dev,
 		       const char *name);
 
+int intel_vsec_suppliers_ready(struct intel_vsec_device *vsec_dev,
+			       unsigned long needs);
 static inline struct intel_vsec_device *dev_to_ivdev(struct device *dev)
 {
 	return container_of(dev, struct intel_vsec_device, auxdev.dev);
@@ -141,10 +201,34 @@ static inline struct intel_vsec_device *auxdev_to_ivdev(struct auxiliary_device 
 #if IS_ENABLED(CONFIG_INTEL_VSEC)
 void intel_vsec_register(struct pci_dev *pdev,
 			 struct intel_vsec_platform_info *info);
+int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
+			      struct intel_vsec_device *vsec_dev,
+			      enum oobmsm_supplier_type type);
 #else
 static inline void intel_vsec_register(struct pci_dev *pdev,
 				       struct intel_vsec_platform_info *info)
 {
 }
+static inline int intel_oobmsm_set_supplier(struct oobmsm_plat_info *plat_info,
+					    struct intel_vsec_device *vsec_dev,
+					    enum oobmsm_supplier_type type)
+{
+	return -ENODEV;
+}
 #endif
+
+#if IS_ENABLED(CONFIG_INTEL_PMT_TELEMETRY)
+struct pmt_feature_group *
+intel_pmt_get_regions_by_feature(enum pmt_feature_id id);
+
+void intel_pmt_put_feature_group(struct pmt_feature_group *feature_group);
+#else
+static inline struct pmt_feature_group *
+intel_pmt_get_regions_by_feature(enum pmt_feature_id id)
+{ return ERR_PTR(-ENODEV); }
+
+static inline void
+intel_pmt_put_feature_group(struct pmt_feature_group *feature_group) {}
+#endif
+
 #endif

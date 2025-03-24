@@ -11918,6 +11918,12 @@ M:	Jarkko Nikula <jarkko.nikula@linux.intel.com>
 L:	linux-iio@vger.kernel.org
 F:	drivers/counter/intel-qep.c
 
+INTEL S3M DRIVER
+M:	Will Skrydlak <will.j.skrydlak@linux.intel.com>
+S:	Supported
+F:	drivers/platform/x86/intel/s3m.c
+F:	include/uapi/linux/s3m_if.h
+
 INTEL SCU DRIVERS
 M:	Mika Westerberg <mika.westerberg@linux.intel.com>
 S:	Maintained

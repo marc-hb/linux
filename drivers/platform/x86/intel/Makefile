@@ -36,6 +36,10 @@ intel-target-$(CONFIG_X86_ANDROID_TABLETS)	+= crystal_cove_charger.o
 intel-target-$(CONFIG_INTEL_MRFLD_PWRBTN)	+= mrfld_pwrbtn.o
 intel-target-$(CONFIG_INTEL_PUNIT_IPC)		+= punit_ipc.o
 
+# S3M drivers
+intel_s3m-y				:= s3m.o
+obj-$(CONFIG_INTEL_S3M_BRIDGE)		+= intel_s3m.o
+
 # TPMI drivers
 intel-target-$(CONFIG_INTEL_PLR_TPMI)		+= plr_tpmi.o
 intel-target-$(CONFIG_INTEL_TPMI_POWER_DOMAINS)	+= tpmi_power_domains.o
