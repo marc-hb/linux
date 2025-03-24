@@ -865,12 +865,6 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 	 * available in mediated vPMU
 	 */
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
-	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
-	   ((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
-	   (cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
-		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
-	else
-		lbr_desc->records.nr = 0;
 
 	/*
 	 * The LBR depth is determined by host capability and it won't be
