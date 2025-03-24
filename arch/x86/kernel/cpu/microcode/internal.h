@@ -19,6 +19,14 @@ enum ucode_state {
 	UCODE_ERROR,
 	UCODE_TIMEOUT,
 	UCODE_OFFLINE,
+	UCODE_FATAL,
+};
+
+enum uniform_scope {
+	UNIFORM_DEFAULT	= 0,
+	UNIFORM_CORE,
+	UNIFORM_PKG,
+	UNIFORM_SYS,
 };
 
 struct microcode_ops {
@@ -31,10 +39,15 @@ struct microcode_ops {
 	 * See also the "Synchronization" section in microcode_core.c.
 	 */
 	enum ucode_state	(*apply_microcode)(int cpu);
+	enum ucode_state	(*update_cpudata_only)(int cpu);
+	void			(*staging_microcode)(void);
 	int			(*collect_cpu_info)(int cpu, struct cpu_signature *csig);
 	void			(*finalize_late_load)(int result);
+	enum uniform_scope	uniform_scope;
 	unsigned int		nmi_safe	: 1,
-				use_nmi		: 1;
+				use_nmi		: 1,
+				use_uniform	: 1,
+				staging_usable	: 1;
 };
 
 struct early_load_data {
@@ -97,6 +110,8 @@ static inline unsigned int x86_cpuid_family(void)
 extern bool dis_ucode_ldr;
 extern bool force_minrev;
 
+void disable_ucode_loader(void);
+
 #ifdef CONFIG_CPU_SUP_AMD
 void load_ucode_amd_bsp(struct early_load_data *ed, unsigned int family);
 void load_ucode_amd_ap(unsigned int family);
@@ -112,15 +127,17 @@ static inline void exit_amd_microcode(void) { }
 #endif /* !CONFIG_CPU_SUP_AMD */
 
 #ifdef CONFIG_CPU_SUP_INTEL
-void load_ucode_intel_bsp(struct early_load_data *ed);
-void load_ucode_intel_ap(void);
+enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed);
+enum ucode_state load_ucode_intel_ap(void);
 void reload_ucode_intel(void);
 struct microcode_ops *init_intel_microcode(void);
+bool staging_work(u64 mmio_addr, void *payload, u32 size);
 #else /* CONFIG_CPU_SUP_INTEL */
-static inline void load_ucode_intel_bsp(struct early_load_data *ed) { }
-static inline void load_ucode_intel_ap(void) { }
+static inline enum ucode_state load_ucode_intel_bsp(struct early_load_data *ed) { return UCODE_OK; }
+static inline enum ucode_state load_ucode_intel_ap(void) { return UCODE_OK; }
 static inline void reload_ucode_intel(void) { }
 static inline struct microcode_ops *init_intel_microcode(void) { return NULL; }
+static inline bool staging_work(u64 mmio_addr, void *payload, u32 size) { return false; }
 #endif  /* !CONFIG_CPU_SUP_INTEL */
 
 #endif /* _X86_MICROCODE_INTERNAL_H */

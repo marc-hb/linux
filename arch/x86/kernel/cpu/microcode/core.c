@@ -40,9 +40,12 @@
 #include <asm/setup.h>
 
 #include "internal.h"
+#include "uconfig.h"
 
 static struct microcode_ops	*microcode_ops;
 bool dis_ucode_ldr = true;
+
+static bool early_load_fatal;
 
 bool force_minrev = IS_ENABLED(CONFIG_MICROCODE_LATE_FORCE_MINREV);
 module_param(force_minrev, bool, S_IRUSR | S_IWUSR);
@@ -120,6 +123,11 @@ static bool __init check_loader_disabled_bsp(void)
 	return dis_ucode_ldr;
 }
 
+void disable_ucode_loader(void)
+{
+	dis_ucode_ldr = true;
+}
+
 void __init load_ucode_bsp(void)
 {
 	unsigned int cpuid_1_eax;
@@ -150,7 +158,7 @@ void __init load_ucode_bsp(void)
 		return;
 
 	if (intel)
-		load_ucode_intel_bsp(&early_data);
+		early_load_fatal |= load_ucode_intel_bsp(&early_data) == UCODE_FATAL;
 	else
 		load_ucode_amd_bsp(&early_data, cpuid_1_eax);
 }
@@ -159,7 +167,7 @@ void load_ucode_ap(void)
 {
 	unsigned int cpuid_1_eax;
 
-	if (dis_ucode_ldr)
+	if (dis_ucode_ldr || early_load_fatal)
 		return;
 
 	cpuid_1_eax = native_cpuid_eax(1);
@@ -167,7 +175,7 @@ void load_ucode_ap(void)
 	switch (x86_cpuid_vendor()) {
 	case X86_VENDOR_INTEL:
 		if (x86_family(cpuid_1_eax) >= 6)
-			load_ucode_intel_ap();
+			early_load_fatal |= load_ucode_intel_ap() == UCODE_FATAL;
 		break;
 	case X86_VENDOR_AMD:
 		if (x86_family(cpuid_1_eax) >= 0x10)
@@ -257,6 +265,8 @@ enum sibling_ctrl {
 	SCTRL_WAIT,
 	/* Invoke the microcode_apply() callback */
 	SCTRL_APPLY,
+	/* Invoke the microcode_update() callback */
+	SCTRL_RECORD_UPDATE,
 	/* Proceed without invoking the microcode_apply() callback */
 	SCTRL_DONE,
 };
@@ -342,9 +352,8 @@ static noinstr bool load_secondary_wait(unsigned int ctrl_cpu)
 	if (wait_for_ctrl())
 		return true;
 
-	instrumentation_begin();
-	panic("Microcode load: Primary CPU %d timed out\n", ctrl_cpu);
-	instrumentation_end();
+	raw_cpu_write(ucode_ctrl.result, UCODE_FATAL);
+	return false;
 }
 
 /*
@@ -357,9 +366,15 @@ static noinstr void load_secondary(unsigned int cpu)
 	enum ucode_state ret;
 
 	if (!load_secondary_wait(ctrl_cpu)) {
+		enum ucode_state result;
+
+		/* Primary thread complete. Allow to invoke instumentable code */
 		instrumentation_begin();
-		pr_err_once("load: %d CPUs timed out\n",
-			    atomic_read(&late_cpus_in) - 1);
+		result = raw_cpu_read(ucode_ctrl.result);
+		if (result == UCODE_TIMEOUT)
+			pr_err_once("load: %d CPUs timed out\n", atomic_read(&late_cpus_in) - 1);
+		else if (result == UCODE_FATAL)
+			pr_err_once("load: Primary CPU %d timed out\n", ctrl_cpu);
 		instrumentation_end();
 		return;
 	}
@@ -372,6 +387,8 @@ static noinstr void load_secondary(unsigned int cpu)
 	 */
 	if (this_cpu_read(ucode_ctrl.ctrl) == SCTRL_APPLY)
 		ret = microcode_ops->apply_microcode(cpu);
+	else if (this_cpu_read(ucode_ctrl.ctrl) == SCTRL_RECORD_UPDATE)
+		ret = microcode_ops->update_cpudata_only(cpu);
 	else
 		ret = per_cpu(ucode_ctrl.result, ctrl_cpu);
 
@@ -380,9 +397,23 @@ static noinstr void load_secondary(unsigned int cpu)
 	instrumentation_end();
 }
 
+static const struct cpumask *ucode_get_scope_mask(unsigned int cpu)
+{
+	switch (microcode_ops->uniform_scope) {
+	case UNIFORM_DEFAULT:
+	case UNIFORM_CORE:
+	default:
+		return topology_sibling_cpumask(cpu);
+	case UNIFORM_PKG:
+		return topology_core_cpumask(cpu);
+	case UNIFORM_SYS:
+		return cpu_online_mask;
+	}
+}
+
 static void __load_primary(unsigned int cpu)
 {
-	struct cpumask *secondaries = topology_sibling_cpumask(cpu);
+	const struct cpumask *secondaries;
 	enum sibling_ctrl ctrl;
 	enum ucode_state ret;
 	unsigned int sibling;
@@ -404,10 +435,25 @@ static void __load_primary(unsigned int cpu)
 	 * case where the CPU has uniform loading at package or system
 	 * scope implemented but does not advertise it.
 	 */
-	if (ret == UCODE_UPDATED || ret == UCODE_OK)
-		ctrl = SCTRL_APPLY;
-	else
+	if (ret == UCODE_UPDATED || ret == UCODE_OK) {
+		/*
+		 * With the "apply_anyrev" knob, for Intel-internal
+		 * validation process, apply() actually triggers
+		 * the hardware mechanism to update the microcode again.
+		 *
+		 * Thus, specify to invoke update() which is a variant
+		 * following the exact apply() code path but not
+		 * triggering the load.
+		 */
+		if (uconfig_anyrev())
+			ctrl = SCTRL_RECORD_UPDATE;
+		else
+			ctrl = SCTRL_APPLY;
+	} else {
 		ctrl = SCTRL_DONE;
+	}
+
+	secondaries = ucode_get_scope_mask(cpu);
 
 	for_each_cpu(sibling, secondaries) {
 		if (sibling != cpu)
@@ -566,6 +612,7 @@ static int load_late_stop_cpus(bool is_safe)
 		case UCODE_TIMEOUT:	timedout++; break;
 		case UCODE_OK:		siblings++; break;
 		case UCODE_OFFLINE:	offline++; break;
+		case UCODE_FATAL:	panic("Microcode update fatal error\n");
 		default:		failed++; break;
 		}
 	}
@@ -653,6 +700,13 @@ static bool setup_cpus(void)
 		 *
 		 * Ensure that the primary thread is online so that it is
 		 * guaranteed that all cores are updated.
+		 *
+		 * When the uniform feature extends the scope beyond the
+		 * core, this might enforce over-broader CPUs online.
+		 *
+		 * However, offlining CPUs apart from 'nosmt' scenarios
+		 * is unrealistic practice during such system-critical
+		 * updates.
 		 */
 		if (!cpu_online(cpu)) {
 			if (topology_is_primary_thread(cpu) || !allow_smt_offline) {
@@ -664,11 +718,8 @@ static bool setup_cpus(void)
 			continue;
 		}
 
-		/*
-		 * Initialize the per CPU state. This is core scope for now,
-		 * but prepared to take package or system scope into account.
-		 */
-		ctrl.ctrl_cpu = cpumask_first(topology_sibling_cpumask(cpu));
+		/* Initialize the per CPU state. */
+		ctrl.ctrl_cpu = cpumask_first(ucode_get_scope_mask(cpu));
 		per_cpu(ucode_ctrl, cpu) = ctrl;
 	}
 	return true;
@@ -676,19 +727,35 @@ static bool setup_cpus(void)
 
 static int load_late_locked(void)
 {
+	enum ucode_state ret;
+	bool is_safe = false;
+
 	if (!setup_cpus())
 		return -EBUSY;
 
-	switch (microcode_ops->request_microcode_fw(0, &microcode_pdev->dev)) {
-	case UCODE_NEW:
-		return load_late_stop_cpus(false);
+	ret = microcode_ops->request_microcode_fw(0, &microcode_pdev->dev);
+	switch (ret) {
 	case UCODE_NEW_SAFE:
-		return load_late_stop_cpus(true);
+		is_safe = true;
+		break;
+	case UCODE_NEW:
+		break;
 	case UCODE_NFOUND:
 		return -ENOENT;
 	default:
 		return -EBADFD;
 	}
+
+	if (uconfig_staging()) {
+		if (microcode_ops->staging_usable)
+			microcode_ops->staging_microcode();
+		ret = microcode_ops->staging_usable ? 0 : -ENODEV;
+	}
+
+	if (uconfig_loading())
+		ret = load_late_stop_cpus(is_safe);
+
+	return ret;
 }
 
 static ssize_t reload_store(struct device *dev,
@@ -809,6 +876,9 @@ static int __init microcode_init(void)
 	struct device *dev_root;
 	struct cpuinfo_x86 *c = &boot_cpu_data;
 	int error;
+
+	if (early_load_fatal)
+		panic("Microcode update fatal error.\n");
 
 	if (dis_ucode_ldr)
 		return -EINVAL;

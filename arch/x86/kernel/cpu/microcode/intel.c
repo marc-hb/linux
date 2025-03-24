@@ -28,6 +28,7 @@
 #include <asm/msr.h>
 
 #include "internal.h"
+#include "uconfig.h"
 
 static const char ucode_path[] = "kernel/x86/microcode/GenuineIntel.bin";
 
@@ -53,6 +54,8 @@ struct extended_sigtable {
 	unsigned int			reserved[3];
 	struct extended_signature	sigs[];
 };
+
+#define FEATURE_FLAG_CPUID_EDX_ARCH_CAP		BIT(29)
 
 #define DEFAULT_UCODE_TOTALSIZE (DEFAULT_UCODE_DATASIZE + MC_HEADER_SIZE)
 #define EXT_HEADER_SIZE		(sizeof(struct extended_sigtable))
@@ -299,10 +302,64 @@ static __init struct microcode_intel *scan_microcode(void *data, size_t size,
 	return size ? NULL : patch;
 }
 
+static bool staged_already(u64 *addr_array, u64 addr)
+{
+	int i;
+
+	for (i = 0; addr_array[i] != 0; i++) {
+		if (addr_array[i] == addr)
+			return true;
+	}
+	addr_array[i] = addr;
+	return false;
+}
+
+static void staging_microcode(void)
+{
+	u32 cpu, lo, hi, size;
+	u64 *addr_array, addr;
+
+	size = get_totalsize(&ucode_patch_late->hdr);
+	if (!IS_ALIGNED(size, sizeof(u32))) {
+		pr_err("Error: staging payload is not dword-aligned.\n");
+		return;
+	}
+
+	addr_array = kcalloc(nr_cpu_ids, sizeof(*addr_array), GFP_KERNEL);
+	if (!addr_array) {
+		pr_err("Error: unable to allocate staging address storage.\n");
+		return;
+	}
+
+	for_each_cpu(cpu, cpu_online_mask) {
+		rdmsr_on_cpu(cpu, MSR_IA32_MCU_STAGING_MBOX_ADDR, &lo, &hi);
+		addr = lo | ((u64)hi << 32);
+		if (!addr) {
+			pr_err("Error: invalid staging address from CPU %u.\n", cpu);
+			goto out;
+		}
+
+		if (staged_already(addr_array, addr))
+			continue;
+
+		if (!staging_work(addr, ucode_patch_late, size)) {
+			pr_err("Error: staging was not successful.\n");
+			goto out;
+		}
+	}
+
+	pr_info("Staging was successful.\n");
+out:
+	kfree(addr_array);
+}
+
+static enum ucode_state verify_update_result(void);
+
 static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 					  struct microcode_intel *mc,
 					  u32 *cur_rev)
 {
+	enum ucode_state result;
 	u32 rev;
 
 	if (!mc)
@@ -314,13 +371,17 @@ static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 	 * already.
 	 */
 	*cur_rev = intel_get_microcode_revision();
-	if (*cur_rev >= mc->hdr.rev) {
+	if (!uconfig_validate_rev(*cur_rev, mc->hdr.rev)) {
 		uci->cpu_sig.rev = *cur_rev;
 		return UCODE_OK;
 	}
 
 	/* write microcode via MSR 0x79 */
 	native_wrmsrl(MSR_IA32_UCODE_WRITE, (unsigned long)mc->bits);
+
+	result = verify_update_result();
+	if (result != UCODE_OK)
+		return result;
 
 	rev = intel_get_microcode_revision();
 	if (rev != mc->hdr.rev)
@@ -399,27 +460,43 @@ static int __init save_builtin_microcode(void)
 }
 early_initcall(save_builtin_microcode);
 
+static __init void setup_uniform_update(void);
+
 /* Load microcode on BSP from initrd or builtin blobs */
-void __init load_ucode_intel_bsp(struct early_load_data *ed)
+enum ucode_state __init load_ucode_intel_bsp(struct early_load_data *ed)
 {
 	struct ucode_cpu_info uci;
+	enum ucode_state result;
+
+	/*
+	 * Setup early as a failure of this needs to disable the
+	 * microcode loader.
+	 */
+	setup_uniform_update();
 
 	uci.mc = get_microcode_blob(&uci, false);
 	ed->old_rev = uci.cpu_sig.rev;
 
-	if (uci.mc && apply_microcode_early(&uci) == UCODE_UPDATED) {
+	if (!uci.mc)
+		return UCODE_NFOUND;
+
+	result = apply_microcode_early(&uci);
+	if (result == UCODE_UPDATED) {
 		ucode_patch_va = UCODE_BSP_LOADED;
 		ed->new_rev = uci.cpu_sig.rev;
 	}
+	return result;
 }
 
-void load_ucode_intel_ap(void)
+enum ucode_state load_ucode_intel_ap(void)
 {
 	struct ucode_cpu_info uci;
 
 	uci.mc = ucode_patch_va;
 	if (uci.mc)
-		apply_microcode_early(&uci);
+		return apply_microcode_early(&uci);
+	else
+		return UCODE_NFOUND;
 }
 
 /* Reload microcode on resume */
@@ -528,7 +605,7 @@ static enum ucode_state parse_microcode_blobs(int cpu, struct iov_iter *iter)
 		    intel_microcode_sanity_check(mc, true, MC_HEADER_TYPE_MICROCODE) < 0)
 			goto fail;
 
-		if (cur_rev >= mc_header.rev)
+		if (!uconfig_validate_rev(cur_rev, mc_header.rev))
 			continue;
 
 		if (!intel_find_matching_signature(mc, &uci->cpu_sig))
@@ -626,9 +703,88 @@ static struct microcode_ops microcode_intel_ops = {
 	.request_microcode_fw	= request_microcode_fw,
 	.collect_cpu_info	= collect_cpu_info,
 	.apply_microcode	= apply_microcode_late,
+	.update_cpudata_only	= uconfig_update_cpudata_only,
 	.finalize_late_load	= finalize_late_load,
+	.staging_microcode	= staging_microcode,
 	.use_nmi		= IS_ENABLED(CONFIG_X86_64),
 };
+
+static __init void setup_uniform_update(void)
+{
+	unsigned int val[2];
+
+	if (!(cpuid_edx(7) & FEATURE_FLAG_CPUID_EDX_ARCH_CAP))
+		return;
+
+	native_rdmsr(MSR_IA32_ARCH_CAPABILITIES, val[0], val[1]);
+	if (!(val[0] & ARCH_CAP_MCU_ENUM))
+		return;
+
+	native_rdmsr(MSR_IA32_MCU_ENUMERATION, val[0], val[1]);
+	if (!(val[0] & UNIFORM_MCU_AVAIL))
+		return;
+
+	/*
+	 * Ensure that the firmware did all the necessary steps if
+	 * needed. Any improper configuration makes the update
+	 * mechanism unusable.
+	 */
+	if (val[0] & UNIFORM_MCU_CONFIG_REQD && !(val[0] & UNIFORM_MCU_CONFIG_COMPLETE)) {
+		pr_err("Disable microcode update: due to incomplete configuration by firmware.\n");
+		disable_ucode_loader();
+		return;
+	}
+
+	/*
+	 * Indicate the uniform scope accordingly. Also, override the
+	 * primary CPU set for the parallel CPU bring-up if needed.
+	 * load_ucode_bsp() already sets the default mask.
+	 */
+	switch (val[0] & UNIFORM_MCU_SCOPE) {
+	case UNIFORM_MCU_SCOPE_CORE:
+		microcode_intel_ops.uniform_scope = UNIFORM_CORE;
+		break;
+	case UNIFORM_MCU_SCOPE_PACKAGE:
+		microcode_intel_ops.uniform_scope = UNIFORM_PKG;
+		break;
+	case UNIFORM_MCU_SCOPE_PLATFORM:
+		microcode_intel_ops.uniform_scope = UNIFORM_SYS;
+		break;
+	default:
+		pr_err("Disable microcode update: unknown uniform scope.\n");
+		disable_ucode_loader();
+		return;
+	}
+
+	microcode_intel_ops.use_uniform = true;
+	pr_info("Uniform update is enabled.\n");
+}
+
+static enum ucode_state verify_update_result(void)
+{
+	bool partial_err, auth_err;
+	unsigned int val[2];
+
+	/* The status MSR only comes with the feature */
+	if (!microcode_intel_ops.use_uniform)
+		return UCODE_OK;
+
+	native_rdmsr(MSR_IA32_MCU_STATUS, val[0], val[1]);
+	partial_err = val[0] & MCU_PARTIAL_UPDATE;
+	auth_err = val[0] & AUTH_FAIL_ON_MCU_COMPONENT;
+
+	if (!partial_err && !auth_err) {
+		/* No error state. Okay to proceed. */
+		return UCODE_OK;
+	} else if (partial_err) {
+		pr_err_once("Microcode load: fatal as partially updated (%s error).",
+			    auth_err ? "authentication" : "configuration");
+		return UCODE_FATAL;
+	} else {
+		pr_err_once("Microcode load: unknown status (IA32_MCU_STATUS=%x).", val[0]);
+		return UCODE_FATAL;
+	}
+}
 
 static __init void calc_llc_size_per_core(struct cpuinfo_x86 *c)
 {
@@ -636,6 +792,18 @@ static __init void calc_llc_size_per_core(struct cpuinfo_x86 *c)
 
 	do_div(llc_size, topology_num_cores_per_package());
 	llc_size_per_core = (unsigned int)llc_size;
+}
+
+static __init bool staging_available(void)
+{
+	u64 val;
+
+	val = x86_read_arch_cap_msr();
+	if (!(val & ARCH_CAP_MCU_ENUM))
+		return false;
+
+	rdmsrl(MSR_IA32_MCU_ENUMERATION, val);
+	return !!(val & MCU_STAGING);
 }
 
 struct microcode_ops * __init init_intel_microcode(void)
@@ -646,6 +814,11 @@ struct microcode_ops * __init init_intel_microcode(void)
 	    cpu_has(c, X86_FEATURE_IA64)) {
 		pr_err("Intel CPU family 0x%x not supported\n", c->x86);
 		return NULL;
+	}
+
+	if (staging_available()) {
+		pr_info("Staging is available.\n");
+		microcode_intel_ops.staging_usable = true;
 	}
 
 	calc_llc_size_per_core(c);

@@ -166,6 +166,10 @@
 						 * Processor MMIO stale data
 						 * vulnerabilities.
 						 */
+#define ARCH_CAP_MCU_ENUM		BIT(16) /*
+						 * IA32_MCU_ENUMERATION and
+						 * IA32_MCU_STATUS MSRs supported
+						 */
 #define ARCH_CAP_FB_CLEAR		BIT(17)	/*
 						 * VERW clears CPU fill buffer
 						 * even on MDS_NO CPUs.
@@ -943,6 +947,22 @@
 #define MSR_IA32_SGXLECONFIG_SHA384_ENABLE	BIT_ULL(0)
 
 #define MSR_IA32_UCODE_REV		0x0000008b
+
+#define MSR_IA32_MCU_ENUMERATION	0x0000007b
+#define UNIFORM_MCU_AVAIL		BIT(0)
+#define UNIFORM_MCU_CONFIG_REQD		BIT(1)
+#define UNIFORM_MCU_CONFIG_COMPLETE	BIT(2)
+#define UNIFORM_MCU_SCOPE		GENMASK(15, 8)
+#define UNIFORM_MCU_SCOPE_CORE		(0x02<<8)
+#define UNIFORM_MCU_SCOPE_PACKAGE	(0x80<<8)
+#define UNIFORM_MCU_SCOPE_PLATFORM	(0xc0<<8)
+
+#define MSR_IA32_MCU_STATUS		0x0000007c
+#define MCU_PARTIAL_UPDATE		BIT(0)
+#define AUTH_FAIL_ON_MCU_COMPONENT	BIT(1)
+#define MCU_STAGING			BIT(4)
+
+#define MSR_IA32_MCU_STAGING_MBOX_ADDR	0x000007a5
 
 /* Intel SGX Launch Enclave Public Key Hash MSRs */
 #define MSR_IA32_SGXLEPUBKEYHASH0	0x0000008C

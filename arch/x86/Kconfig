@@ -1379,6 +1379,18 @@ config MICROCODE_LATE_FORCE_MINREV
 
 	  If unsure say Y.
 
+config MICROCODE_LATE_LOADING_DEBUG
+	bool "Customize late loading behavior for testing and debugging"
+	default n
+	depends on MICROCODE_LATE_LOADING && CPU_SUP_INTEL
+	help
+	  Provide late microcode loading behaviour customization. Currently,
+	  (1) staging, (2) loading (activation), and (3) revision-check policy
+	  are customizable. Note this is intended only for Intel-internal
+	  valudation exercise.
+
+	  If unsuer say N.
+
 config X86_MSR
 	tristate "/dev/cpu/*/msr - Model-specific register support"
 	help
