@@ -1351,7 +1351,7 @@ void vmx_prepare_switch_to_guest(struct kvm_vcpu *vcpu)
 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
 
 	if (cpu_feature_enabled(X86_FEATURE_FRED) && guest_cpu_cap_has(vcpu, X86_FEATURE_FRED))
-		wrmsrns(MSR_IA32_FRED_RSP0, vmx->msr_guest_fred_rsp0);
+		wrmsrl(MSR_IA32_FRED_RSP0, vmx->msr_guest_fred_rsp0);
 #else
 	savesegment(fs, fs_sel);
 	savesegment(gs, gs_sel);
@@ -1439,7 +1439,7 @@ static void vmx_write_guest_fred_rsp0(struct vcpu_vmx *vmx, u64 data)
 {
 	preempt_disable();
 	if (vmx->guest_state_loaded)
-		wrmsrns(MSR_IA32_FRED_RSP0, data);
+		wrmsrl(MSR_IA32_FRED_RSP0, data);
 	preempt_enable();
 	vmx->msr_guest_fred_rsp0 = data;
 }
@@ -4577,11 +4577,6 @@ static u32 vmx_vmexit_ctrl(void)
 	/* Loading of EFER and PERF_GLOBAL_CTRL are toggled dynamically */
 	return vmexit_ctrl &
 		~(VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL | VM_EXIT_LOAD_IA32_EFER);
-}
-
-static u64 vmx_secondary_vmexit_ctrl(void)
-{
-	return vmcs_config.secondary_vmexit_ctrl;
 }
 
 void vmx_refresh_apicv_exec_ctrl(struct kvm_vcpu *vcpu)
@@ -8016,28 +8011,6 @@ static void update_intel_pt_cfg(struct kvm_vcpu *vcpu)
 	/* unmask address range configure area */
 	for (i = 0; i < vmx->pt_desc.num_address_ranges; i++)
 		vmx->pt_desc.ctl_bitmask &= ~(0xfULL << (32 + i * 4));
-}
-
-static void vmx_set_intercept_for_fred_msr(struct kvm_vcpu *vcpu)
-{
-	bool flag = !guest_cpu_cap_has(vcpu, X86_FEATURE_FRED);
-
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP0, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP1, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP2, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_RSP3, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_STKLVLS, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP1, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP2, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP3, MSR_TYPE_RW, flag);
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_CONFIG, MSR_TYPE_RW, flag);
-
-	/*
-	 * flag = !(CET.SUPERVISOR_SHADOW_STACK || FRED)
-	 *
-	 * A possible optimization is to intercept SSPs when FRED && !CET.SUPERVISOR_SHADOW_STACK.
-	 */
-	vmx_set_intercept_for_msr(vcpu, MSR_IA32_FRED_SSP0, MSR_TYPE_RW, flag);
 }
 
 void vmx_vcpu_after_set_cpuid(struct kvm_vcpu *vcpu)
