@@ -1997,12 +1997,23 @@ config INTEL_TDX_HOST
 	depends on X86_X2APIC
 	select ARCH_KEEP_MEMBLOCK
 	depends on CONTIG_ALLOC
-	depends on !KEXEC_CORE
 	depends on X86_MCE
 	help
 	  Intel Trust Domain Extensions (TDX) protects guest VMs from malicious
 	  host and certain physical attacks.  This option enables necessary TDX
 	  support in the host kernel to run confidential VMs.
+
+	  If unsure, say N.
+
+config INTEL_TDX_HOST_DEBUG
+	tristate "TDX host debugfs"
+	default n
+	depends on INTEL_TDX_HOST
+	depends on DEBUG_FS
+	depends on KVM
+	help
+	  TDX module debug support via debug fs.  The debug version of TDX
+	  module is required.
 
 	  If unsure, say N.
 

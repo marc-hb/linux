@@ -14,24 +14,40 @@
  * and find the first range, but that's correct because the condition
  * expression would cause us to quit the loop.
  */
-static void encrypt_region(struct kvm_vm *vm, struct userspace_mem_region *region)
+static int encrypt_region(struct kvm_vm *vm,
+			  struct userspace_mem_region *region,
+			  uint8_t page_type)
 {
 	const struct sparsebit *protected_phy_pages = region->protected_phy_pages;
 	const vm_paddr_t gpa_base = region->region.guest_phys_addr;
 	const sparsebit_idx_t lowest_page_in_region = gpa_base >> vm->page_shift;
 	sparsebit_idx_t i, j;
+	int ret;
 
 	if (!sparsebit_any_set(protected_phy_pages))
-		return;
+		return 0;
 
-	sev_register_encrypted_memory(vm, region);
+	if (vm->type == KVM_X86_SEV_VM || vm->type == KVM_X86_SEV_ES_VM)
+		sev_register_encrypted_memory(vm, region);
 
 	sparsebit_for_each_set_range(protected_phy_pages, i, j) {
 		const uint64_t size = (j - i + 1) * vm->page_size;
 		const uint64_t offset = (i - lowest_page_in_region) * vm->page_size;
 
-		sev_launch_update_data(vm, gpa_base + offset, size);
+		if (vm->type == KVM_X86_SNP_VM) {
+			vm_mem_set_private(vm, gpa_base + offset, size);
+			ret = snp_launch_update_data(vm, gpa_base + offset, size,
+						     page_type);
+			if (ret)
+				return ret;
+			continue;
+		}
+		ret = sev_launch_update_data(vm, gpa_base + offset, size);
+		if (ret)
+			return ret;
 	}
+
+	return 0;
 }
 
 void sev_vm_init(struct kvm_vm *vm)
@@ -60,56 +76,123 @@ void sev_es_vm_init(struct kvm_vm *vm)
 	}
 }
 
-void sev_vm_launch(struct kvm_vm *vm, uint32_t policy)
+void snp_vm_init(struct kvm_vm *vm)
+{
+	struct kvm_sev_init init = { 0 };
+
+	assert(vm->type == KVM_X86_SNP_VM);
+	vm_sev_ioctl(vm, KVM_SEV_INIT2, &init);
+}
+
+int sev_vm_launch_start(struct kvm_vm *vm, uint32_t policy)
 {
 	struct kvm_sev_launch_start launch_start = {
 		.policy = policy,
 	};
+
+	return __vm_sev_ioctl(vm, KVM_SEV_LAUNCH_START, &launch_start);
+}
+
+int sev_vm_launch_update(struct kvm_vm *vm, uint32_t policy)
+{
 	struct userspace_mem_region *region;
-	struct kvm_sev_guest_status status;
-	int ctr;
+	int ctr, ret;
 
-	vm_sev_ioctl(vm, KVM_SEV_LAUNCH_START, &launch_start);
-	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
-
-	TEST_ASSERT_EQ(status.policy, policy);
-	TEST_ASSERT_EQ(status.state, SEV_GUEST_STATE_LAUNCH_UPDATE);
-
-	hash_for_each(vm->regions.slot_hash, ctr, region, slot_node)
-		encrypt_region(vm, region);
-
+	hash_for_each(vm->regions.slot_hash, ctr, region, slot_node) {
+		ret = encrypt_region(vm, region, 0);
+		if (ret)
+			return ret;
+	}
 	if (policy & SEV_POLICY_ES)
 		vm_sev_ioctl(vm, KVM_SEV_LAUNCH_UPDATE_VMSA, NULL);
 
 	vm->arch.is_pt_protected = true;
+
+	return 0;
 }
 
-void sev_vm_launch_measure(struct kvm_vm *vm, uint8_t *measurement)
+void sev_vm_launch(struct kvm_vm *vm, uint32_t policy)
+{
+	struct kvm_sev_guest_status status;
+	int ret;
+
+	ret = sev_vm_launch_start(vm, policy);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_SNP_LAUNCH_START, ret));
+
+	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
+	TEST_ASSERT_EQ(status.policy, policy);
+	TEST_ASSERT_EQ(status.state, SEV_GUEST_STATE_LAUNCH_UPDATE);
+
+	ret = sev_vm_launch_update(vm, policy);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_LAUNCH_UPDATE_DATA, ret));
+}
+
+int sev_vm_launch_measure(struct kvm_vm *vm, uint8_t *measurement)
 {
 	struct kvm_sev_launch_measure launch_measure;
-	struct kvm_sev_guest_status guest_status;
 
 	launch_measure.len = 256;
 	launch_measure.uaddr = (__u64)measurement;
-	vm_sev_ioctl(vm, KVM_SEV_LAUNCH_MEASURE, &launch_measure);
 
-	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &guest_status);
-	TEST_ASSERT_EQ(guest_status.state, SEV_GUEST_STATE_LAUNCH_SECRET);
+	return __vm_sev_ioctl(vm, KVM_SEV_LAUNCH_MEASURE, &launch_measure);
 }
 
-void sev_vm_launch_finish(struct kvm_vm *vm)
+int sev_vm_launch_finish(struct kvm_vm *vm)
 {
-	struct kvm_sev_guest_status status;
+	return __vm_sev_ioctl(vm, KVM_SEV_LAUNCH_FINISH, NULL);
+}
 
-	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
-	TEST_ASSERT(status.state == SEV_GUEST_STATE_LAUNCH_UPDATE ||
-		    status.state == SEV_GUEST_STATE_LAUNCH_SECRET,
-		    "Unexpected guest state: %d", status.state);
+int snp_vm_launch(struct kvm_vm *vm, uint32_t policy, uint8_t flags)
+{
+	struct kvm_sev_snp_launch_start launch_start = {
+		.policy = policy,
+		.flags = flags,
+	};
 
-	vm_sev_ioctl(vm, KVM_SEV_LAUNCH_FINISH, NULL);
+	return __vm_sev_ioctl(vm, KVM_SEV_SNP_LAUNCH_START, &launch_start);
+}
 
-	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
-	TEST_ASSERT_EQ(status.state, SEV_GUEST_STATE_RUNNING);
+int snp_vm_launch_update(struct kvm_vm *vm, uint8_t page_type)
+{
+	struct userspace_mem_region *region;
+	int ctr, ret;
+
+	hash_for_each(vm->regions.slot_hash, ctr, region, slot_node) {
+		ret = encrypt_region(vm, region, page_type);
+		if (ret)
+			return ret;
+	}
+
+	vm->arch.is_pt_protected = true;
+
+	return 0;
+}
+
+int snp_vm_launch_finish(struct kvm_vm *vm, uint16_t flags)
+{
+	struct kvm_sev_snp_launch_finish launch_finish = {
+		.flags = flags,
+	};
+
+	return __vm_sev_ioctl(vm, KVM_SEV_SNP_LAUNCH_FINISH, &launch_finish);
+}
+
+bool is_kvm_snp_supported(void)
+{
+	int sev_fd = open_sev_dev_path_or_exit();
+	struct sev_user_data_status sev_status;
+
+	struct sev_issue_cmd arg = {
+		.cmd = SEV_PLATFORM_STATUS,
+		.data = (unsigned long)&sev_status,
+	};
+
+	kvm_ioctl(sev_fd, SEV_ISSUE_CMD, &arg);
+	close(sev_fd);
+
+	return sev_status.api_major > SNP_FW_REQ_VER_MAJOR ||
+		(sev_status.api_major == SNP_FW_REQ_VER_MAJOR &&
+		sev_status.api_minor >= SNP_FW_REQ_VER_MINOR);
 }
 
 struct kvm_vm *vm_sev_create_with_one_vcpu(uint32_t type, void *guest_code,
@@ -130,12 +213,46 @@ struct kvm_vm *vm_sev_create_with_one_vcpu(uint32_t type, void *guest_code,
 
 void vm_sev_launch(struct kvm_vm *vm, uint32_t policy, uint8_t *measurement)
 {
-	sev_vm_launch(vm, policy);
+	struct kvm_sev_guest_status status;
+	int ret;
+
+	if (vm->type == KVM_X86_SNP_VM) {
+		vm_enable_cap(vm, KVM_CAP_EXIT_HYPERCALL, (1 << KVM_HC_MAP_GPA_RANGE));
+		ret = snp_vm_launch(vm, policy, 0);
+		TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_SNP_LAUNCH_START, ret));
+
+		ret = snp_vm_launch_update(vm, KVM_SEV_SNP_PAGE_TYPE_NORMAL);
+		TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_SNP_LAUNCH_UPDATE, ret));
+
+		ret = snp_vm_launch_finish(vm, 0);
+		TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_SNP_LAUNCH_FINISH, ret));
+		return;
+	}
+
+	ret = sev_vm_launch_start(vm, policy);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_LAUNCH_START, ret));
+
+	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
+	TEST_ASSERT_EQ(status.policy, policy);
+	TEST_ASSERT_EQ(status.state, SEV_GUEST_STATE_LAUNCH_UPDATE);
+
+	ret = sev_vm_launch_update(vm, policy);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_LAUNCH_UPDATE_DATA, ret));
 
 	if (!measurement)
 		measurement = alloca(256);
 
-	sev_vm_launch_measure(vm, measurement);
+	ret = sev_vm_launch_measure(vm, measurement);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_LAUNCH_MEASURE, ret));
 
-	sev_vm_launch_finish(vm);
+	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
+	TEST_ASSERT(status.state == SEV_GUEST_STATE_LAUNCH_UPDATE ||
+		    status.state == SEV_GUEST_STATE_LAUNCH_SECRET,
+		    "Unexpected guest state: %d", status.state);
+
+	ret = sev_vm_launch_finish(vm);
+	TEST_ASSERT(!ret, KVM_IOCTL_ERROR(KVM_SEV_LAUNCH_FINISH, ret));
+
+	vm_sev_ioctl(vm, KVM_SEV_GUEST_STATUS, &status);
+	TEST_ASSERT_EQ(status.state, SEV_GUEST_STATE_RUNNING);
 }

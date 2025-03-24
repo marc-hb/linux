@@ -20,6 +20,7 @@
 #include "lapic.h"
 #include "nested.h"
 #include "pmu.h"
+#include "tdx.h"
 
 /*
  * Perf's "BASE" is wildly misleading, architectural PMUs use bits 31:16 of ECX
@@ -37,6 +38,22 @@
 
 static void vmx_enable_lbr_msrs_passthrough(struct kvm_vcpu *vcpu);
 static void vmx_disable_lbr_msrs_passthrough(struct kvm_vcpu *vcpu);
+
+struct lbr_desc *vcpu_to_lbr_desc(struct kvm_vcpu *vcpu)
+{
+	if (is_td_vcpu(vcpu))
+		return NULL;
+
+	return &to_vmx(vcpu)->lbr_desc;
+}
+
+static struct x86_pmu_lbr *vcpu_to_lbr_records(struct kvm_vcpu *vcpu)
+{
+	if (is_td_vcpu(vcpu))
+		return NULL;
+
+	return &to_vmx(vcpu)->lbr_desc.records;
+}
 
 static void reprogram_fixed_counters(struct kvm_pmu *pmu, u64 data)
 {
@@ -144,6 +161,14 @@ static inline struct kvm_pmc *get_fw_gp_pmc(struct kvm_pmu *pmu, u32 msr)
 		return NULL;
 
 	return get_gp_pmc(pmu, msr, MSR_IA32_PMC0);
+}
+
+bool intel_pmu_lbr_is_enabled(struct kvm_vcpu *vcpu)
+{
+	if (is_td_vcpu(vcpu))
+		return false;
+
+	return !!vcpu_to_lbr_records(vcpu)->nr;
 }
 
 static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
@@ -255,6 +280,9 @@ static inline void intel_pmu_release_guest_lbr_event(struct kvm_vcpu *vcpu)
 {
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 
+	if (!lbr_desc)
+		return;
+
 	if (lbr_desc->event) {
 		perf_event_release_kernel(lbr_desc->event);
 		lbr_desc->event = NULL;
@@ -295,6 +323,9 @@ int intel_pmu_create_guest_lbr_event(struct kvm_vcpu *vcpu)
 		.branch_sample_type = PERF_SAMPLE_BRANCH_CALL_STACK |
 					PERF_SAMPLE_BRANCH_USER,
 	};
+
+	if (WARN_ON_ONCE(!lbr_desc))
+		return 0;
 
 	if (unlikely(lbr_desc->event)) {
 		__set_bit(INTEL_PMC_IDX_FIXED_VLBR, pmu->pmc_in_use);
@@ -856,6 +887,9 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 	u64 perf_capabilities;
 
+	if (!lbr_desc)
+		return;
+
 	memset(&lbr_desc->records, 0, sizeof(lbr_desc->records));
 
 	pmu->arch_lbr_ctrl_rsvd = ~(0xfull | 0x7f0000ull);
@@ -865,6 +899,17 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 	 * available in mediated vPMU
 	 */
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
+
+        /*
+         * Legacy LBR is only available in legacy vPMU and Arch LBR is only
+         * available in mediated vPMU
+         */
+	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
+		((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
+		(cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
+		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
+	else
+		lbr_desc->records.nr = 0;
 
 	/*
 	 * The LBR depth is determined by host capability and it won't be
@@ -1021,7 +1066,8 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 					  MSR_CORE_PERF_GLOBAL_OVF_CTRL_OVF_UNCORE);
 	}
 
-	if (guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
+	if (kvm_cpu_cap_has(X86_FEATURE_INTEL_PT) &&
+	    guest_cpu_cap_has(vcpu, X86_FEATURE_INTEL_PT)) {
 		pmu->global_status_rsvd &= ~MSR_CORE_PERF_GLOBAL_OVF_CTRL_TRACE_TOPA_PMI;
 
 		entry = kvm_find_cpuid_entry_index(vcpu, 0x14, 0);
@@ -1029,8 +1075,10 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_EN_PT_LOG;
 	}
 
-	if (guest_cpu_cap_has(vcpu, X86_FEATURE_HLE) ||
-	    guest_cpu_cap_has(vcpu, X86_FEATURE_RTM)) {
+	entry = kvm_find_cpuid_entry_index(vcpu, 7, 0);
+	if (entry &&
+	    (boot_cpu_has(X86_FEATURE_HLE) || boot_cpu_has(X86_FEATURE_RTM)) &&
+	    (entry->ebx & (X86_FEATURE_HLE|X86_FEATURE_RTM))) {
 		pmu->eventsel_rsvd ^= HSW_IN_TX;
 		pmu->raw_event_mask |= (HSW_IN_TX|HSW_IN_TX_CHECKPOINTED);
 	}
@@ -1058,6 +1106,7 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	fixed_bits = fixed_ctrs_bitmap(pmu);
 	gp_bits = gp_ctrs_bitmap(pmu);
 	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
+
 	if (perf_capabilities & PERF_CAP_PEBS_FORMAT) {
 		if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
 			pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd;
@@ -1248,7 +1297,7 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 			VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL |
 			VM_EXIT_SAVE_IA32_PERF_GLOBAL_CTRL, mediated);
 
-	arch_lbr = mediated && guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR);
+	arch_lbr = mediated && kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR);
 	vm_exit_controls_changebit(vmx, VM_EXIT_CLEAR_IA32_LBR_CTL, arch_lbr);
 	vm_entry_controls_changebit(vmx, VM_ENTRY_LOAD_IA32_LBR_CTL, arch_lbr);
 }
@@ -1258,6 +1307,9 @@ static void intel_pmu_init(struct kvm_vcpu *vcpu)
 	int i;
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+
+	if (!lbr_desc)
+		return;
 
 	for (i = 0; i < KVM_MAX_NR_INTEL_GP_COUNTERS; i++) {
 		pmu->gp_counters[i].type = KVM_PMC_GP;
@@ -1402,7 +1454,9 @@ void vmx_passthrough_lbr_msrs(struct kvm_vcpu *vcpu)
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
 
-	if (guest_cpu_cap_has(vcpu, X86_FEATURE_ARCH_LBR))
+	if (kvm_cpu_cap_has(X86_FEATURE_ARCH_LBR))
+		return;
+	if (WARN_ON_ONCE(!lbr_desc))
 		return;
 
 	if (!lbr_desc->event) {
