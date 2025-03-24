@@ -113,7 +113,8 @@ enum icp_qat_capabilities_mask {
 	ICP_ACCEL_CAPABILITIES_LZ4_COMPRESSION = BIT(24),
 	ICP_ACCEL_CAPABILITIES_LZ4S_COMPRESSION = BIT(25),
 	ICP_ACCEL_CAPABILITIES_AES_V2 = BIT(26),
-	/* Bits 27-28 are currently reserved */
+	ICP_ACCEL_CAPABILITIES_KPT = BIT(27),
+	/* Bit 28 is currently reserved */
 	ICP_ACCEL_CAPABILITIES_ZUC_256 = BIT(29),
 	ICP_ACCEL_CAPABILITIES_WIRELESS_CRYPTO_EXT = BIT(30),
 };
@@ -335,7 +336,8 @@ enum icp_qat_hw_compression_delayed_match {
 enum icp_qat_hw_compression_algo {
 	ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE = 0,
 	ICP_QAT_HW_COMPRESSION_ALGO_LZS = 1,
-	ICP_QAT_HW_COMPRESSION_ALGO_DELIMITER = 2
+	ICP_QAT_HW_COMPRESSION_ALGO_ZSTD = 2,
+	ICP_QAT_HW_COMPRESSION_ALGO_DELIMITER = 3
 };
 
 enum icp_qat_hw_compression_depth {

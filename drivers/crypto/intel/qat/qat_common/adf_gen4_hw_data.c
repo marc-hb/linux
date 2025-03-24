@@ -6,8 +6,13 @@
 #include "adf_cfg_services.h"
 #include "adf_common_drv.h"
 #include "adf_fw_config.h"
+#include "adf_gen4_hw_csr_data.h"
 #include "adf_gen4_hw_data.h"
 #include "adf_gen4_pm.h"
+#include "icp_qat_fw_comp.h"
+#include "adf_ring_queue.h"
+#include "icp_qat_hw_20_comp.h"
+#include "qat_crypto.h"
 
 u32 adf_gen4_get_accel_mask(struct adf_hw_device_data *self)
 {
@@ -258,24 +263,37 @@ static const u16 rp_group_to_arb_mask[] = {
 	[RP_GROUP_1] = 0xA,
 };
 
-static bool is_single_service(int service_id)
+static bool is_single_service(u32 service_msk)
 {
-	switch (service_id) {
-	case SVC_DC:
-	case SVC_SYM:
-	case SVC_ASYM:
-		return true;
-	case SVC_CY:
-	case SVC_CY2:
-	case SVC_DCC:
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
-	default:
+	int num_svc = 0;
+
+	num_svc = hweight32(service_msk);
+
+	if (num_svc > 1 || service_msk == SVC_DCC)
 		return false;
+
+	return true;
+}
+
+int adf_gen4_service_supported(u32 service_mask)
+{
+	int num_svc = hweight32(service_mask);
+
+	if (service_mask >= BIT(SVC_ID_COUNT) || service_mask & SVC_DECOMP)
+		return -EINVAL;
+
+	switch (num_svc) {
+	case SINGLE_SVC:
+		return 0;
+	case DOUBLE_SVC:
+		if (service_mask & SVC_DCC)
+			return -EINVAL;
+		return 0;
+	default:
+		return -EINVAL;
 	}
 }
+EXPORT_SYMBOL_GPL(adf_gen4_service_supported);
 
 int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 {
@@ -283,8 +301,8 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 	u32 *thd2arb_map = hw_data->thd_to_arb_map;
 	unsigned int ae_cnt, worker_obj_cnt, i, j;
 	unsigned long ae_mask, thds_mask;
-	int srv_id, rp_group;
-	u32 thd2arb_map_base;
+	u32 thd2arb_map_base, svc_mask;
+	int rp_group, ret;
 	u16 arb_mask;
 
 	if (!hw_data->get_rp_group || !hw_data->get_ena_thd_mask ||
@@ -292,15 +310,15 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 	    !hw_data->uof_get_ae_mask)
 		return -EFAULT;
 
-	srv_id = adf_get_service_enabled(accel_dev);
-	if (srv_id < 0)
-		return srv_id;
+	ret = adf_get_service_enabled(accel_dev, &svc_mask);
+	if (ret)
+		return ret;
 
 	ae_cnt = hw_data->get_num_aes(hw_data);
 	worker_obj_cnt = hw_data->uof_get_num_objs(accel_dev) -
 			 ADF_GEN4_ADMIN_ACCELENGINES;
 
-	if (srv_id == SVC_DCC) {
+	if (svc_mask == SVC_DCC) {
 		if (ae_cnt > ICP_QAT_HW_AE_DELIMITER)
 			return -EINVAL;
 
@@ -321,7 +339,7 @@ int adf_gen4_init_thd2arb_map(struct adf_accel_dev *accel_dev)
 		if (thds_mask == ADF_GEN4_ENA_THD_MASK_ERROR)
 			return -EINVAL;
 
-		if (is_single_service(srv_id))
+		if (is_single_service(svc_mask))
 			arb_mask = rp_group_to_arb_mask[RP_GROUP_0] |
 				   rp_group_to_arb_mask[RP_GROUP_1];
 		else
@@ -343,6 +361,7 @@ u16 adf_gen4_get_ring_to_svc_map(struct adf_accel_dev *accel_dev)
 	enum adf_cfg_service_type rps[RP_GROUP_COUNT] = { };
 	unsigned int ae_mask, start_id, worker_obj_cnt, i;
 	u16 ring_to_svc_map;
+	u32 svc_mask;
 	int rp_group;
 
 	if (!hw_data->get_rp_group || !hw_data->uof_get_ae_mask ||
@@ -350,7 +369,9 @@ u16 adf_gen4_get_ring_to_svc_map(struct adf_accel_dev *accel_dev)
 		return 0;
 
 	/* If dcc, all rings handle compression requests */
-	if (adf_get_service_enabled(accel_dev) == SVC_DCC) {
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return 0;
+	if (svc_mask == SVC_DCC) {
 		for (i = 0; i < RP_GROUP_COUNT; i++)
 			rps[i] = COMP;
 		goto set_mask;
@@ -489,183 +510,137 @@ int adf_gen4_bank_drain_start(struct adf_accel_dev *accel_dev,
 	return ret;
 }
 
-static void bank_state_save(struct adf_hw_csr_ops *ops, void __iomem *base,
-			    u32 bank, struct bank_state *state, u32 num_rings)
+static void adf_gen4_build_comp_dc_hw_block(void **ctx,
+					    enum icp_qat_hw_compression_algo algo)
 {
-	u32 i;
+	struct icp_qat_fw_comp_req *req_tmpl =
+		(struct icp_qat_fw_comp_req *)*ctx;
+	struct icp_qat_fw_comp_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
+	struct icp_qat_hw_comp_20_config_csr_upper hw_comp_upper_csr = {0};
+	struct icp_qat_hw_comp_20_config_csr_lower hw_comp_lower_csr = {0};
+	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
+	u32 upper_val;
+	u32 lower_val;
 
-	state->ringstat0 = ops->read_csr_stat(base, bank);
-	state->ringuostat = ops->read_csr_uo_stat(base, bank);
-	state->ringestat = ops->read_csr_e_stat(base, bank);
-	state->ringnestat = ops->read_csr_ne_stat(base, bank);
-	state->ringnfstat = ops->read_csr_nf_stat(base, bank);
-	state->ringfstat = ops->read_csr_f_stat(base, bank);
-	state->ringcstat0 = ops->read_csr_c_stat(base, bank);
-	state->iaintflagen = ops->read_csr_int_en(base, bank);
-	state->iaintflagreg = ops->read_csr_int_flag(base, bank);
-	state->iaintflagsrcsel0 = ops->read_csr_int_srcsel(base, bank);
-	state->iaintcolen = ops->read_csr_int_col_en(base, bank);
-	state->iaintcolctl = ops->read_csr_int_col_ctl(base, bank);
-	state->iaintflagandcolen = ops->read_csr_int_flag_and_col(base, bank);
-	state->ringexpstat = ops->read_csr_exp_stat(base, bank);
-	state->ringexpintenable = ops->read_csr_exp_int_en(base, bank);
-	state->ringsrvarben = ops->read_csr_ring_srv_arb_en(base, bank);
-
-	for (i = 0; i < num_rings; i++) {
-		state->rings[i].head = ops->read_csr_ring_head(base, bank, i);
-		state->rings[i].tail = ops->read_csr_ring_tail(base, bank, i);
-		state->rings[i].config = ops->read_csr_ring_config(base, bank, i);
-		state->rings[i].base = ops->read_csr_ring_base(base, bank, i);
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DYNAMIC;
+	break;
+	default:
+		return;
 	}
+	hw_comp_lower_csr.skip_ctrl = ICP_QAT_HW_COMP_20_BYTE_SKIP_3BYTE_LITERAL;
+	hw_comp_lower_csr.algo = ICP_QAT_HW_COMP_20_HW_COMP_FORMAT_ILZ77;
+	hw_comp_lower_csr.lllbd = ICP_QAT_HW_COMP_20_LLLBD_CTRL_LLLBD_ENABLED;
+	hw_comp_lower_csr.sd = ICP_QAT_HW_COMP_20_SEARCH_DEPTH_LEVEL_1;
+	hw_comp_lower_csr.hash_update = ICP_QAT_HW_COMP_20_SKIP_HASH_UPDATE_DONT_ALLOW;
+	hw_comp_lower_csr.edmm = ICP_QAT_HW_COMP_20_EXTENDED_DELAY_MATCH_MODE_EDMM_ENABLED;
+	hw_comp_upper_csr.nice = ICP_QAT_HW_COMP_20_CONFIG_CSR_NICE_PARAM_DEFAULT_VAL;
+	hw_comp_upper_csr.lazy = ICP_QAT_HW_COMP_20_CONFIG_CSR_LAZY_PARAM_DEFAULT_VAL;
+
+	upper_val = ICP_QAT_FW_COMP_20_BUILD_CONFIG_UPPER(hw_comp_upper_csr);
+	lower_val = ICP_QAT_FW_COMP_20_BUILD_CONFIG_LOWER(hw_comp_lower_csr);
+
+	cd_pars->u.sl.comp_slice_cfg_word[0] = lower_val;
+	cd_pars->u.sl.comp_slice_cfg_word[1] = upper_val;
 }
 
-#define CHECK_STAT(op, expect_val, name, args...) \
-({ \
-	u32 __expect_val = (expect_val); \
-	u32 actual_val = op(args); \
-	(__expect_val == actual_val) ? 0 : \
-		(pr_err("QAT: Fail to restore %s register. Expected 0x%x, actual 0x%x\n", \
-			name, __expect_val, actual_val), -EINVAL); \
-})
-
-static int bank_state_restore(struct adf_hw_csr_ops *ops, void __iomem *base,
-			      u32 bank, struct bank_state *state, u32 num_rings,
-			      int tx_rx_gap)
+static void adf_gen4_build_decomp_dc_hw_block(void **ctx,
+					      enum icp_qat_hw_compression_algo algo)
 {
-	u32 val, tmp_val, i;
-	int ret;
+	struct icp_qat_fw_comp_req *req_tmpl =
+		(struct icp_qat_fw_comp_req *)*ctx;
+	struct icp_qat_hw_decomp_20_config_csr_lower hw_decomp_lower_csr = {0};
+	struct icp_qat_fw_comp_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
+	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
+	u32 lower_val;
 
-	for (i = 0; i < num_rings; i++)
-		ops->write_csr_ring_base(base, bank, i, state->rings[i].base);
-
-	for (i = 0; i < num_rings; i++)
-		ops->write_csr_ring_config(base, bank, i, state->rings[i].config);
-
-	for (i = 0; i < num_rings / 2; i++) {
-		int tx = i * (tx_rx_gap + 1);
-		int rx = tx + tx_rx_gap;
-
-		ops->write_csr_ring_head(base, bank, tx, state->rings[tx].head);
-		ops->write_csr_ring_tail(base, bank, tx, state->rings[tx].tail);
-
-		/*
-		 * The TX ring head needs to be updated again to make sure that
-		 * the HW will not consider the ring as full when it is empty
-		 * and the correct state flags are set to match the recovered state.
-		 */
-		if (state->ringestat & BIT(tx)) {
-			val = ops->read_csr_int_srcsel(base, bank);
-			val |= ADF_RP_INT_SRC_SEL_F_RISE_MASK;
-			ops->write_csr_int_srcsel_w_val(base, bank, val);
-			ops->write_csr_ring_head(base, bank, tx, state->rings[tx].head);
-		}
-
-		ops->write_csr_ring_tail(base, bank, rx, state->rings[rx].tail);
-		val = ops->read_csr_int_srcsel(base, bank);
-		val |= ADF_RP_INT_SRC_SEL_F_RISE_MASK << ADF_RP_INT_SRC_SEL_RANGE_WIDTH;
-		ops->write_csr_int_srcsel_w_val(base, bank, val);
-
-		ops->write_csr_ring_head(base, bank, rx, state->rings[rx].head);
-		val = ops->read_csr_int_srcsel(base, bank);
-		val |= ADF_RP_INT_SRC_SEL_F_FALL_MASK << ADF_RP_INT_SRC_SEL_RANGE_WIDTH;
-		ops->write_csr_int_srcsel_w_val(base, bank, val);
-
-		/*
-		 * The RX ring tail needs to be updated again to make sure that
-		 * the HW will not consider the ring as empty when it is full
-		 * and the correct state flags are set to match the recovered state.
-		 */
-		if (state->ringfstat & BIT(rx))
-			ops->write_csr_ring_tail(base, bank, rx, state->rings[rx].tail);
+	switch (algo) {
+	case ICP_QAT_HW_COMPRESSION_ALGO_DEFLATE:
+		header->service_cmd_id = ICP_QAT_FW_COMP_CMD_DECOMPRESS;
+	break;
+	default:
+		return;
 	}
+	hw_decomp_lower_csr.algo = ICP_QAT_HW_DECOMP_20_HW_DECOMP_FORMAT_DEFLATE;
+	lower_val = ICP_QAT_FW_DECOMP_20_BUILD_CONFIG_LOWER(hw_decomp_lower_csr);
 
-	ops->write_csr_int_flag_and_col(base, bank, state->iaintflagandcolen);
-	ops->write_csr_int_en(base, bank, state->iaintflagen);
-	ops->write_csr_int_col_en(base, bank, state->iaintcolen);
-	ops->write_csr_int_srcsel_w_val(base, bank, state->iaintflagsrcsel0);
-	ops->write_csr_exp_int_en(base, bank, state->ringexpintenable);
-	ops->write_csr_int_col_ctl(base, bank, state->iaintcolctl);
-	ops->write_csr_ring_srv_arb_en(base, bank, state->ringsrvarben);
+	cd_pars->u.sl.comp_slice_cfg_word[0] = lower_val;
+	cd_pars->u.sl.comp_slice_cfg_word[1] = 0;
+}
 
-	/* Check that all ring statuses match the saved state. */
-	ret = CHECK_STAT(ops->read_csr_stat, state->ringstat0, "ringstat",
-			 base, bank);
-	if (ret)
-		return ret;
+void adf_gen4_init_dc_ops(struct adf_dc_ops *dc_ops)
+{
+	dc_ops->build_comp_dc_hw_block = adf_gen4_build_comp_dc_hw_block;
+	dc_ops->build_decomp_dc_hw_block = adf_gen4_build_decomp_dc_hw_block;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_init_dc_ops);
 
-	ret = CHECK_STAT(ops->read_csr_e_stat, state->ringestat, "ringestat",
-			 base, bank);
-	if (ret)
-		return ret;
+u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
+			     enum adf_cfg_service_type svc_type)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
+	u32 ae_cnt;
 
-	ret = CHECK_STAT(ops->read_csr_ne_stat, state->ringnestat, "ringnestat",
-			 base, bank);
-	if (ret)
-		return ret;
+	ae_cnt = hw_data->get_num_aes(hw_data);
+	if (!ae_cnt)
+		return 0;
 
-	ret = CHECK_STAT(ops->read_csr_nf_stat, state->ringnfstat, "ringnfstat",
-			 base, bank);
-	if (ret)
-		return ret;
+	return ae_cnt - 1;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_get_num_svc_aes);
 
-	ret = CHECK_STAT(ops->read_csr_f_stat, state->ringfstat, "ringfstat",
-			 base, bank);
-	if (ret)
-		return ret;
+u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				  struct rl_slice_cnt *slices)
+{
+	switch (svc) {
+	case SYM:
+		return slices->cph_cnt;
+	case ASYM:
+		return slices->pke_cnt;
+	case COMP:
+		return slices->dcpr_cnt;
+	default:
+		return 0;
+	}
+}
+EXPORT_SYMBOL_GPL(adf_gen4_get_rl_svc_slice_cnt);
 
-	ret = CHECK_STAT(ops->read_csr_c_stat, state->ringcstat0, "ringcstat",
-			 base, bank);
-	if (ret)
-		return ret;
+void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev)
+{
+	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 
-	tmp_val = ops->read_csr_exp_stat(base, bank);
-	val = state->ringexpstat;
-	if (tmp_val && !val) {
-		pr_err("QAT: Bank was restored with exception: 0x%x\n", val);
+	hw_data->crypto_cipher_caps = AES_XTS | AES_CTR | AES_CBC;
+	hw_data->crypto_aead_caps = AES_CBC_HMAC_SHA1 | AES_CBC_HMAC_SHA256 |
+				    AES_CBC_HMAC_SHA512;
+}
+EXPORT_SYMBOL_GPL(adf_gen4_set_crypto_cap);
+
+int adf_gen4_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 ring_number,
+				enum adf_ring_queue_mode queue_mode)
+{
+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
+	struct adf_bar *etr_bar;
+
+	if (!base_addr || !hw_data || ring_number >= hw_data->num_banks)
+		return -EINVAL;
+
+	etr_bar = &GET_BARS(accel_dev)[hw_data->get_etr_bar_id(hw_data)];
+
+	switch (queue_mode) {
+	case ADF_RING_QUEUE_UQ:
+		*base_addr = etr_bar->base_addr + ADF_GEN4_UQ_BASE +
+			     ring_number * ADF_RING_BUNDLE_SIZE;
+		break;
+	case ADF_RING_QUEUE_WQ:
+		*base_addr = etr_bar->base_addr + ADF_GEN4_WQ_BASE +
+			     ring_number * ADF_RING_BUNDLE_SIZE;
+		break;
+	default:
 		return -EINVAL;
 	}
 
 	return 0;
 }
-
-int adf_gen4_bank_state_save(struct adf_accel_dev *accel_dev, u32 bank_number,
-			     struct bank_state *state)
-{
-	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
-	struct adf_hw_csr_ops *csr_ops = GET_CSR_OPS(accel_dev);
-	void __iomem *csr_base = adf_get_etr_base(accel_dev);
-
-	if (bank_number >= hw_data->num_banks || !state)
-		return -EINVAL;
-
-	dev_dbg(&GET_DEV(accel_dev), "Saving state of bank %d\n", bank_number);
-
-	bank_state_save(csr_ops, csr_base, bank_number, state,
-			hw_data->num_rings_per_bank);
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(adf_gen4_bank_state_save);
-
-int adf_gen4_bank_state_restore(struct adf_accel_dev *accel_dev, u32 bank_number,
-				struct bank_state *state)
-{
-	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
-	struct adf_hw_csr_ops *csr_ops = GET_CSR_OPS(accel_dev);
-	void __iomem *csr_base = adf_get_etr_base(accel_dev);
-	int ret;
-
-	if (bank_number >= hw_data->num_banks  || !state)
-		return -EINVAL;
-
-	dev_dbg(&GET_DEV(accel_dev), "Restoring state of bank %d\n", bank_number);
-
-	ret = bank_state_restore(csr_ops, csr_base, bank_number, state,
-				 hw_data->num_rings_per_bank, hw_data->tx_rx_gap);
-	if (ret)
-		dev_err(&GET_DEV(accel_dev),
-			"Unable to restore state of bank %d\n", bank_number);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(adf_gen4_bank_state_restore);
+EXPORT_SYMBOL_GPL(adf_gen4_get_ring_base_addr);

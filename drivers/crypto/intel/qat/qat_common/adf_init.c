@@ -10,6 +10,7 @@
 #include "adf_dbgfs.h"
 #include "adf_heartbeat.h"
 #include "adf_rl.h"
+#include "adf_sysfs_anti_rb.h"
 #include "adf_sysfs_ras_counters.h"
 #include "adf_telemetry.h"
 
@@ -147,6 +148,12 @@ static int adf_dev_init(struct adf_accel_dev *accel_dev)
 	if (ret && ret != -EOPNOTSUPP)
 		return ret;
 
+	if (hw_data->set_crypto_cap)
+		hw_data->set_crypto_cap(accel_dev);
+
+	if (hw_data->set_comp_cap)
+		hw_data->set_comp_cap(accel_dev);
+
 	/*
 	 * Subservice initialisation is divided into two stages: init and start.
 	 * This is to facilitate any ordering dependencies between services
@@ -181,6 +188,13 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 	struct service_hndl *service;
 	int ret;
 
+	if (hw_data->set_vc) {
+		dev_info(&GET_DEV(accel_dev),
+			 "Setting virtual channels for device qat_dev%d\n",
+			 accel_dev->accel_id);
+		hw_data->set_vc(accel_dev);
+	}
+
 	set_bit(ADF_STATUS_STARTING, &accel_dev->status);
 
 	if (adf_ae_start(accel_dev)) {
@@ -212,10 +226,24 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 		return -EFAULT;
 	}
 
+	/* Enable Key Protection Technology (KPT) */
+	if (adf_enable_kpt(accel_dev)) {
+		dev_err(&GET_DEV(accel_dev), "Failed to enable KPT\n");
+		return -EFAULT;
+	}
+
 	if (hw_data->start_timer) {
 		ret = hw_data->start_timer(accel_dev);
 		if (ret) {
 			dev_err(&GET_DEV(accel_dev), "Failed to start internal sync timer\n");
+			return ret;
+		}
+	}
+
+	if (hw_data->start_ras_timer) {
+		ret = hw_data->start_ras_timer(accel_dev);
+		if (ret) {
+			dev_err(&GET_DEV(accel_dev), "Failed to start ras uncorrectable timer\n");
 			return ret;
 		}
 	}
@@ -243,7 +271,7 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 	set_bit(ADF_STATUS_STARTED, &accel_dev->status);
 
 	if (!list_empty(&accel_dev->crypto_list) &&
-	    (qat_algs_register() || qat_asym_algs_register())) {
+	    (qat_algs_register(accel_dev) || qat_asym_algs_register())) {
 		dev_err(&GET_DEV(accel_dev),
 			"Failed to register crypto algs\n");
 		set_bit(ADF_STATUS_STARTING, &accel_dev->status);
@@ -263,6 +291,7 @@ static int adf_dev_start(struct adf_accel_dev *accel_dev)
 
 	adf_dbgfs_add(accel_dev);
 	adf_sysfs_start_ras(accel_dev);
+	adf_sysfs_anti_rb_add(accel_dev);
 
 	return 0;
 }
@@ -291,6 +320,7 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 	adf_tl_stop(accel_dev);
 	adf_rl_stop(accel_dev);
 	adf_dbgfs_rm(accel_dev);
+	adf_sysfs_anti_rb_rm(accel_dev);
 	adf_sysfs_stop_ras(accel_dev);
 
 	clear_bit(ADF_STATUS_STARTING, &accel_dev->status);
@@ -324,6 +354,9 @@ static void adf_dev_stop(struct adf_accel_dev *accel_dev)
 		hw_data->stop_timer(accel_dev);
 
 	hw_data->disable_iov(accel_dev);
+
+	if (hw_data->stop_ras_timer)
+		hw_data->stop_ras_timer(accel_dev);
 
 	if (wait)
 		msleep(100);

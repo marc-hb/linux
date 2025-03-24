@@ -31,11 +31,16 @@ enum icp_qat_fw_init_admin_cmd_id {
 	ICP_QAT_FW_RL_REMOVE = 136,
 	ICP_QAT_FW_TL_START = 137,
 	ICP_QAT_FW_TL_STOP = 138,
+	ICP_QAT_FW_KPT_ENABLE = 144,
+	ICP_QAT_FW_SVN_READ = 146,
+	ICP_QAT_FW_SVN_COMMIT = 147,
 };
 
 enum icp_qat_fw_init_admin_resp_status {
 	ICP_QAT_FW_INIT_RESP_STATUS_SUCCESS = 0,
-	ICP_QAT_FW_INIT_RESP_STATUS_FAIL
+	ICP_QAT_FW_INIT_RESP_STATUS_FAIL = 1,
+	ICP_QAT_FW_INIT_RESP_STATUS_RETRY = 2,
+	ICP_QAT_FW_INIT_RESP_STATUS_UNSUPPORTED = 4,
 };
 
 struct icp_qat_fw_init_admin_tl_rp_indexes {
@@ -56,6 +61,8 @@ struct icp_qat_fw_init_admin_slice_cnt {
 	__u8 cph_cnt;
 	__u8 ath_cnt;
 };
+
+#define SLICE_IDX(sl) offsetof(struct icp_qat_fw_init_admin_slice_cnt, sl##_cnt)
 
 struct icp_qat_fw_init_admin_sla_config_params {
 	__u32 pcie_in_cir;
@@ -80,7 +87,8 @@ struct icp_qat_fw_init_admin_req {
 	union {
 		struct {
 			__u16 ibuf_size_in_kb;
-			__u16 resrvd3;
+			__u8 fw_flags;
+			__u8 resrvd3;
 		};
 		struct {
 			__u32 int_timer_ticks;
@@ -159,11 +167,23 @@ struct icp_qat_fw_init_admin_resp {
 		};
 		struct icp_qat_fw_init_admin_slice_cnt slices;
 		__u16 fw_capabilities;
+		struct {
+			__u8 enforced_min_svn;
+			__u8 permanent_min_svn;
+			__u8 active_svn;
+			__u8 resrvd9;
+			__u16 svn_status;
+			__u16 resrvd10;
+			__u64 resrvd11;
+		};
 	};
 } __packed;
 
 #define ICP_QAT_FW_SYNC ICP_QAT_FW_HEARTBEAT_SYNC
 #define ICP_QAT_FW_CAPABILITIES_GET ICP_QAT_FW_CRYPTO_CAPABILITY_GET
+
+/* Init AE flags */
+#define ICP_QAT_FW_INIT_AE_AT_ENABLE_FLAG 0x01
 
 #define ICP_QAT_NUMBER_OF_PM_EVENTS 8
 

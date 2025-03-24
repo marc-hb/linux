@@ -71,16 +71,92 @@ static ssize_t reset_error_counters_store(struct device *dev,
 	return count;
 }
 
+static ssize_t errors_nonfatal_threshold_store(struct device *dev,
+					       struct device_attribute *dev_attr,
+					       const char *buf, size_t count)
+{
+	unsigned int uncorr_error_threshold;
+	struct adf_accel_dev *accel_dev;
+	int ret;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	ret = kstrtouint(buf, 10, &uncorr_error_threshold);
+	if (ret)
+		return ret;
+
+	accel_dev->ras_errors.uncorr_error_threshold = uncorr_error_threshold;
+
+	return count;
+}
+
+static ssize_t errors_nonfatal_threshold_show(struct device *dev,
+					      struct device_attribute *dev_attr,
+					      char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	unsigned long counter;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	counter = accel_dev->ras_errors.uncorr_error_threshold;
+	return scnprintf(buf, PAGE_SIZE, "%ld\n", counter);
+}
+
+static ssize_t errors_nonfatal_timer_store(struct device *dev,
+					   struct device_attribute *dev_attr,
+					   const char *buf, size_t count)
+{
+	unsigned int uncorr_error_timer;
+	struct adf_accel_dev *accel_dev;
+	int ret;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	ret = kstrtouint(buf, 10, &uncorr_error_timer);
+	if (ret)
+		return ret;
+
+	accel_dev->ras_errors.uncorr_error_timer = uncorr_error_timer;
+
+	return count;
+}
+
+static ssize_t errors_nonfatal_timer_show(struct device *dev,
+					  struct device_attribute *dev_attr,
+					  char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	unsigned long counter;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	counter = accel_dev->ras_errors.uncorr_error_timer;
+	return scnprintf(buf, PAGE_SIZE, "%ld\n", counter);
+}
+
 static DEVICE_ATTR_RO(errors_correctable);
 static DEVICE_ATTR_RO(errors_nonfatal);
 static DEVICE_ATTR_RO(errors_fatal);
 static DEVICE_ATTR_WO(reset_error_counters);
+static DEVICE_ATTR_RW(errors_nonfatal_threshold);
+static DEVICE_ATTR_RW(errors_nonfatal_timer);
 
 static struct attribute *qat_ras_attrs[] = {
 	&dev_attr_errors_correctable.attr,
 	&dev_attr_errors_nonfatal.attr,
 	&dev_attr_errors_fatal.attr,
 	&dev_attr_reset_error_counters.attr,
+	&dev_attr_errors_nonfatal_threshold.attr,
+	&dev_attr_errors_nonfatal_timer.attr,
 	NULL,
 };
 

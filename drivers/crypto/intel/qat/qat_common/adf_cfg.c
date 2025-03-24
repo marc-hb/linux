@@ -382,3 +382,38 @@ int adf_cfg_get_param_value(struct adf_accel_dev *accel_dev,
 	return ret;
 }
 EXPORT_SYMBOL_GPL(adf_cfg_get_param_value);
+
+/**
+ * adf_cfg_del_key_value_param() - Remove key-value config entry from config table.
+ * @accel_dev:  Pointer to acceleration device.
+ * @section_name: Name of the section where the param is stored
+ * @key: The key string
+ *
+ * Function deletes configuration key - value entry from the appropriate section
+ * in the given acceleration device.
+ *
+ * Return: 0 on success, error code otherwise.
+ */
+int adf_cfg_del_key_value_param(struct adf_accel_dev *accel_dev,
+				const char *section_name, const char *key)
+{
+	struct adf_cfg_device_data *cfg = accel_dev->cfg;
+	struct adf_cfg_section *section = adf_cfg_sec_find(accel_dev,
+							   section_name);
+	char temp_val[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
+	int ret;
+
+	if (!section)
+		return -EFAULT;
+
+	ret = adf_cfg_key_val_get(accel_dev, section_name, key, temp_val);
+	if (ret)
+		return ret;
+
+	down_write(&cfg->lock);
+	adf_cfg_keyval_remove(key, section);
+	up_write(&cfg->lock);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(adf_cfg_del_key_value_param);

@@ -12,8 +12,10 @@ config CRYPTO_DEV_QAT
 	select CRYPTO_SHA256
 	select CRYPTO_SHA512
 	select CRYPTO_LIB_AES
+	select CRYPTO_ZSTD
 	select FW_LOADER
 	select CRC8
+	select UACCE
 
 config CRYPTO_DEV_QAT_DH895xCC
 	tristate "Support for Intel(R) DH895xCC"
@@ -69,6 +71,17 @@ config CRYPTO_DEV_QAT_420XX
 
 	  To compile this as a module, choose M here: the module
 	  will be called qat_420xx.
+
+config CRYPTO_DEV_QAT_6XXX
+	tristate "Support for Intel(R) QAT_6XXX"
+	depends on PCI && (!CPU_BIG_ENDIAN || COMPILE_TEST)
+	select CRYPTO_DEV_QAT
+	help
+	  Support for Intel(R) QuickAssist Technology QAT_6xxx
+	  for accelerating crypto and compression workloads.
+
+	  To compile this as a module, choose M here: the module
+	  will be called qat_6xxx.
 
 config CRYPTO_DEV_QAT_DH895xCCVF
 	tristate "Support for Intel(R) DH895xCC Virtual Function"

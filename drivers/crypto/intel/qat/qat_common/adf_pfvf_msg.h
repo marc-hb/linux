@@ -103,6 +103,8 @@ enum pf2vf_msgtype {
 	ADF_PF2VF_MSGTYPE_RESTARTED		= 0x05,
 /* Values from 0x10 are Gen4 specific, message type is only 4 bits in Gen2 devices. */
 	ADF_PF2VF_MSGTYPE_RP_RESET_RESP		= 0x10,
+	ADF_PF2VF_MSGTYPE_CIR_RESP		= 0x11,
+	ADF_PF2VF_MSGTYPE_PIR_RESP		= 0x12,
 };
 
 /* VF->PF messages */
@@ -117,6 +119,8 @@ enum vf2pf_msgtype {
 	ADF_VF2PF_MSGTYPE_RESTARTING_COMPLETE	= 0x0a,
 /* Values from 0x10 are Gen4 specific, message type is only 4 bits in Gen2 devices. */
 	ADF_VF2PF_MSGTYPE_RP_RESET		= 0x10,
+	ADF_VF2PF_MSGTYPE_CIR_REQ		= 0x11,
+	ADF_VF2PF_MSGTYPE_PIR_REQ		= 0x12,
 };
 
 /* VF/PF compatibility version. */
@@ -260,5 +264,9 @@ struct ring_to_svc_map_v1 {
 	struct pfvf_blkmsg_header hdr;
 	u16 map;
 } __packed;
+
+/* PF->VF CIR/PIR Response */
+#define ADF_PF2VF_RL_RESP_RP_MASK	GENMASK(1, 0)
+#define ADF_PF2VF_RL_RESP_VAL_MASK	GENMASK(23, 2)
 
 #endif /* ADF_PFVF_MSG_H */

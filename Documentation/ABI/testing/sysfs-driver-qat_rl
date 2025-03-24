@@ -31,7 +31,7 @@ Description:
 		* rm_all: Removes all the configured SLAs.
 			* Inputs: None
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/rp
 Date:		January 2024
@@ -68,7 +68,7 @@ Description:
 			## Write
 			# echo 0x5 > /sys/bus/pci/devices/<BDF>/qat_rl/rp
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/id
 Date:		January 2024
@@ -101,7 +101,7 @@ Description:
 			# cat /sys/bus/pci/devices/<BDF>/qat_rl/rp
 			0x5  ## ring pair ID 0 and ring pair ID 2
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/cir
 Date:		January 2024
@@ -135,7 +135,7 @@ Description:
 			# cat /sys/bus/pci/devices/<BDF>/qat_rl/cir
 			500
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/pir
 Date:		January 2024
@@ -169,7 +169,7 @@ Description:
 			# cat /sys/bus/pci/devices/<BDF>/qat_rl/pir
 			750
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/srv
 Date:		January 2024
@@ -202,7 +202,7 @@ Description:
 			# cat /sys/bus/pci/devices/<BDF>/qat_rl/srv
 			dc
 
-		This attribute is only available for qat_4xxx devices.
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
 
 What:		/sys/bus/pci/devices/<BDF>/qat_rl/cap_rem
 Date:		January 2024
@@ -224,3 +224,60 @@ Description:
 			0
 
 		This attribute is only available for qat_4xxx devices.
+
+What:           /sys/bus/pci/devices/<BDF>/qat_rl/max_tp
+Date:           May 2025
+KernelVersion:  6.15
+Contact:        qat-linux@intel.com
+Description:
+		(RW) This file introduces a new interface for querying the maximum
+		throughput for a specific service on qat devices. It accepts a
+		string parameter representing the service type and returns the
+		maximum throughput in "operations per second" for Asym and "Mbps"
+		for Sym, DC, Decomp services that can be achieved.
+
+		Writing to this file sets the context to a specific service, for
+		which the maximum throughput is then queried.
+		Reading from this file returns the maximum throughput.
+
+		Example usage::
+
+			# echo "asym" > /sys/bus/pci/devices/<BDF>/qat_rl/max_tp
+			This sets the context to the "asym" service for the next read
+			operation.
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_rl/max_tp
+			This returns the maximum throughput for the "asym" service
+			e.g., 5000 operations per second.
+
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
+
+What:           /sys/bus/pci/devices/<BDF>/qat_rl/max_sla
+Date:           May 2025
+KernelVersion:  6.15
+Contact:        qat-linux@intel.com
+Description:
+		(RO) This file allows users to query the maximum configurable LEAF
+		Service Level Agreement (SLA) for the qat device.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_rl/max_sla
+			This returns the maximum configurable LEAF SLA.
+
+		This attribute is only available for qat_4xxx and qat_6xxx devices.
+
+What:           /sys/bus/pci/devices/<BDF>/qat_rl/used_sla
+Date:           May 2025
+KernelVersion:  6.15
+Contact:        qat-linux@intel.com
+Description:
+		(RO) This file allows users to query the currently used number of
+		LEAF SLA for the qat device.
+
+		Example usage::
+
+			# cat /sys/bus/pci/devices/<BDF>/qat_rl/used_sla
+			This returns the currently used LEAF SLAs.
+
+		This attribute is only available for qat_4xxx and qat_6xxx devices.

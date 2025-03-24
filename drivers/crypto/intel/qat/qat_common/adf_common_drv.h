@@ -10,8 +10,8 @@
 #include "icp_qat_hal.h"
 
 #define ADF_MAJOR_VERSION	0
-#define ADF_MINOR_VERSION	6
-#define ADF_BUILD_VERSION	0
+#define ADF_MINOR_VERSION	8
+#define ADF_BUILD_VERSION	4
 #define ADF_DRV_VERSION		__stringify(ADF_MAJOR_VERSION) "." \
 				__stringify(ADF_MINOR_VERSION) "." \
 				__stringify(ADF_BUILD_VERSION)
@@ -103,11 +103,11 @@ void adf_cleanup_etr_data(struct adf_accel_dev *accel_dev);
 int qat_crypto_register(void);
 int qat_crypto_unregister(void);
 int qat_crypto_vf_dev_config(struct adf_accel_dev *accel_dev);
-struct qat_crypto_instance *qat_crypto_get_instance_node(int node);
+struct qat_crypto_instance *qat_crypto_get_instance_node(int node, int algo, int algo_type);
 void qat_crypto_put_instance(struct qat_crypto_instance *inst);
 void qat_alg_callback(void *resp);
 void qat_alg_asym_callback(void *resp);
-int qat_algs_register(void);
+int qat_algs_register(struct adf_accel_dev *accel_dev);
 void qat_algs_unregister(void);
 int qat_asym_algs_register(void);
 void qat_asym_algs_unregister(void);
@@ -119,6 +119,9 @@ int qat_compression_unregister(void);
 int qat_comp_algs_register(void);
 void qat_comp_algs_unregister(void);
 void qat_comp_alg_callback(void *resp);
+
+int adf_uacce_register(void);
+int adf_uacce_unregister(void);
 
 int adf_isr_resource_alloc(struct adf_accel_dev *accel_dev);
 void adf_isr_resource_free(struct adf_accel_dev *accel_dev);

@@ -6,11 +6,14 @@
 #include <linux/iopoll.h>
 #include <linux/pci.h>
 #include <linux/dma-mapping.h>
+#include <linux/delay.h>
+#include "adf_anti_rb.h"
 #include "adf_accel_devices.h"
 #include "adf_admin.h"
 #include "adf_common_drv.h"
 #include "adf_cfg.h"
 #include "adf_heartbeat.h"
+#include "adf_uacce.h"
 #include "icp_qat_fw_init_admin.h"
 
 #define ADF_ADMIN_MAILBOX_STRIDE 0x1000
@@ -177,6 +180,8 @@ static int adf_init_ae(struct adf_accel_dev *accel_dev)
 	memset(&req, 0, sizeof(req));
 	memset(&resp, 0, sizeof(resp));
 	req.cmd_id = ICP_QAT_FW_INIT_AE;
+	if (adf_uacce_is_enabled(accel_dev))
+		req.fw_flags = ICP_QAT_FW_INIT_AE_AT_ENABLE_FLAG;
 
 	return adf_send_admin(accel_dev, &req, &resp, ae_mask);
 }
@@ -533,6 +538,97 @@ int adf_send_admin_tl_stop(struct adf_accel_dev *accel_dev)
 	req.cmd_id = ICP_QAT_FW_TL_STOP;
 
 	return adf_send_admin(accel_dev, &req, &resp, ae_mask);
+}
+
+int adf_admin_query_anti_rb(struct adf_accel_dev *accel_dev,
+			    enum anti_rb command, u8 *svn)
+{
+	u32 admin_ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {};
+	struct icp_qat_fw_init_admin_req req = {};
+	int ret, retry = ADF_SVN_RETRY_MAX;
+
+	req.cmd_id = ICP_QAT_FW_SVN_READ;
+
+	do {
+		ret = adf_send_admin(accel_dev, &req, &resp, admin_ae_mask);
+		if (!ret)
+			break;
+		else if (resp.status != ICP_QAT_FW_INIT_RESP_STATUS_RETRY)
+			return ret;
+		msleep(ADF_SVN_RETRY_MS);
+	} while (--retry);
+
+	if (!retry)
+		return -ETIMEDOUT;
+
+	switch (command) {
+	case ENFORCED_MIN_SVN:
+		*svn = resp.enforced_min_svn;
+		break;
+	case PERMANENT_MIN_SVN:
+		*svn = resp.permanent_min_svn;
+		break;
+	case ACTIVE_SVN:
+		*svn = resp.active_svn;
+		break;
+	default:
+		*svn = 0;
+		dev_err(&GET_DEV(accel_dev),
+			"Unknown Secure version number request\n");
+		break;
+	}
+
+	return ret;
+}
+
+int adf_admin_commit_anti_rb(struct adf_accel_dev *accel_dev)
+{
+	u32 admin_ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {};
+	struct icp_qat_fw_init_admin_req req = {};
+	int ret, retry = 0;
+
+	req.cmd_id = ICP_QAT_FW_SVN_COMMIT;
+
+	do {
+		ret = adf_send_admin(accel_dev, &req, &resp, admin_ae_mask);
+		if (!ret)
+			break;
+		else if (resp.status != ICP_QAT_FW_INIT_RESP_STATUS_RETRY)
+			return ret;
+		msleep(ADF_SVN_RETRY_MS);
+	} while (++retry < ADF_SVN_RETRY_MAX);
+
+	if (retry == ADF_SVN_RETRY_MAX)
+		ret = -ETIMEDOUT;
+
+	return ret;
+}
+
+int adf_init_admin_kpt(struct adf_accel_dev *accel_dev, dma_addr_t init_ptr, u16 init_sz)
+{
+	u32 ae_mask = GET_HW_DATA(accel_dev)->admin_ae_mask;
+	struct icp_qat_fw_init_admin_resp resp = {0};
+	struct icp_qat_fw_init_admin_req req = {0};
+	int ret;
+
+	if (!accel_dev->admin) {
+		dev_err(&GET_DEV(accel_dev), "adf_admin is not available\n");
+		return -EFAULT;
+	}
+
+	req.cmd_id = ICP_QAT_FW_KPT_ENABLE;
+	req.init_cfg_ptr = init_ptr;
+	req.init_cfg_sz = init_sz;
+
+	ret = adf_send_admin(accel_dev, &req, &resp, ae_mask);
+	if (ret) {
+		dev_err(&GET_DEV(accel_dev),
+			"Failed to enable KPT status: %d",
+			resp.status);
+	}
+	return ret;
 }
 
 int adf_init_admin_comms(struct adf_accel_dev *accel_dev)

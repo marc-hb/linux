@@ -177,6 +177,8 @@ static enum adf_cfg_service_type srv_to_cfg_svc_type(enum adf_base_services rl_s
 		return SYM;
 	case ADF_SVC_DC:
 		return COMP;
+	case ADF_SVC_DECOMP:
+		return DECOMP;
 	default:
 		return UNUSED;
 	}
@@ -552,27 +554,17 @@ u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 				  enum adf_base_services svc_type)
 {
 	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
+	enum adf_cfg_service_type cfg_svc_type = srv_to_cfg_svc_type(svc_type);
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 	u64 avail_slice_cycles, allocated_tokens;
 
 	if (!sla_val)
 		return 0;
 
+	/* Handle generation specific slice count adjustment */
 	avail_slice_cycles = hw_data->clock_frequency;
-
-	switch (svc_type) {
-	case ADF_SVC_ASYM:
-		avail_slice_cycles *= device_data->slices.pke_cnt;
-		break;
-	case ADF_SVC_SYM:
-		avail_slice_cycles *= device_data->slices.cph_cnt;
-		break;
-	case ADF_SVC_DC:
-		avail_slice_cycles *= device_data->slices.dcpr_cnt;
-		break;
-	default:
-		break;
-	}
+	avail_slice_cycles *=
+		hw_data->get_rl_svc_slice_cnt(cfg_svc_type, &device_data->slices);
 
 	do_div(avail_slice_cycles, device_data->scan_interval);
 	allocated_tokens = avail_slice_cycles * sla_val;
@@ -584,6 +576,7 @@ u32 adf_rl_calculate_slice_tokens(struct adf_accel_dev *accel_dev, u32 sla_val,
 u32 adf_rl_calculate_ae_cycles(struct adf_accel_dev *accel_dev, u32 sla_val,
 			       enum adf_base_services svc_type)
 {
+	enum adf_cfg_service_type arb_srv = srv_to_cfg_svc_type(svc_type);
 	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 	u64 allocated_ae_cycles, avail_ae_cycles;
@@ -592,7 +585,7 @@ u32 adf_rl_calculate_ae_cycles(struct adf_accel_dev *accel_dev, u32 sla_val,
 		return 0;
 
 	avail_ae_cycles = hw_data->clock_frequency;
-	avail_ae_cycles *= hw_data->get_num_aes(hw_data) - 1;
+	avail_ae_cycles *= hw_data->get_num_svc_aes(accel_dev, arb_srv);
 	do_div(avail_ae_cycles, device_data->scan_interval);
 
 	sla_val *= device_data->max_tp[svc_type];
@@ -1013,6 +1006,28 @@ ret_ok:
 }
 
 /**
+ * adf_rl_get_max_throughput() - Retrieves the maximum throughput for a
+ * specific service.
+ * @accel_dev: The pointer to the accelerator device structure.
+ * @srv: The enum value representing the base service.
+ *
+ * Check if the service is supported by the device and return the maximum
+ * throughput for the service.
+ *
+ * Return: The maximum throughput value for the specified service.
+ */
+u32 adf_rl_get_max_throughput(struct adf_accel_dev *accel_dev,
+			      enum adf_base_services srv)
+{
+	struct adf_rl_hw_data *device_data = &accel_dev->hw_device->rl_data;
+
+	if (srv >= ADF_SVC_NONE)
+		return 0;
+
+	return device_data->max_tp[srv];
+}
+
+/**
  * adf_rl_remove_sla() - removes provided sla_id
  * @accel_dev: pointer to acceleration device structure
  * @sla_id: ID of the cluster or root to which we want assign an new SLA
@@ -1076,6 +1091,37 @@ void adf_rl_remove_sla_all(struct adf_accel_dev *accel_dev, bool incl_default)
 	}
 
 	mutex_unlock(&rl_data->rl_lock);
+}
+
+/**
+ * adf_rl_get_num_used_slas() - Retrieves the number of used Service Level
+ * Agreements (SLAs) for a specific node type.
+ *
+ * @accel_dev: The pointer to the acceleration device structure.
+ * @node_type: The type of the node for which to retrieve the number of
+ *			   used SLAs.
+ *
+ * Iterate through the node list for the specified node type and count the
+ * node ids that are not NULL.
+ *
+ * Return: The number of used SLAs for the specified node type.
+ */
+u32 adf_rl_get_num_used_slas(struct adf_accel_dev *accel_dev,
+			     enum rl_node_type node_type)
+{
+	struct adf_rl *rl_data = accel_dev->rate_limiting;
+	struct rl_sla **sla_type_arr = NULL;
+	u32 max_id = 0, used_sla = 0;
+	int i = 0;
+
+	max_id = adf_rl_get_sla_arr_of_type(rl_data, node_type, &sla_type_arr);
+	for (i = 0; i < max_id; i++) {
+		if (!sla_type_arr[i])
+			continue;
+		used_sla++;
+	}
+
+	return used_sla;
 }
 
 int adf_rl_init(struct adf_accel_dev *accel_dev)
@@ -1185,3 +1231,10 @@ void adf_rl_exit(struct adf_accel_dev *accel_dev)
 	kfree(accel_dev->rate_limiting);
 	accel_dev->rate_limiting = NULL;
 }
+
+int adf_rl_get_sla_val(struct adf_accel_dev *accel_dev, u32 bank_num,
+		       u32 *sla_val, u32 msg_type)
+{
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL_GPL(adf_rl_get_sla_val);

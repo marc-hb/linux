@@ -7,6 +7,7 @@
 
 #include "adf_accel_devices.h"
 #include "adf_cfg_common.h"
+#include "adf_dc.h"
 
 /* PCIe configuration space */
 #define ADF_GEN4_BAR_MASK	(BIT(0) | BIT(2) | BIT(4))
@@ -54,6 +55,10 @@
 #define ADF_GEN4_ADMINMSGLR_OFFSET	0x500578
 #define ADF_GEN4_MAILBOX_BASE_OFFSET	0x600970
 
+/* Service configuration count */
+#define SINGLE_SVC 1
+#define DOUBLE_SVC 2
+
 /* Default ring mapping */
 #define ADF_GEN4_DEFAULT_RING_TO_SRV_MAP \
 	(ASYM << ADF_CFG_SERV_RING_PAIR_0_SHIFT | \
@@ -83,9 +88,6 @@
 #define ADF_WQM_CSR_RPRESETSTS(bank)	(ADF_WQM_CSR_RPRESETCTL(bank) + 4)
 
 /* Ring interrupt */
-#define ADF_RP_INT_SRC_SEL_F_RISE_MASK	GENMASK(1, 0)
-#define ADF_RP_INT_SRC_SEL_F_FALL_MASK	GENMASK(2, 0)
-#define ADF_RP_INT_SRC_SEL_RANGE_WIDTH	4
 #define ADF_COALESCED_POLL_TIMEOUT_US	(1 * USEC_PER_SEC)
 #define ADF_COALESCED_POLL_DELAY_US	1000
 #define ADF_WQM_CSR_RPINTSOU(bank)	(0x200000 + ((bank) << 12))
@@ -125,6 +127,10 @@
 #define ADF_GEN4_VINTSOUPF2VM_OFFSET(i)	(0x40B008 + (i) * 0x20)
 #define ADF_GEN4_VINTMSK_OFFSET(i)	(0x40B004 + (i) * 0x20)
 #define ADF_GEN4_VINTSOU_OFFSET(i)	(0x40B000 + (i) * 0x20)
+
+/* WQM Windows Base */
+#define ADF_GEN4_WQ_BASE		0x100000
+#define ADF_GEN4_UQ_BASE		0x180000
 
 struct adf_gen4_vfmig {
 	struct adf_mstate_mgr *mstate_mgr;
@@ -179,5 +185,15 @@ int adf_gen4_bank_state_save(struct adf_accel_dev *accel_dev, u32 bank_number,
 			     struct bank_state *state);
 int adf_gen4_bank_state_restore(struct adf_accel_dev *accel_dev,
 				u32 bank_number, struct bank_state *state);
+void adf_gen4_init_dc_ops(struct adf_dc_ops *dc_ops);
+u32 adf_gen4_get_num_svc_aes(struct adf_accel_dev *accel_dev,
+			     enum adf_cfg_service_type svc_type);
+u32 adf_gen4_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				  struct rl_slice_cnt *slices);
+int adf_gen4_service_supported(u32 service_mask);
+void adf_gen4_set_crypto_cap(struct adf_accel_dev *accel_dev);
+int adf_gen4_get_ring_base_addr(struct adf_accel_dev *accel_dev,
+				resource_size_t *base_addr, u32 bank_number,
+				enum adf_ring_queue_mode queue_mode);
 
 #endif

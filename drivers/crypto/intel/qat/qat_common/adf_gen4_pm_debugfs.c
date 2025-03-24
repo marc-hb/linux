@@ -9,38 +9,11 @@
 #include "adf_admin.h"
 #include "adf_common_drv.h"
 #include "adf_gen4_pm.h"
+#include "adf_pm_debugfs.h"
 #include "icp_qat_fw_init_admin.h"
 
-/*
- * This is needed because a variable is used to index the mask at
- * pm_scnprint_table(), making it not compile time constant, so the compile
- * asserts from FIELD_GET() or u32_get_bits() won't be fulfilled.
- */
-#define field_get(_mask, _reg) (((_reg) & (_mask)) >> (ffs(_mask) - 1))
-
-#define PM_INFO_MEMBER_OFF(member)	\
-	(offsetof(struct icp_qat_fw_init_admin_pm_info, member) / sizeof(u32))
-
-#define PM_INFO_REGSET_ENTRY_MASK(_reg_, _field_, _mask_)	\
-{								\
-	.reg_offset = PM_INFO_MEMBER_OFF(_reg_),		\
-	.key = __stringify(_field_),				\
-	.field_mask = _mask_,					\
-}
-
-#define PM_INFO_REGSET_ENTRY32(_reg_, _field_)	\
-	PM_INFO_REGSET_ENTRY_MASK(_reg_, _field_, GENMASK(31, 0))
-
-#define PM_INFO_REGSET_ENTRY(_reg_, _field_)	\
+#define PM_INFO_REGSET_ENTRY(_reg_, _field_)   \
 	PM_INFO_REGSET_ENTRY_MASK(_reg_, _field_, ADF_GEN4_PM_##_field_##_MASK)
-
-#define PM_INFO_MAX_KEY_LEN	21
-
-struct pm_status_row {
-	int reg_offset;
-	u32 field_mask;
-	const char *key;
-};
 
 static const struct pm_status_row pm_fuse_rows[] = {
 	PM_INFO_REGSET_ENTRY(fusectl0, ENABLE_PM),
@@ -108,44 +81,6 @@ static const struct pm_status_row pm_csrs_rows[] = {
 	PM_INFO_REGSET_ENTRY32(pm.main, CPM_PM_MASTER_FW),
 	PM_INFO_REGSET_ENTRY32(pm.pwrreq, CPM_PM_PWRREQ),
 };
-
-static int pm_scnprint_table(char *buff, const struct pm_status_row *table,
-			     u32 *pm_info_regs, size_t buff_size, int table_len,
-			     bool lowercase)
-{
-	char key[PM_INFO_MAX_KEY_LEN];
-	int wr = 0;
-	int i;
-
-	for (i = 0; i < table_len; i++) {
-		if (lowercase)
-			string_lower(key, table[i].key);
-		else
-			string_upper(key, table[i].key);
-
-		wr += scnprintf(&buff[wr], buff_size - wr, "%s: %#x\n", key,
-				field_get(table[i].field_mask,
-					  pm_info_regs[table[i].reg_offset]));
-	}
-
-	return wr;
-}
-
-static int pm_scnprint_table_upper_keys(char *buff, const struct pm_status_row *table,
-					u32 *pm_info_regs, size_t buff_size,
-					int table_len)
-{
-	return pm_scnprint_table(buff, table, pm_info_regs, buff_size,
-				 table_len, false);
-}
-
-static int pm_scnprint_table_lower_keys(char *buff, const struct pm_status_row *table,
-					u32 *pm_info_regs, size_t buff_size,
-					int table_len)
-{
-	return pm_scnprint_table(buff, table, pm_info_regs, buff_size,
-				 table_len, true);
-}
 
 static_assert(sizeof(struct icp_qat_fw_init_admin_pm_info) < PAGE_SIZE);
 

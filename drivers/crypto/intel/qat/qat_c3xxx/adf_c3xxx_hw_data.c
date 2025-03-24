@@ -5,7 +5,6 @@
 #include <adf_clock.h>
 #include <adf_common_drv.h>
 #include <adf_gen2_config.h>
-#include <adf_gen2_dc.h>
 #include <adf_gen2_hw_csr_data.h>
 #include <adf_gen2_hw_data.h>
 #include <adf_gen2_pfvf.h>
@@ -131,6 +130,7 @@ void adf_init_hw_data_c3xxx(struct adf_hw_device_data *hw_data)
 	hw_data->get_accel_mask = get_accel_mask;
 	hw_data->get_ae_mask = get_ae_mask;
 	hw_data->get_accel_cap = adf_gen2_get_accel_cap;
+	hw_data->set_crypto_cap = adf_gen2_set_crypto_cap;
 	hw_data->get_num_accels = adf_gen2_get_num_accels;
 	hw_data->get_num_aes = adf_gen2_get_num_aes;
 	hw_data->get_sram_bar_id = get_sram_bar_id;

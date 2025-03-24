@@ -3,21 +3,21 @@
 #include <linux/iopoll.h>
 #include <adf_accel_devices.h>
 #include <adf_admin.h>
+#include <adf_bank_state.h>
 #include <adf_cfg.h>
 #include <adf_cfg_services.h>
 #include <adf_clock.h>
 #include <adf_common_drv.h>
 #include <adf_fw_config.h>
 #include <adf_gen4_config.h>
-#include <adf_gen4_dc.h>
 #include <adf_gen4_hw_csr_data.h>
 #include <adf_gen4_hw_data.h>
 #include <adf_gen4_pfvf.h>
 #include <adf_gen4_pm.h>
 #include "adf_gen4_ras.h"
-#include <adf_gen4_timer.h>
 #include <adf_gen4_tl.h>
 #include <adf_gen4_vf_mig.h>
+#include <adf_timer.h>
 #include "adf_4xxx_hw_data.h"
 #include "icp_qat_hw.h"
 
@@ -112,6 +112,7 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 	u32 capabilities_sym, capabilities_asym, capabilities_dc;
 	u32 capabilities_dcc;
 	u32 fusectl1;
+	u32 svc_mask;
 
 	/* Read accelerator capabilities mask */
 	pci_read_config_dword(pdev, ADF_GEN4_FUSECTL1_OFFSET, &fusectl1);
@@ -177,9 +178,11 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		capabilities_dc &= ~ICP_ACCEL_CAPABILITIES_CNV_INTEGRITY64;
 	}
 
-	switch (adf_get_service_enabled(accel_dev)) {
-	case SVC_CY:
-	case SVC_CY2:
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return 0;
+
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		return capabilities_sym | capabilities_asym;
 	case SVC_DC:
 		return capabilities_dc;
@@ -195,11 +198,9 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 		return capabilities_sym;
 	case SVC_ASYM:
 		return capabilities_asym;
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
+	case SVC_ASYM | SVC_DC:
 		return capabilities_asym | capabilities_dc;
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
+	case SVC_SYM | SVC_DC:
 		return capabilities_sym | capabilities_dc;
 	default:
 		return 0;
@@ -240,9 +241,13 @@ static u32 uof_get_num_objs(struct adf_accel_dev *accel_dev)
 
 static const struct adf_fw_config *get_fw_config(struct adf_accel_dev *accel_dev)
 {
-	switch (adf_get_service_enabled(accel_dev)) {
-	case SVC_CY:
-	case SVC_CY2:
+	u32 svc_mask = 0;
+
+	if (adf_get_service_enabled(accel_dev, &svc_mask))
+		return NULL;
+
+	switch (svc_mask) {
+	case SVC_SYM | SVC_ASYM:
 		return adf_fw_cy_config;
 	case SVC_DC:
 		return adf_fw_dc_config;
@@ -252,11 +257,9 @@ static const struct adf_fw_config *get_fw_config(struct adf_accel_dev *accel_dev
 		return adf_fw_sym_config;
 	case SVC_ASYM:
 		return adf_fw_asym_config;
-	case SVC_ASYM_DC:
-	case SVC_DC_ASYM:
+	case SVC_ASYM | SVC_DC:
 		return adf_fw_asym_dc_config;
-	case SVC_SYM_DC:
-	case SVC_DC_SYM:
+	case SVC_SYM | SVC_DC:
 		return adf_fw_sym_dc_config;
 	default:
 		return NULL;
@@ -415,6 +418,7 @@ void adf_init_hw_data_4xxx(struct adf_hw_device_data *hw_data, u32 dev_id)
 	hw_data->get_arb_info = adf_gen4_get_arb_info;
 	hw_data->get_admin_info = adf_gen4_get_admin_info;
 	hw_data->get_accel_cap = get_accel_cap;
+	hw_data->set_crypto_cap = adf_gen4_set_crypto_cap;
 	hw_data->get_sku = adf_gen4_get_sku;
 	hw_data->init_admin_comms = adf_init_admin_comms;
 	hw_data->exit_admin_comms = adf_exit_admin_comms;
@@ -456,16 +460,20 @@ void adf_init_hw_data_4xxx(struct adf_hw_device_data *hw_data, u32 dev_id)
 	hw_data->get_ring_to_svc_map = adf_gen4_get_ring_to_svc_map;
 	hw_data->disable_iov = adf_disable_sriov;
 	hw_data->ring_pair_reset = adf_gen4_ring_pair_reset;
-	hw_data->bank_state_save = adf_gen4_bank_state_save;
-	hw_data->bank_state_restore = adf_gen4_bank_state_restore;
+	hw_data->bank_state_save = adf_bank_state_save;
+	hw_data->bank_state_restore = adf_bank_state_restore;
 	hw_data->enable_pm = adf_gen4_enable_pm;
 	hw_data->handle_pm_interrupt = adf_gen4_handle_pm_interrupt;
 	hw_data->dev_config = adf_gen4_dev_config;
-	hw_data->start_timer = adf_gen4_timer_start;
-	hw_data->stop_timer = adf_gen4_timer_stop;
+	hw_data->start_timer = adf_timer_start;
+	hw_data->stop_timer = adf_timer_stop;
 	hw_data->get_hb_clock = adf_gen4_get_heartbeat_clock;
 	hw_data->num_hb_ctrs = ADF_NUM_HB_CNT_PER_AE;
 	hw_data->clock_frequency = ADF_4XXX_AE_FREQ;
+	hw_data->get_num_svc_aes = adf_gen4_get_num_svc_aes;
+	hw_data->get_rl_svc_slice_cnt = adf_gen4_get_rl_svc_slice_cnt;
+	hw_data->service_supported = adf_gen4_service_supported;
+	hw_data->get_ring_base_addr = adf_gen4_get_ring_base_addr;
 
 	adf_gen4_set_err_mask(&hw_data->dev_err_mask);
 	adf_gen4_init_hw_csr_ops(&hw_data->csr_ops);
