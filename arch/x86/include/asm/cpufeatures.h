@@ -2,18 +2,10 @@
 #ifndef _ASM_X86_CPUFEATURES_H
 #define _ASM_X86_CPUFEATURES_H
 
-#ifndef _ASM_X86_REQUIRED_FEATURES_H
-#include <asm/required-features.h>
-#endif
-
-#ifndef _ASM_X86_DISABLED_FEATURES_H
-#include <asm/disabled-features.h>
-#endif
-
 /*
  * Defines x86 CPU feature bits
  */
-#define NCAPINTS			23	   /* N 32-bit words worth of info */
+#define NCAPINTS			24	   /* N 32-bit words worth of info */
 #define NBUGINTS			2	   /* N 32-bit bug flags */
 
 /*
@@ -490,6 +482,9 @@
 
 /* Intel-defined CPU features, CPUID level 0x00000007:1 (EDX), word 22 */
 #define X86_FEATURE_APX			(22*32+21) /* "apx" Advanced Performance Extensions */
+
+/* Intel-defined CPU features, CPUID level 0x00000007:1 (ECX), word 23 */
+#define X86_FEATURE_MSR_IMM		(23*32+ 5) /* "msr_imm" MSR immediate form instructions */
 
 /*
  * BUG word(s)

@@ -1104,6 +1104,10 @@ void kvm_set_cpu_caps(void)
 		F(AMX_FP8),
 	);
 
+	kvm_cpu_cap_init(CPUID_7_1_ECX,
+		F(MSR_IMM),
+	);
+
 	kvm_cpu_cap_init(CPUID_7_1_EDX,
 		F(AVX_VNNI_INT8),
 		F(AVX_NE_CONVERT),

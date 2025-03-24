@@ -1018,64 +1018,65 @@ static void xen_write_cr4(unsigned long cr4)
 	native_write_cr4(cr4);
 }
 
-static u64 xen_do_read_msr(unsigned int msr, int *err)
+/*
+ * Return true in xen_rdmsr_ret_type to indicate the requested MSR read has
+ * been done successfully.
+ */
+struct xen_rdmsr_ret_type xen_do_read_msr(u32 msr)
 {
-	u64 val = 0;	/* Avoid uninitialized value for safe variant. */
+	struct xen_rdmsr_ret_type ret = { 0, true };
+	int err;
+	bool emulated;
 
-	if (pmu_msr_read(msr, &val, err))
-		return val;
+	if (pmu_msr_chk_emulated(msr, &ret.val, true, &emulated) && emulated)
+		return ret;
 
-	if (err)
-		val = native_read_msr_safe(msr, err);
-	else
-		val = native_read_msr(msr);
+	ret.val = native_read_msr_safe(msr, &err);
+	ret.done = !err;
 
 	switch (msr) {
 	case MSR_IA32_APICBASE:
-		val &= ~X2APIC_ENABLE;
+		ret.val &= ~X2APIC_ENABLE;
 		if (smp_processor_id() == 0)
-			val |= MSR_IA32_APICBASE_BSP;
+			ret.val |= MSR_IA32_APICBASE_BSP;
 		else
-			val &= ~MSR_IA32_APICBASE_BSP;
+			ret.val &= ~MSR_IA32_APICBASE_BSP;
+		break;
+
+	default:
 		break;
 	}
-	return val;
+
+	return ret;
 }
 
-static void set_seg(unsigned int which, unsigned int low, unsigned int high,
-		    int *err)
+static bool set_seg(u32 which, u64 base)
 {
-	u64 base = ((u64)high << 32) | low;
-
 	if (HYPERVISOR_set_segment_base(which, base) == 0)
-		return;
+		return true;
 
-	if (err)
-		*err = -EIO;
-	else
-		WARN(1, "Xen set_segment_base(%u, %llx) failed\n", which, base);
+	WARN(1, "Xen set_segment_base(%u, %llx) failed\n", which, base);
+	return false;
 }
 
 /*
- * Support write_msr_safe() and write_msr() semantics.
- * With err == NULL write_msr() semantics are selected.
- * Supplying an err pointer requires err to be pre-initialized with 0.
+ * Return true to indicate the requested MSR write has been done successfully,
+ * otherwise return false to have the calling MSR write primitives in msr.h to
+ * fail.
  */
-static void xen_do_write_msr(unsigned int msr, unsigned int low,
-			     unsigned int high, int *err)
+bool xen_do_write_msr(u32 msr, u64 val)
 {
+	bool emulated;
+
 	switch (msr) {
 	case MSR_FS_BASE:
-		set_seg(SEGBASE_FS, low, high, err);
-		break;
+		return set_seg(SEGBASE_FS, val);
 
 	case MSR_KERNEL_GS_BASE:
-		set_seg(SEGBASE_GS_USER, low, high, err);
-		break;
+		return set_seg(SEGBASE_GS_USER, val);
 
 	case MSR_GS_BASE:
-		set_seg(SEGBASE_GS_KERNEL, low, high, err);
-		break;
+		return set_seg(SEGBASE_GS_KERNEL, val);
 
 	case MSR_STAR:
 	case MSR_CSTAR:
@@ -1087,45 +1088,14 @@ static void xen_do_write_msr(unsigned int msr, unsigned int low,
 		/* Fast syscall setup is all done in hypercalls, so
 		   these are all ignored.  Stub them out here to stop
 		   Xen console noise. */
-		break;
+		return true;
 
 	default:
-		if (!pmu_msr_write(msr, low, high, err)) {
-			if (err)
-				*err = native_write_msr_safe(msr, low, high);
-			else
-				native_write_msr(msr, low, high);
-		}
+		if (pmu_msr_chk_emulated(msr, &val, false, &emulated) && emulated)
+			return true;
+
+		return native_write_msr_safe(msr, val) == 0;
 	}
-}
-
-static u64 xen_read_msr_safe(unsigned int msr, int *err)
-{
-	return xen_do_read_msr(msr, err);
-}
-
-static int xen_write_msr_safe(unsigned int msr, unsigned int low,
-			      unsigned int high)
-{
-	int err = 0;
-
-	xen_do_write_msr(msr, low, high, &err);
-
-	return err;
-}
-
-static u64 xen_read_msr(unsigned int msr)
-{
-	int err;
-
-	return xen_do_read_msr(msr, xen_msr_safe ? &err : NULL);
-}
-
-static void xen_write_msr(unsigned int msr, unsigned low, unsigned high)
-{
-	int err;
-
-	xen_do_write_msr(msr, low, high, xen_msr_safe ? &err : NULL);
 }
 
 /* This is called once we have the cpu_possible_mask */
@@ -1161,12 +1131,6 @@ static const typeof(pv_ops) xen_cpu_ops __initconst = {
 		.write_cr0 = xen_write_cr0,
 
 		.write_cr4 = xen_write_cr4,
-
-		.read_msr = xen_read_msr,
-		.write_msr = xen_write_msr,
-
-		.read_msr_safe = xen_read_msr_safe,
-		.write_msr_safe = xen_write_msr_safe,
 
 		.read_pmc = xen_read_pmc,
 

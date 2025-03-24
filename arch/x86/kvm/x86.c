@@ -2178,6 +2178,14 @@ static int complete_fast_rdmsr(struct kvm_vcpu *vcpu)
 	return complete_fast_msr_access(vcpu);
 }
 
+static int complete_fast_rdmsr_imm(struct kvm_vcpu *vcpu)
+{
+	if (!vcpu->run->msr.error)
+		kvm_register_write(vcpu, vcpu->arch.rdmsr_imm_reg, vcpu->run->msr.data);
+
+	return complete_fast_msr_access(vcpu);
+}
+
 static u64 kvm_msr_reason(int r)
 {
 	switch (r) {
@@ -2237,6 +2245,31 @@ int kvm_emulate_rdmsr(struct kvm_vcpu *vcpu)
 }
 EXPORT_SYMBOL_GPL(kvm_emulate_rdmsr);
 
+int kvm_emulate_rdmsr_imm(struct kvm_vcpu *vcpu, u32 msr, int reg)
+{
+	u64 data;
+	int r;
+
+	r = kvm_get_msr_with_filter(vcpu, msr, &data);
+
+	if (!r) {
+		trace_kvm_msr_read(msr, data);
+
+		kvm_register_write(vcpu, reg, data);
+	} else {
+		vcpu->arch.rdmsr_imm_reg = reg;
+
+		/* MSR read failed? See if we should ask user space */
+		if (kvm_msr_user_space(vcpu, msr, KVM_EXIT_X86_RDMSR, 0,
+				       complete_fast_rdmsr_imm, r))
+			return 0;
+		trace_kvm_msr_read_ex(msr);
+	}
+
+	return kvm_x86_call(complete_emulated_msr)(vcpu, r);
+}
+EXPORT_SYMBOL_GPL(kvm_emulate_rdmsr_imm);
+
 int kvm_emulate_wrmsr(struct kvm_vcpu *vcpu)
 {
 	u32 ecx = kvm_rcx_read(vcpu);
@@ -2261,6 +2294,30 @@ int kvm_emulate_wrmsr(struct kvm_vcpu *vcpu)
 	return kvm_x86_call(complete_emulated_msr)(vcpu, r);
 }
 EXPORT_SYMBOL_GPL(kvm_emulate_wrmsr);
+
+int kvm_emulate_wrmsr_imm(struct kvm_vcpu *vcpu, u32 msr, int reg)
+{
+	unsigned long data = kvm_register_read(vcpu, reg);
+	int r;
+
+	r = kvm_set_msr_with_filter(vcpu, msr, data);
+
+	if (!r) {
+		trace_kvm_msr_write(msr, data);
+	} else {
+		/* MSR write failed? See if we should ask user space */
+		if (kvm_msr_user_space(vcpu, msr, KVM_EXIT_X86_WRMSR, data,
+				       complete_fast_msr_access, r))
+			return 0;
+		/* Signal all other negative errors to userspace */
+		if (r < 0)
+			return r;
+		trace_kvm_msr_write_ex(msr, data);
+	}
+
+	return kvm_x86_call(complete_emulated_msr)(vcpu, r);
+}
+EXPORT_SYMBOL_GPL(kvm_emulate_wrmsr_imm);
 
 int kvm_emulate_as_nop(struct kvm_vcpu *vcpu)
 {
@@ -2341,10 +2398,8 @@ static int handle_fastpath_set_tscdeadline(struct kvm_vcpu *vcpu, u64 data)
 	return 0;
 }
 
-fastpath_t handle_fastpath_set_msr_irqoff(struct kvm_vcpu *vcpu)
+static fastpath_t handle_fastpath_set_msr_irqoff_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
 {
-	u32 msr = kvm_rcx_read(vcpu);
-	u64 data;
 	fastpath_t ret;
 	bool handled;
 
@@ -2352,11 +2407,9 @@ fastpath_t handle_fastpath_set_msr_irqoff(struct kvm_vcpu *vcpu)
 
 	switch (msr) {
 	case APIC_BASE_MSR + (APIC_ICR >> 4):
-		data = kvm_read_edx_eax(vcpu);
 		handled = !handle_fastpath_set_x2apic_icr_irqoff(vcpu, data);
 		break;
 	case MSR_IA32_TSC_DEADLINE:
-		data = kvm_read_edx_eax(vcpu);
 		handled = !handle_fastpath_set_tscdeadline(vcpu, data);
 		break;
 	default:
@@ -2378,7 +2431,21 @@ fastpath_t handle_fastpath_set_msr_irqoff(struct kvm_vcpu *vcpu)
 
 	return ret;
 }
+
+fastpath_t handle_fastpath_set_msr_irqoff(struct kvm_vcpu *vcpu)
+{
+	u32 msr = kvm_rcx_read(vcpu);
+	u64 data = kvm_read_edx_eax(vcpu);
+
+	return handle_fastpath_set_msr_irqoff_common(vcpu, msr, data);
+}
 EXPORT_SYMBOL_GPL(handle_fastpath_set_msr_irqoff);
+
+fastpath_t handle_fastpath_set_msr_imm_irqoff(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+{
+	return handle_fastpath_set_msr_irqoff_common(vcpu, msr, data);
+}
+EXPORT_SYMBOL_GPL(handle_fastpath_set_msr_imm_irqoff);
 
 /*
  * Adapt set_msr() to msr_io()'s calling convention
