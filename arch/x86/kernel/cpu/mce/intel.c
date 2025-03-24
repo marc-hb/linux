@@ -468,11 +468,33 @@ static void intel_imc_init(struct cpuinfo_x86 *c)
 	}
 }
 
+/* Detect whether the reset of the bit-fix filter is supported. */
+static void intel_detect_bff_reset(void)
+{
+	u64 val;
+
+	rdmsrl(MSR_IA32_MCG_CAP, val);
+	if (!(val & MCG_TES_P))
+		return;
+
+	if (!cpu_feature_enabled(X86_FEATURE_CORE_CAPABILITIES))
+		return;
+
+	rdmsrl(MSR_IA32_CORE_CAPS, val);
+	if (!(val & MSR_IA32_CORE_CAPS_BFF_RESET_DETECT))
+		return;
+
+	mce_flags.bff_reset = 1;
+
+	pr_info_once("Bit-fix filter reset capability detected.");
+}
+
 void mce_intel_feature_init(struct cpuinfo_x86 *c)
 {
 	intel_init_cmci();
 	intel_init_lmce();
 	intel_imc_init(c);
+	intel_detect_bff_reset();
 }
 
 void mce_intel_feature_clear(struct cpuinfo_x86 *c)
@@ -515,4 +537,74 @@ bool intel_mce_usable_address(struct mce *m)
 		return false;
 
 	return true;
+}
+
+/*
+ * Typically, some CPU hardware components like cache exhibit either a few
+ * corrected errors over a long term or a sudden surge. A 10-minute period
+ * should be sufficient to determine if the bit-fix filter overflow (yellow
+ * status) is due to a short-term surge (e.g., within several seconds or
+ * minutes) or a long-term accumulation of corrected errors (e.g., in the
+ * past 5 years). If the overflow repeats frequently, it indicates that
+ * there are enough real defects to overflow the bit-fix filter, and warning
+ * messages should be printed to alert users to schedule the system for
+ * servicing. Otherwise, the overflow is likely due to a long-term
+ * accumulation of corrected errors or a transient surge of corrected errors,
+ * and no action is needed.
+ */
+#define BFF_OVERFLOW_INTERVAL	(10 * 60)
+
+static bool bff_overflowed(struct mce *m)
+{
+	if (!(m->status & MCI_STATUS_VAL))
+		return false;
+
+	/* TES is undefined if UC == 1. */
+	if (m->status & MCI_STATUS_UC)
+		return false;
+
+	if (MCI_STATUS_TES(m->status) != MCI_STATUS_TES_YELLOW)
+		return false;
+
+	return true;
+}
+
+static bool bff_overflow_frequently(struct mce *m)
+{
+	struct mce_bank *bank = this_cpu_ptr(&mce_banks_array[m->bank]);
+	unsigned long now = jiffies, when;
+
+	/* First occurrence of overflow. */
+	if (!bank->bff_overflow_timestamp) {
+		bank->bff_overflow_timestamp = now;
+		return false;
+	}
+
+	when = bank->bff_overflow_timestamp + BFF_OVERFLOW_INTERVAL * HZ;
+	bank->bff_overflow_timestamp = now;
+
+	if (time_after(now, when))
+		return false;
+
+	return true;
+}
+
+void mce_intel_handle_bff(struct mce *mce)
+{
+	static DEFINE_RATELIMIT_STATE(ratelimit, 10 * HZ, 10);
+
+	if (!bff_overflowed(mce))
+		return;
+
+	/* The bit-fix filter overflowed, reset it. */
+	wrmsrl(MSR_MCx_BFF_CTL(mce->bank), MCI_BFF_RESET);
+
+	if (!bff_overflow_frequently(mce))
+		return;
+
+	if (!__ratelimit(&ratelimit))
+		return;
+
+	pr_emerg(HW_ERR "SOCKET %d CPU %d BANK %d bit-fix filter overflowed frequently.\n",
+		 mce->socketid, mce->extcpu, mce->bank);
 }

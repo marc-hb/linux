@@ -144,3 +144,12 @@ void mce_track_storm(struct mce *mce)
 		cmci_storm_begin(mce->bank);
 	}
 }
+
+void mce_track_bff(struct mce *mce)
+{
+	switch (boot_cpu_data.x86_vendor) {
+	case X86_VENDOR_INTEL:
+		mce_intel_handle_bff(mce);
+		break;
+	}
+}

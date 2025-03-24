@@ -42,6 +42,7 @@ extern mce_banks_t mce_banks_ce_disabled;
 
 #ifdef CONFIG_X86_MCE_INTEL
 void mce_intel_handle_storm(int bank, bool on);
+void mce_intel_handle_bff(struct mce *mce);
 void cmci_disable_bank(int bank);
 void intel_init_cmci(void);
 void intel_init_lmce(void);
@@ -50,6 +51,7 @@ bool intel_filter_mce(struct mce *m);
 bool intel_mce_usable_address(struct mce *m);
 #else
 static inline void mce_intel_handle_storm(int bank, bool on) { }
+static inline void mce_intel_handle_bff(struct mce *mce) { }
 static inline void cmci_disable_bank(int bank) { }
 static inline void intel_init_cmci(void) { }
 static inline void intel_init_lmce(void) { }
@@ -64,6 +66,7 @@ void mce_timer_kick(bool storm);
 void cmci_storm_begin(unsigned int bank);
 void cmci_storm_end(unsigned int bank);
 void mce_track_storm(struct mce *mce);
+void mce_track_bff(struct mce *mce);
 void mce_inherit_storm(unsigned int bank);
 bool mce_get_storm_mode(void);
 void mce_set_storm_mode(bool storm);
@@ -71,6 +74,7 @@ void mce_set_storm_mode(bool storm);
 static inline void cmci_storm_begin(unsigned int bank) {}
 static inline void cmci_storm_end(unsigned int bank) {}
 static inline void mce_track_storm(struct mce *mce) {}
+static inline void mce_track_bff(struct mce *mce) {}
 static inline void mce_inherit_storm(unsigned int bank) {}
 static inline bool mce_get_storm_mode(void) { return false; }
 static inline void mce_set_storm_mode(bool storm) {}
@@ -229,7 +233,10 @@ struct mce_vendor_flags {
 	/* Skylake, Cascade Lake, Cooper Lake REP;MOVS* quirk */
 	skx_repmov_quirk	: 1,
 
-	__reserved_0		: 55;
+	/* (Intel) Inidicate the presence of bit-fix filter reset MSRs. */
+	bff_reset		: 1,
+
+	__reserved_0		: 54;
 };
 
 extern struct mce_vendor_flags mce_flags;
@@ -248,6 +255,9 @@ struct mce_bank {
 	lsb_in_status		: 1,
 
 	__reserved_1		: 62;
+
+	/* (Intel) The timestamp in jiffies when MCA_STATUS[54:53] == 2 (yellow). */
+	u64			bff_overflow_timestamp;
 };
 
 DECLARE_PER_CPU_READ_MOSTLY(struct mce_bank[MAX_NR_BANKS], mce_banks_array);
