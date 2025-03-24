@@ -2250,7 +2250,7 @@ int kvm_emulate_rdmsr_imm(struct kvm_vcpu *vcpu, u32 msr, int reg)
 	u64 data;
 	int r;
 
-	r = kvm_get_msr_with_filter(vcpu, msr, &data);
+	r = kvm_emulate_msr_read_with_filter(vcpu, msr, &data);
 
 	if (!r) {
 		trace_kvm_msr_read(msr, data);
@@ -2300,7 +2300,7 @@ int kvm_emulate_wrmsr_imm(struct kvm_vcpu *vcpu, u32 msr, int reg)
 	unsigned long data = kvm_register_read(vcpu, reg);
 	int r;
 
-	r = kvm_set_msr_with_filter(vcpu, msr, data);
+	r = kvm_emulate_msr_write_with_filter(vcpu, msr, data);
 
 	if (!r) {
 		trace_kvm_msr_write(msr, data);
