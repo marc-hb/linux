@@ -110,6 +110,10 @@
 #define CNL_FREG_NUM			6
 #define CNL_PR_NUM			5
 
+#define SNR_PR				0x84
+#define SNR_FREG_NUM			12
+#define SNR_PR_NUM			5
+
 #define LVSCC				0xc4
 #define UVSCC				0xc8
 #define ERASE_OPCODE_SHIFT		8
@@ -1106,6 +1110,14 @@ static int intel_spi_init(struct intel_spi *ispi)
 		ispi->pregs = ispi->base + CNL_PR;
 		ispi->nregions = CNL_FREG_NUM;
 		ispi->pr_num = CNL_PR_NUM;
+		erase_64k = true;
+		break;
+
+	case INTEL_SPI_SNR:
+		ispi->sregs = NULL;
+		ispi->pregs = ispi->base + SNR_PR;
+		ispi->nregions = SNR_FREG_NUM;
+		ispi->pr_num = SNR_PR_NUM;
 		erase_64k = true;
 		break;
 
