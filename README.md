@@ -18,9 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v1.1
+---------------
+5.   update from 6.14-rc7 to 6.14
+
+
 dmr-6.14-v1.0
 ---------------
-
 4.   add arch/x86/configs/dmr.config file for build.
 
 3.   Add initial README.md file
