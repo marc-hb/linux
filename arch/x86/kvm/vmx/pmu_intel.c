@@ -1198,6 +1198,9 @@ static void intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	bool mediated;
 	bool arch_lbr;
 
+	if (is_td_vcpu(vcpu))
+		return;
+
 	/*
 	 * In legacy (non-mediated) vPMU, setting passthrough of LBR MSRs is
 	 * done only in the VM-Entry loop, while in mediated vPMU, LBR MSRs
@@ -1285,6 +1288,9 @@ static void intel_pmu_reset(struct kvm_vcpu *vcpu)
 static void intel_pmu_destroy(struct kvm_vcpu *vcpu)
 {
 	struct lbr_desc *lbr_desc = vcpu_to_lbr_desc(vcpu);
+
+	if (!lbr_desc)
+		return;
 
 	kfree(lbr_desc->state);
 	lbr_desc->state = NULL;
@@ -1695,7 +1701,7 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 {
-	union vmx_exit_reason exit_reason = to_vmx(vcpu)->exit_reason;
+	union vmx_exit_reason exit_reason = vmx_get_exit_reason(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	u32 intr_info = vmx_get_intr_info(vcpu);
 	u64 pebs_overflow = pmu->global_status &
