@@ -71,7 +71,6 @@ qat_support,\
 nmi_source_fixup"
 
 
-TODO: update the below for dmr-6.14
 
 initial features and bug fixes assocated Intel-next PRs for dmr-6.14-v1.0
 =====================
