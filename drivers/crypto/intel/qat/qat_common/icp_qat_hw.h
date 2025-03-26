@@ -119,6 +119,9 @@ enum icp_qat_capabilities_mask {
 	ICP_ACCEL_CAPABILITIES_WIRELESS_CRYPTO_EXT = BIT(30),
 };
 
+#define QAT_CAPS_MAJOR 0
+#define QAT_CAPS_MINOR 0
+
 #define QAT_AUTH_MODE_BITPOS 4
 #define QAT_AUTH_MODE_MASK 0xF
 #define QAT_AUTH_ALGO_BITPOS 0
