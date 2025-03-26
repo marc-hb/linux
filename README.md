@@ -18,10 +18,13 @@ Release History
 ===============
 
 
-dmr-6.14-v1.1
+dmr-6.14-v2.2
+---------------
+5.   update config options for QAT per QAT dev team.
+
+dmr-6.14-v2.1
 ---------------
 5.   update from 6.14-rc7 to 6.14
-
 
 dmr-6.14-v1.0
 ---------------
