@@ -280,3 +280,216 @@ Description:	(RW) Read reports the current QAT device queue mode
 
 		This attribute is only available for qat_4xxx and
 		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_cksum_algos
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the checksum algorithms capabilities supported by
+		the device.
+
+		The value is a 16-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: crc32
+		* bit 1: adler/xxhash
+		* bit 2: programmable 64 bit input/output crc
+		* bit 3: crc64
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_comp_algos
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the compression algorithms capabilities supported
+		by the device.
+
+		The value is a 16-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: deflate
+		* bit 2: lz4
+		* bit 3: lz4s
+		* bit 6: zstd
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_deflate
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the deflate capabilities supported by the device.
+
+		The value is a 32-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: compression
+		* bit 1: decompression
+		* bit 3: stateless
+		* bit 8: dynamic huffman
+		* bit 10: dynamic huffman buffer request
+		* bit 11: auto select best huffman tree
+		* bit 12: end of last block
+		* bit 13: uncompressed dictionary
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_dev
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the capabilities supported by the device.
+
+		The value is a 32-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: symmetric crypto
+		* bit 1: asymmetric crypto
+		* bit 2: cipher
+		* bit 3: authentication
+		* bit 5: compression
+		* bit 8: zuc
+		* bit 9: sha3
+		* bit 12: hdkf
+		* bit 13: ecedmont
+		* bit 14: ext alg chain
+		* bit 15: sha3 ext
+		* bit 16: aes-gcm spc
+		* bit 17: chacha poly
+		* bit 18: sm2
+		* bit 19: sm3
+		* bit 20: sm4
+		* bit 22: cnv integrity
+		* bit 23: cnv integrity 64
+		* bit 24: lz4 compression
+		* bit 25: lz4s compression
+		* bit 26: aes v2
+		* bit 27: kpt
+		* bit 29: zuc 256
+		* bit 30: wireless crypto ext
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_dev_dc_ext
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the extended compression capabilities supported by
+		the device.
+
+		The value is a 32-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: compress and verify
+		* bit 8: compress and verify and recover
+		* bit 9: e2e integrity crc
+		* bit 10: append crc 64
+		* bit 11: partial decompress
+		* bit 12: zero padding
+		* bit 16: dc chain compress + hash
+		* bit 17: dc chain compress + encrypt
+		* bit 18: dc chain compress + (hash, encrypt)
+		* bit 19: dc chain compress + (encrypt, hash)
+		* bit 20: dc chain compress + aead
+		* bit 21: dc chain compress + aead
+		* bit 21: dc chain hash + compress
+		* bit 22: dc chain hash verify + decompress
+		* bit 23: dc chain decrypt + decompress
+		* bit 24: dc chain (hash, verify, decrypt) + decompress
+		* bit 25: dc chain (decrypt, hash, verify) + decompress
+		* bit 26: dc chain aead + decompress
+		* bit 27: dc chain decompress + hash verify
+		* bit 28: dc chain compress + aead + hash
+		* bit 29: lz4 compress programmable crc over header + block data
+		* bit 30: lz4 compress programmable crc over lz4 block data
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_lz4
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the LZ4 capabilities supported by the device.
+
+		The value is a 16-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: compression
+		* bit 1: decompression
+		* bit 3: stateless
+		* bit 4: stateful-lite
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_lz4s
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the LZ4S capabilities supported by the device.
+
+		The value is a 16-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: compression
+		* bit 1: decompression
+		* bit 3: stateless
+		* bit 4: stateful-lite
+		* bit 5: uncompressed dictionary
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_version
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports version of the capabilities in the format
+		<major>.<minor>.
+
+What:		/sys/bus/pci/devices/<BDF>/qat/caps_zstd
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) Reports the ZSTD capabilities supported by the device.
+
+		The value is a 16-bit bit mask and is displayed in hex.
+		Each bit of the mask reports whether the capability is supported
+		(1) or not (0) according to following mapping:
+
+		* bit 0: compression
+		* bit 1: decompression
+		* bit 2: uncompressed dictionary
+		* bit 3: dictionary id
+
+		Reserved bits are omitted.
+
+		This attribute is only available for qat_4xxx and
+		qat_6xxx devices.

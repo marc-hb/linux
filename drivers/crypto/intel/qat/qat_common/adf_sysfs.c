@@ -9,6 +9,7 @@
 #include "adf_common_drv.h"
 #include "adf_ring_queue.h"
 #include "adf_uacce.h"
+#include "icp_qat_hw.h"
 
 #define UNSET_RING_NUM -1
 
@@ -471,6 +472,144 @@ static ssize_t ring_queue_mode_store(struct device *dev, struct device_attribute
 }
 static DEVICE_ATTR_RW(ring_queue_mode);
 
+static ssize_t caps_dev_show(struct device *dev, struct device_attribute *dev_attr,
+			     char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u32 capabilities_mask;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	capabilities_mask = GET_HW_DATA(accel_dev)->accel_capabilities_mask;
+
+	return sysfs_emit(buf, "%#08x\n", capabilities_mask);
+}
+static DEVICE_ATTR_RO(caps_dev);
+
+static ssize_t caps_dev_dc_ext_show(struct device *dev, struct device_attribute *dev_attr,
+				    char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u32 extended_dc_capabilities;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	extended_dc_capabilities = GET_HW_DATA(accel_dev)->extended_dc_capabilities;
+
+	return sysfs_emit(buf, "%#08x\n", extended_dc_capabilities);
+}
+static DEVICE_ATTR_RO(caps_dev_dc_ext);
+
+static ssize_t caps_comp_algos_show(struct device *dev, struct device_attribute *dev_attr,
+				    char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u16 comp_algos;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	comp_algos = GET_HW_DATA(accel_dev)->fw_dc_caps.comp_algos;
+
+	return sysfs_emit(buf, "%#08x\n", comp_algos);
+}
+static DEVICE_ATTR_RO(caps_comp_algos);
+
+static ssize_t caps_cksum_algos_show(struct device *dev, struct device_attribute *dev_attr,
+				     char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u16 cksum_algos;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	cksum_algos = GET_HW_DATA(accel_dev)->fw_dc_caps.cksum_algos;
+
+	return sysfs_emit(buf, "%#08x\n", cksum_algos);
+}
+static DEVICE_ATTR_RO(caps_cksum_algos);
+
+static ssize_t caps_deflate_show(struct device *dev, struct device_attribute *dev_attr,
+				 char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u32 deflate_caps;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	deflate_caps = GET_HW_DATA(accel_dev)->fw_dc_caps.deflate_caps;
+
+	return sysfs_emit(buf, "%#08x\n", deflate_caps);
+}
+static DEVICE_ATTR_RO(caps_deflate);
+
+static ssize_t caps_lz4_show(struct device *dev, struct device_attribute *dev_attr,
+			     char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u16 lz4_caps;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	lz4_caps = GET_HW_DATA(accel_dev)->fw_dc_caps.lz4_caps;
+
+	return sysfs_emit(buf, "%#08x\n", lz4_caps);
+}
+static DEVICE_ATTR_RO(caps_lz4);
+
+static ssize_t caps_lz4s_show(struct device *dev, struct device_attribute *dev_attr,
+			      char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u16 lz4s_caps;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	lz4s_caps = GET_HW_DATA(accel_dev)->fw_dc_caps.lz4s_caps;
+
+	return sysfs_emit(buf, "%#08x\n", lz4s_caps);
+}
+static DEVICE_ATTR_RO(caps_lz4s);
+
+static ssize_t caps_zstd_show(struct device *dev, struct device_attribute *dev_attr,
+			      char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+	u16 zstd_caps;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	zstd_caps = GET_HW_DATA(accel_dev)->fw_dc_caps.zstd_caps;
+
+	return sysfs_emit(buf, "%#08x\n", zstd_caps);
+}
+static DEVICE_ATTR_RO(caps_zstd);
+
+static ssize_t caps_version_show(struct device *dev, struct device_attribute *dev_attr,
+				 char *buf)
+{
+	u8 version_maj = QAT_CAPS_MAJOR;
+	u8 version_min = QAT_CAPS_MINOR;
+
+	return sysfs_emit(buf, "%u.%u\n", version_maj, version_min);
+}
+static DEVICE_ATTR_RO(caps_version);
+
 static struct attribute *qat_attrs[] = {
 	&dev_attr_state.attr,
 	&dev_attr_cfg_services.attr,
@@ -481,6 +620,15 @@ static struct attribute *qat_attrs[] = {
 	&dev_attr_num_rps_per_vf.attr,
 	&dev_attr_uacce.attr,
 	&dev_attr_ring_queue_mode.attr,
+	&dev_attr_caps_cksum_algos.attr,
+	&dev_attr_caps_comp_algos.attr,
+	&dev_attr_caps_deflate.attr,
+	&dev_attr_caps_dev.attr,
+	&dev_attr_caps_dev_dc_ext.attr,
+	&dev_attr_caps_lz4.attr,
+	&dev_attr_caps_lz4s.attr,
+	&dev_attr_caps_version.attr,
+	&dev_attr_caps_zstd.attr,
 	NULL,
 };
 
