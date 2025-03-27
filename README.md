@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v2.5
+---------------
+10. Fixup patches for TDX use in Simics.
+    Add new Linux OS kernel boot parameter iommu=ignore [ intel_iommu=ignore ]
+    https://jira.devtools.intel.com/browse/LFE-16161
+
 dmr-6.14-v2.4
 ---------------
 9.   fix: SST Tool output discrepancies on 2S Simics
