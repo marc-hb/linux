@@ -18,6 +18,10 @@ Release History
 ===============
 
 
+dmr-6.14-v2.3
+---------------
+6.   fix TDX issue with simics using non-upstreamed patches.
+
 dmr-6.14-v2.2
 ---------------
 5.   update config options for QAT per QAT dev team.
