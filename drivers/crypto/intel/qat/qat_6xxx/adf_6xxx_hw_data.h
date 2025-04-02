@@ -128,6 +128,8 @@
 #define ADF_6XXX_ACCELENGINES_MASK	GENMASK(8, 0)
 #define ADF_6XXX_ADMIN_AE_MASK		GENMASK(8, 8)
 
+#define ADF_6XXX_HICPPAGENTCMDPARERRLOG_MASK    0x1B
+
 /* Firmware binaries */
 #define ADF_6XXX_FW		"qat_6xxx.bin"
 #define ADF_6XXX_MMP		"qat_6xxx_mmp.bin"
