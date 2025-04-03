@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v2.4
+---------------
+7.   fix: SST Tool output discrepancies on 2S Simics
+     https://jira.devtools.intel.com/browse/LINUXBKC3-580 
+
 dmr-6.14-v2.3
 ---------------
 6.   fix TDX issue with simics using non-upstreamed patches.
