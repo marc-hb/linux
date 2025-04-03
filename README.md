@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v2.6
+---------------
+11. fix: KVM kselftest monitor_mwait_test fail
+    https://jira.devtools.intel.com/browse/LFE-16865
+
 dmr-6.14-v2.5
 ---------------
 10. Add new Linux OS kernel boot parameter iommu=ignore [ intel_iommu=ignore ]
