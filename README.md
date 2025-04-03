@@ -20,16 +20,18 @@ Release History
 
 dmr-6.14-v2.4
 ---------------
-7.   fix: SST Tool output discrepancies on 2S Simics
+9.   fix: SST Tool output discrepancies on 2S Simics
      https://jira.devtools.intel.com/browse/LINUXBKC3-580 
 
 dmr-6.14-v2.3
 ---------------
-6.   fix TDX issue with simics using non-upstreamed patches.
+8.   fix TDX issue with simics using non-upstreamed patches.
 
 dmr-6.14-v2.2
 ---------------
-5.   update config options for QAT per QAT dev team.
+7.   update config options for QAT per QAT dev team.
+6.   cosmedec: change mc to imc for uncore.
+     https://jira.devtools.intel.com/browse/LFE-154
 
 dmr-6.14-v2.1
 ---------------
