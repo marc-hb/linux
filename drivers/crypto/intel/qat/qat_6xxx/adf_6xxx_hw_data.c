@@ -874,6 +874,7 @@ static u32 get_wcy_accel_cap(struct adf_accel_dev *accel_dev)
 			   ICP_ACCEL_CAPABILITIES_CIPHER |
 			   ICP_ACCEL_CAPABILITIES_AUTHENTICATION |
 			   ICP_ACCEL_CAPABILITIES_WIRELESS_CRYPTO_EXT |
+			   ICP_ACCEL_CAPABILITIES_5G |
 			   ICP_ACCEL_CAPABILITIES_ZUC |
 			   ICP_ACCEL_CAPABILITIES_ZUC_256;
 
@@ -883,6 +884,9 @@ static u32 get_wcy_accel_cap(struct adf_accel_dev *accel_dev)
 	}
 	if (fusectl1 & ICP_ACCEL_GEN6_MASK_ZUC_256_SLICE)
 		capabilities_sym &= ~ICP_ACCEL_CAPABILITIES_ZUC_256;
+
+	if (fusectl1 & ICP_ACCEL_GEN6_MASK_5G_SLICE)
+		capabilities_sym &= ~ICP_ACCEL_CAPABILITIES_5G;
 
 	if (adf_get_service_enabled(accel_dev) == SVC_SYM)
 		return capabilities_sym;
