@@ -25,7 +25,7 @@
 #define ADF_DC "Dc"
 #define ADF_CFG_DC "dc"
 #define ADF_CFG_DECOMP "decomp"
-#define ADF_CFG_CY "sym;asym"
+#define ADF_CFG_CY "asym;sym"
 #define ADF_CFG_SYM "sym"
 #define ADF_CFG_ASYM "asym"
 #define ADF_CFG_DCC "dcc"
