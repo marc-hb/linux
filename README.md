@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v3.1
+---------------
+12. fix: OS doesn't understand CXL CPER log for CXL protocol errors and event
+    logs. https://jira.devtools.intel.com/browse/LINUXBKC3-215
+
 dmr-6.14-v2.6
 ---------------
 11. fix: KVM kselftest monitor_mwait_test fail
