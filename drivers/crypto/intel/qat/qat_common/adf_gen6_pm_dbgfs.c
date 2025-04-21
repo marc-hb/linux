@@ -116,3 +116,4 @@ void adf_gen6_init_dev_pm_data(struct adf_accel_dev *accel_dev)
 	accel_dev->power_management.print_pm_status = adf_gen6_print_pm_status;
 	accel_dev->power_management.present = true;
 }
+EXPORT_SYMBOL_GPL(adf_gen6_init_dev_pm_data);
