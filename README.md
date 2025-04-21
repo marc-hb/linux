@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v3.2
+---------------
+13. fix: APX feature bits CPUID in guest is not correct
+    https://jira.devtools.intel.com/browse/LFE-16870
+
 dmr-6.14-v3.1
 ---------------
 12. fix: OS doesn't understand CXL CPER log for CXL protocol errors and event
