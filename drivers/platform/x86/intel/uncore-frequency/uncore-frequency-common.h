@@ -31,6 +31,7 @@
  * @control_cpu:	Designated CPU for a die to read/write
  * @valid:		Mark the data valid/invalid
  * @package_id:	Package id for this instance
+ * @partition_id:	Partition ID of this instance
  * @die_id:		Die id for this instance
  * @domain_id:		Power domain id for this instance
  * @cluster_id:		cluster id in a domain
@@ -66,6 +67,7 @@ struct uncore_data {
 	int control_cpu;
 	bool valid;
 	int package_id;
+	int partition_id;
 	int die_id;
 	int domain_id;
 	int cluster_id;
@@ -102,6 +104,7 @@ enum uncore_index {
 	UNCORE_INDEX_EFF_LAT_CTRL_HIGH_THRESHOLD_ENABLE,
 	UNCORE_INDEX_EFF_LAT_CTRL_FREQ,
 	UNCORE_INDEX_DIE_ID,
+	UNCORE_INDEX_DOMAIN_ID,
 };
 
 int uncore_freq_common_init(int (*read)(struct uncore_data *data, unsigned int *value,

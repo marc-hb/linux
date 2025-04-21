@@ -22,13 +22,6 @@ static DEFINE_IDA(intel_uncore_ida);
 static int (*uncore_read)(struct uncore_data *data, unsigned int *value, enum uncore_index index);
 static int (*uncore_write)(struct uncore_data *data, unsigned int input, enum uncore_index index);
 
-static ssize_t show_domain_id(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	struct uncore_data *data = container_of(attr, struct uncore_data, domain_id_kobj_attr);
-
-	return sprintf(buf, "%u\n", data->domain_id);
-}
-
 static ssize_t show_fabric_cluster_id(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	struct uncore_data *data = container_of(attr, struct uncore_data, fabric_cluster_id_kobj_attr);
@@ -143,6 +136,7 @@ show_uncore_attr(elc_high_threshold_enable,
 show_uncore_attr(elc_floor_freq_khz, UNCORE_INDEX_EFF_LAT_CTRL_FREQ);
 
 show_uncore_attr(die_id, UNCORE_INDEX_DIE_ID);
+show_uncore_attr(domain_id, UNCORE_INDEX_DOMAIN_ID);
 
 #define show_uncore_data(member_name)					\
 	static ssize_t show_##member_name(struct kobject *kobj,	\

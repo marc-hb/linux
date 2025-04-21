@@ -376,6 +376,57 @@ static void uncore_set_agent_type(struct tpmi_uncore_cluster_info *cluster_info)
 		cluster_info->uncore_data.agent_type_mask |= AGENT_TYPE_IO;
 }
 
+#define MAX_PARTIIONS	2
+
+static u8 io_die_count[MAX_PARTIIONS];
+static u8 io_die_offset[MAX_PARTIIONS];
+
+/* IO die index start from here after compute_dies */
+static u8 io_die_start;
+
+/* Lock to protect io_die_start, io_die_count and io_die_offset */
+static DEFINE_MUTEX(domain_lock);
+
+static void update_domain_id(int num_resources, struct oobmsm_plat_info *plat_info)
+{
+	u8 cdie_range;
+
+	guard(mutex)(&domain_lock);
+
+	if (!plat_info->cdie_mask || plat_info->partition >=  MAX_PARTIIONS ||
+	    io_die_count[plat_info->partition])
+		return;
+
+	if (fls(plat_info->cdie_mask) > io_die_start)
+		io_die_start = fls(plat_info->cdie_mask);
+
+	cdie_range = fls(plat_info->cdie_mask) - ffs(plat_info->cdie_mask) + 1;
+	io_die_offset[plat_info->partition] = cdie_range;
+	io_die_count[plat_info->partition] = num_resources - cdie_range;
+}
+
+static int get_mapped_domain_id(struct uncore_data *data)
+{
+	struct tpmi_uncore_cluster_info *cluster_info;
+	int i, io_die_id;
+
+	if (topology_max_dies_per_package() <= 1)
+		return data->domain_id;
+
+	guard(mutex)(&domain_lock);
+
+	cluster_info = container_of(data, struct tpmi_uncore_cluster_info, uncore_data);
+	if (cluster_info->uncore_data.agent_type_mask & AGENT_TYPE_CORE)
+		return cluster_info->cdie_id;
+
+	io_die_id = io_die_start;
+
+	for (i = 0; i < data->partition_id; i++)
+		io_die_id += io_die_count[i];
+
+	return io_die_id + data->domain_id - io_die_offset[data->partition_id];
+}
+
 /* Callback for sysfs read for TPMI uncore values. Called under mutex locks. */
 static int uncore_read(struct uncore_data *data, unsigned int *value, enum uncore_index index)
 {
@@ -406,6 +457,9 @@ static int uncore_read(struct uncore_data *data, unsigned int *value, enum uncor
 		*value = ret;
 		return 0;
 
+	case UNCORE_INDEX_DOMAIN_ID:
+		*value = get_mapped_domain_id(data);
+		return 0;
 	default:
 		break;
 	}
@@ -456,7 +510,7 @@ static void remove_cluster_entries(struct tpmi_uncore_struct *tpmi_uncore)
 }
 
 static void set_cdie_id(int domain_id, struct tpmi_uncore_cluster_info *cluster_info,
-		       struct intel_tpmi_plat_info *plat_info)
+		       struct oobmsm_plat_info *plat_info)
 {
 
 	cluster_info->cdie_id = domain_id;
@@ -607,12 +661,15 @@ static int uncore_probe(struct auxiliary_device *auxdev, const struct auxiliary_
 			uncore_set_agent_type(cluster_info);
 
 			cluster_info->uncore_data.package_id = pkg;
+			cluster_info->uncore_data.partition_id = plat_info->partition;
 			/* There are no dies like Cascade Lake */
 			cluster_info->uncore_data.die_id = 0;
 			cluster_info->uncore_data.domain_id = i;
 			cluster_info->uncore_data.cluster_id = j;
 
 			set_cdie_id(i, cluster_info, plat_info);
+
+			update_domain_id(num_resources, plat_info);
 
 			cluster_info->uncore_root = tpmi_uncore;
 
