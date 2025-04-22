@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v3.3
+---------------
+15. fix: System fails to undergo shutdown/S5 State when booted to tboot OS with
+    TXT enable
+    https://hsdes.intel.com/appstore/article/#/16027244517
+
 dmr-6.14-v3.2
 ---------------
 13. fix: APX feature bits CPUID in guest is not correct
