@@ -17,6 +17,7 @@
 #include "adf_rl_admin.h"
 #include "adf_rl.h"
 #include "adf_sysfs_rl.h"
+#include "adf_cfg_services.h"
 
 #define RL_TOKEN_GRANULARITY_PCIEIN_BUCKET	0U
 #define RL_TOKEN_GRANULARITY_PCIEOUT_BUCKET	0U
@@ -181,6 +182,22 @@ static enum adf_cfg_service_type srv_to_cfg_svc_type(enum adf_base_services rl_s
 		return DECOMP;
 	default:
 		return UNUSED;
+	}
+}
+
+static unsigned long rl_svc_to_adf_svc_bitmask(enum adf_base_services rl_svc)
+{
+	switch (rl_svc) {
+	case ADF_SVC_ASYM:
+		return BIT(SVC_ASYM);
+	case ADF_SVC_SYM:
+		return BIT(SVC_SYM);
+	case ADF_SVC_DC:
+		return BIT(SVC_DC);
+	case ADF_SVC_DECOMP:
+		return BIT(SVC_DECOMP);
+	default:
+		return 0;
 	}
 }
 
@@ -1128,14 +1145,31 @@ int adf_rl_init(struct adf_accel_dev *accel_dev)
 {
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
 	struct adf_rl_hw_data *rl_hw_data = &hw_data->rl_data;
+	enum adf_base_services rl_svc;
+	unsigned long svc_bitmask;
 	struct adf_rl *rl;
 	int ret = 0;
 
-	/* Validate device parameters */
-	if (RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_ASYM]) ||
-	    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_SYM]) ||
-	    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_DC]) ||
-	    RL_VALIDATE_NON_ZERO(rl_hw_data->scan_interval) ||
+	if (hw_data->services_supported) {
+		for (rl_svc = 0; rl_svc < RL_ROOT_MAX; rl_svc++) {
+			svc_bitmask = rl_svc_to_adf_svc_bitmask(rl_svc);
+			if (hw_data->services_supported(svc_bitmask) &&
+			    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[rl_svc])) {
+				ret = -EOPNOTSUPP;
+				goto err_ret;
+			}
+		}
+	} else {
+		/* Validate device parameters */
+		if (RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_ASYM]) ||
+		    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_SYM]) ||
+		    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[ADF_SVC_DC])) {
+			ret = -EOPNOTSUPP;
+			goto err_ret;
+		}
+	}
+
+	if (RL_VALIDATE_NON_ZERO(rl_hw_data->scan_interval) ||
 	    RL_VALIDATE_NON_ZERO(rl_hw_data->pcie_scale_div) ||
 	    RL_VALIDATE_NON_ZERO(rl_hw_data->pcie_scale_mul) ||
 	    RL_VALIDATE_NON_ZERO(rl_hw_data->scale_ref)) {

@@ -624,8 +624,8 @@ static u32 adf_gen6_get_num_svc_aes(struct adf_accel_dev *accel_dev,
 	return 0;
 }
 
-static u32 adf_gen6_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
-					 struct rl_slice_cnt *slices)
+static u32 get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				struct rl_slice_cnt *slices)
 {
 	switch (svc) {
 	case SYM:
@@ -636,6 +636,17 @@ static u32 adf_gen6_get_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
 		return slices->cpr_cnt + slices->dcpr_cnt;
 	case DECOMP:
 		return slices->dcpr_cnt;
+	default:
+		return 0;
+	}
+}
+
+static u32 get_wcy_rl_svc_slice_cnt(enum adf_cfg_service_type svc,
+				    struct rl_slice_cnt *slices)
+{
+	switch (svc) {
+	case SYM:
+		return slices->wcp_cnt;
 	default:
 		return 0;
 	}
@@ -1157,7 +1168,7 @@ static void adf_gen6_set_cmdq_cnt(struct adf_accel_dev *accel_dev)
 	cmdq_cnt->ath_cnt = slice_cnt->ath_cnt * 2;
 }
 
-static void adf_gen6_init_rl_data(struct adf_rl_hw_data *rl_data)
+static void adf_gen6_init_rl_data(struct adf_rl_hw_data *rl_data, bool wcy_mode)
 {
 	rl_data->pciout_tb_offset = ADF_GEN6_RL_TOKEN_PCIEOUT_BUCKET_OFFSET;
 	rl_data->pciin_tb_offset = ADF_GEN6_RL_TOKEN_PCIEIN_BUCKET_OFFSET;
@@ -1166,10 +1177,14 @@ static void adf_gen6_init_rl_data(struct adf_rl_hw_data *rl_data)
 	rl_data->c2s_offset = ADF_GEN6_RL_C2S_OFFSET;
 	rl_data->pcie_scale_div = ADF_6XXX_RL_PCIE_SCALE_FACTOR_DIV;
 	rl_data->pcie_scale_mul = ADF_6XXX_RL_PCIE_SCALE_FACTOR_MUL;
-	rl_data->max_tp[ADF_SVC_ASYM] = ADF_6XXX_RL_MAX_TP_ASYM;
-	rl_data->max_tp[ADF_SVC_SYM] = ADF_6XXX_RL_MAX_TP_SYM;
-	rl_data->max_tp[ADF_SVC_DC] = ADF_6XXX_RL_MAX_TP_DC;
-	rl_data->max_tp[ADF_SVC_DECOMP] = ADF_6XXX_RL_MAX_TP_DECOMP;
+	if (wcy_mode) {
+		rl_data->max_tp[ADF_SVC_SYM] = ADF_6XXX_RL_MAX_TP_WCY_SYM;
+	} else {
+		rl_data->max_tp[ADF_SVC_ASYM] = ADF_6XXX_RL_MAX_TP_ASYM;
+		rl_data->max_tp[ADF_SVC_SYM] = ADF_6XXX_RL_MAX_TP_SYM;
+		rl_data->max_tp[ADF_SVC_DC] = ADF_6XXX_RL_MAX_TP_DC;
+		rl_data->max_tp[ADF_SVC_DECOMP] = ADF_6XXX_RL_MAX_TP_DECOMP;
+	}
 	rl_data->scan_interval = ADF_6XXX_RL_SCANS_PER_SEC;
 	rl_data->scale_ref = ADF_6XXX_RL_SLICE_REF;
 }
@@ -1237,7 +1252,6 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data, bool wcy_mode)
 	hw_data->set_cmdq_cnt = adf_gen6_set_cmdq_cnt;
 	hw_data->clock_frequency = ADF_6XXX_AE_FREQ;
 	hw_data->get_num_svc_aes = adf_gen6_get_num_svc_aes;
-	hw_data->get_rl_svc_slice_cnt = adf_gen6_get_rl_svc_slice_cnt;
 	hw_data->get_ring_base_addr = adf_gen6_get_ring_base_addr;
 	hw_data->get_rl_sla_val = adf_rl_get_sla_val;
 	hw_data->kpt_capable = adf_kpt_capable;
@@ -1247,12 +1261,14 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data, bool wcy_mode)
 		hw_data->get_accel_cap = get_wcy_accel_cap;
 		hw_data->get_default_service = get_wcy_service;
 		hw_data->set_crypto_cap = set_wcy_crypto_cap;
+		hw_data->get_rl_svc_slice_cnt = get_wcy_rl_svc_slice_cnt;
 	} else {
 		hw_data->services_supported = services_supported;
 		hw_data->set_ssm_wdtimer = set_ssm_wdtimer;
 		hw_data->get_accel_cap = get_accel_cap;
 		hw_data->set_crypto_cap = set_crypto_cap;
 		hw_data->set_comp_cap = set_comp_cap;
+		hw_data->get_rl_svc_slice_cnt = get_rl_svc_slice_cnt;
 	}
 	adf_gen6_init_hw_csr_ops(&hw_data->csr_ops);
 	adf_gen6_init_pf_pfvf_ops(&hw_data->pfvf_ops);
@@ -1261,7 +1277,7 @@ void adf_init_hw_data_6xxx(struct adf_hw_device_data *hw_data, bool wcy_mode)
 	adf_gen6_init_ras_ops(&hw_data->ras_ops);
 	adf_gen6_set_err_mask(&hw_data->dev_err_mask);
 	adf_gen6_init_tl_data(&hw_data->tl_data);
-	adf_gen6_init_rl_data(&hw_data->rl_data);
+	adf_gen6_init_rl_data(&hw_data->rl_data, wcy_mode);
 	adf_gen6_init_anti_rb(&hw_data->anti_rb_data);
 	adf_gen6_init_kpt(&hw_data->kpt_data);
 }

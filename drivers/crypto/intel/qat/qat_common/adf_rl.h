@@ -75,6 +75,8 @@ struct rl_slice_cnt {
 	u8 pke_cnt;
 	u8 cph_cnt;
 	u8 cpr_cnt;
+	u8 wcp_cnt;
+	u8 wat_cnt;
 };
 
 struct adf_rl_interface_data {
