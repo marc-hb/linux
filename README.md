@@ -18,9 +18,14 @@ Release History
 ===============
 
 
+dmr-6.14-v3.4
+---------------
+15. fix: It fails to boot TD guest with fred=on on host, simics crash
+    https://jira.devtools.intel.com/browse/LFE-16679
+
 dmr-6.14-v3.3
 ---------------
-15. fix: System fails to undergo shutdown/S5 State when booted to tboot OS with
+14. fix: System fails to undergo shutdown/S5 State when booted to tboot OS with
     TXT enable
     https://hsdes.intel.com/appstore/article/#/16027244517
 
