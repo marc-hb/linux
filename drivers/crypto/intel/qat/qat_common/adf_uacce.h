@@ -17,11 +17,14 @@ struct adf_uacce_data {
 	DECLARE_HASHTABLE(pasid_ht, ADF_PASID_HASHTABLE_BITS);
 	struct uacce_device *uacce_dev;
 	struct adf_uacce_bank_data *bank_data;
+	const char *last_event;
+	atomic_t last_event_read_cnt;
 	u32 svc_bitmask;
 };
 
 bool adf_uacce_is_enabled(struct adf_accel_dev *accel_dev);
 int adf_uacce_enable(struct adf_accel_dev *accel_dev);
 void adf_uacce_disable(struct adf_accel_dev *accel_dev);
+void adf_uacce_wait_for_restarting_complete(struct adf_accel_dev *accel_dev);
 
 #endif /* _ADF_UACCE_H_ */

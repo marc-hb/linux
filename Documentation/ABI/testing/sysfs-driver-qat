@@ -241,6 +241,56 @@ Description:	(RW) Read reports the current state of the uacce framework
 		This attribute is only available for qat_4xxx and
 		qat_6xxx devices.
 
+What:		/sys/bus/pci/devices/<BDF>/qat/dev_event
+Date:		TBD
+KernelVersion:	TBD
+Contact:	qat-linux@intel.com
+Description:	(RO) This attribute provides information about device events.
+
+		This attribute is only taken into account if the device is
+		working with uacce framework enabled (see
+		/sys/bus/pci/devices/<BDF>/qat/uacce). Otherwise always returns
+		"none".
+
+		Reading this file returns the most recent event reported by
+		the device.
+
+		Possible values are:
+
+		* restarting: The device is in the process of restarting.
+		* restarted: The device has successfully restarted.
+		* error: An error has been encountered.
+		* none: No events have been reported.
+
+		In addition the events are signaled through the kernel's
+		sysfs_notify() mechanism, so that user space can use poll for
+		monitoring the events (type POLLPRI).
+
+		When the device is in the process of restarting, the device
+		resources must be released and should not be used until
+		the event "restarted" is received.
+		Note that if the user space application does not monitor
+		the attribute frequently enough, some events may be missed.
+
+		Example flow of events in response to an unrecoverable AER error::
+
+			# Error detected
+			# cat /sys/bus/pci/devices/<BDF>/qat/dev_event
+			error
+
+			# Device tries to restart
+			# cat /sys/bus/pci/devices/<BDF>/qat/dev_event
+			restarting
+
+			# Device has restarted
+			# cat /sys/bus/pci/devices/<BDF>/qat/dev_event
+			restarted
+
+			# Device is now ready for use
+
+		This attribute is available only for qat_4xxx and
+		qat_6xxx devices.
+
 What:		/sys/bus/pci/devices/<BDF>/qat/ring_queue_mode
 Date:		TBD
 KernelVersion:	TBD

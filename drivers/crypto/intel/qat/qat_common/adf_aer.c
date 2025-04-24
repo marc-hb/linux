@@ -8,6 +8,7 @@
 #include "adf_accel_devices.h"
 #include "adf_common_drv.h"
 #include "adf_pfvf_pf_msg.h"
+#include "adf_uacce.h"
 
 struct adf_fatal_error_data {
 	struct adf_accel_dev *accel_dev;
@@ -41,6 +42,7 @@ static pci_ers_result_t adf_error_detected(struct pci_dev *pdev,
 	adf_error_notifier(accel_dev);
 	adf_pf2vf_notify_fatal_error(accel_dev);
 	adf_dev_restarting_notify(accel_dev);
+	adf_uacce_wait_for_restarting_complete(accel_dev);
 	adf_pf2vf_notify_restarting(accel_dev);
 	adf_pf2vf_wait_for_restarting_complete(accel_dev);
 	pci_clear_master(pdev);

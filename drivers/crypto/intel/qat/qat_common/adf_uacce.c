@@ -4,7 +4,9 @@
 #define dev_fmt(fmt) "UACCE: " fmt
 
 #include <linux/bitops.h>
+#include <linux/delay.h>
 #include <linux/iommu.h>
+#include <linux/iopoll.h>
 #include <linux/uacce.h>
 
 #include "adf_accel_devices.h"
@@ -26,6 +28,22 @@
 #define ADF_RINGMODECTL_ENABLE_UQ	BIT(0)
 
 #define ADF_MAX_RP_UQ_REFERENCES	256
+
+#define ADF_PF_WAIT_RESTARTING_COMPLETE_DELAY	100
+#define ADF_UACCE_SHUTDOWN_RETRY		100
+#define ADF_DEV_EVENT_RECEIVE_DELAY_US	(100 * USEC_PER_MSEC)
+#define ADF_DEV_EVENT_RECEIVE_MAX_DELAY_US	(10 * USEC_PER_SEC)
+#define ADF_DEV_EVENT_EMPTY_VAL		"none"
+
+static const char * const adf_event_strings[] = {
+	[ADF_EVENT_INIT] = "init",
+	[ADF_EVENT_START] = "start",
+	[ADF_EVENT_STOP] = "stop",
+	[ADF_EVENT_SHUTDOWN] = "shutdown",
+	[ADF_EVENT_RESTARTING] = "restarting",
+	[ADF_EVENT_RESTARTED] = "restarted",
+	[ADF_EVENT_FATAL_ERROR] = "error"
+};
 
 static struct service_hndl adf_uacce;
 
@@ -652,6 +670,48 @@ static const struct uacce_ops adf_uacce_ops = {
 	.isolate_err_threshold_read = adf_uacce_isolate_err_threshold_read,
 };
 
+static void wait_for_event_receive(struct adf_accel_dev *accel_dev)
+{
+	struct adf_uacce_data *uacce_data = &accel_dev->uacce_data;
+	struct adf_uacce_pasid_hnode *node;
+	int read_cnt, ret, i;
+	uint users_cnt = 0;
+
+	/*
+	 * Determine the number of active processes by counting unique PASIDs
+	 * in the hash table
+	 */
+	hash_for_each(uacce_data->pasid_ht, i, node, hnode) {
+		users_cnt++;
+	}
+
+	/*
+	 * Wait until sysfs events attribute will be read by all processes
+	 * that are using this device.
+	 */
+	ret = read_poll_timeout(atomic_read, read_cnt, read_cnt >= users_cnt,
+				ADF_DEV_EVENT_RECEIVE_DELAY_US,
+				ADF_DEV_EVENT_RECEIVE_MAX_DELAY_US, true,
+				&uacce_data->last_event_read_cnt);
+
+	if (ret < 0)
+		dev_dbg(&GET_DEV(accel_dev),
+			"Not all users received the device event\n");
+}
+
+static void event_notify(struct adf_accel_dev *accel_dev, const char *event_str)
+{
+	struct adf_uacce_data *uacce_data = &accel_dev->uacce_data;
+
+	if (!uacce_data->uacce_dev)
+		return;
+
+	uacce_data->last_event = event_str;
+	atomic_set(&uacce_data->last_event_read_cnt, 0);
+	adf_sysfs_dev_event_notify(accel_dev);
+	wait_for_event_receive(accel_dev);
+}
+
 static int adf_uacce_shutdown(struct adf_accel_dev *accel_dev)
 {
 	if (!accel_dev->uacce_data.uacce_dev)
@@ -768,10 +828,21 @@ static int adf_uacce_event_handler(struct adf_accel_dev *accel_dev,
 		break;
 	case ADF_EVENT_RESTARTING:
 	case ADF_EVENT_RESTARTED:
+	case ADF_EVENT_FATAL_ERROR:
+		event_notify(accel_dev, adf_event_strings[event]);
+		ret = 0;
+		break;
 	case ADF_EVENT_START:
 		ret = 0;
 		break;
 	case ADF_EVENT_STOP:
+		/* If this step is part of AER flow skip the shutdown notification */
+		if (accel_dev->uacce_data.last_event !=
+		    adf_event_strings[ADF_EVENT_RESTARTING]) {
+			event_notify(accel_dev,
+				     adf_event_strings[ADF_EVENT_RESTARTING]);
+			adf_uacce_wait_for_restarting_complete(accel_dev);
+		}
 		ret = 0;
 		break;
 	default:
@@ -836,6 +907,10 @@ int adf_uacce_enable(struct adf_accel_dev *accel_dev)
 		dev_err(&GET_DEV(accel_dev),
 			"Config entry (%s) cannot be added\n", ADF_UACCE_ENABLED);
 
+	/* Initialize last event variable */
+	accel_dev->uacce_data.last_event = ADF_DEV_EVENT_EMPTY_VAL;
+	atomic_set(&accel_dev->uacce_data.last_event_read_cnt, 0);
+
 	iommu_dev_disable_feature(&GET_DEV(accel_dev), IOMMU_DEV_FEAT_SVA);
 err_svm:
 	iommu_dev_disable_feature(&GET_DEV(accel_dev), IOMMU_DEV_FEAT_IOPF);
@@ -852,4 +927,45 @@ void adf_uacce_disable(struct adf_accel_dev *accel_dev)
 	adf_cfg_del_key_value_param(accel_dev, ADF_GENERAL_SEC,
 				    ADF_UACCE_ENABLED);
 	adf_ring_queue_disable_uq(accel_dev);
+
+	/* Clear last event variable */
+	accel_dev->uacce_data.last_event = ADF_DEV_EVENT_EMPTY_VAL;
+	atomic_set(&accel_dev->uacce_data.last_event_read_cnt, 0);
 }
+
+/*
+ * Wait for userspace to release all resources before restarting the device.
+ */
+void adf_uacce_wait_for_restarting_complete(struct adf_accel_dev *accel_dev)
+{
+	struct adf_uacce_data *uacce_data = &accel_dev->uacce_data;
+	struct adf_uacce_bank_data *bank_data = uacce_data->bank_data;
+	uint banks_num = GET_MAX_BANKS(accel_dev);
+	uint retries = ADF_UACCE_SHUTDOWN_RETRY;
+	bool bank_in_use;
+	uint i;
+
+	if (!uacce_data->uacce_dev)
+		return;
+
+	dev_dbg(&GET_DEV(accel_dev), "uacce wait for restarting complete\n");
+	do {
+		bank_in_use = false;
+		for (i = 0; i < banks_num; i++) {
+			if (bank_data[i].ref_counter) {
+				bank_in_use = true;
+				break;
+			}
+		}
+
+		if (!bank_in_use)
+			break;
+
+		msleep(ADF_PF_WAIT_RESTARTING_COMPLETE_DELAY);
+	} while (--retries);
+
+	if (bank_in_use)
+		dev_err(&GET_DEV(accel_dev),
+			"Timeout waiting for apps to release resources\n");
+}
+

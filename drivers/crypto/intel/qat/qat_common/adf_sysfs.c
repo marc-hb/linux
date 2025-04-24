@@ -346,6 +346,30 @@ static ssize_t num_rps_per_vf_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(num_rps_per_vf);
 
+static ssize_t dev_event_show(struct device *dev,
+			      struct device_attribute *attr, char *buf)
+{
+	struct adf_accel_dev *accel_dev;
+
+	accel_dev = adf_devmgr_pci_to_accel_dev(to_pci_dev(dev));
+	if (!accel_dev)
+		return -EINVAL;
+
+	if (!accel_dev->uacce_data.last_event)
+		return -EINVAL;
+
+	atomic_inc(&accel_dev->uacce_data.last_event_read_cnt);
+
+	return sysfs_emit(buf, "%s\n", accel_dev->uacce_data.last_event);
+}
+
+void adf_sysfs_dev_event_notify(struct adf_accel_dev *accel_dev)
+{
+	dev_dbg(&GET_DEV(accel_dev), "QAT dev event: %s\n", accel_dev->uacce_data.last_event);
+	sysfs_notify(&GET_DEV(accel_dev).kobj, "qat", "dev_event");
+}
+static DEVICE_ATTR_RO(dev_event);
+
 static ssize_t uacce_show(struct device *dev, struct device_attribute *attr,
 			  char *buf)
 {
@@ -619,6 +643,7 @@ static struct attribute *qat_attrs[] = {
 	&dev_attr_auto_reset.attr,
 	&dev_attr_num_rps_per_vf.attr,
 	&dev_attr_uacce.attr,
+	&dev_attr_dev_event.attr,
 	&dev_attr_ring_queue_mode.attr,
 	&dev_attr_caps_cksum_algos.attr,
 	&dev_attr_caps_comp_algos.attr,
