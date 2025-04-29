@@ -22,17 +22,20 @@ dmr-6.14-v3.4
 ---------------
 15. fix: It fails to boot TD guest with fred=on on host, simics crash
     https://jira.devtools.intel.com/browse/LFE-16679
+    https://jira.devtools.intel.com/browse/LINUXBKC3-574
 
 dmr-6.14-v3.3
 ---------------
 14. fix: System fails to undergo shutdown/S5 State when booted to tboot OS with
     TXT enable
     https://hsdes.intel.com/appstore/article/#/16027244517
+    https://jira.devtools.intel.com/browse/LINUXBKC3-620
 
 dmr-6.14-v3.2
 ---------------
 13. fix: APX feature bits CPUID in guest is not correct
     https://jira.devtools.intel.com/browse/LFE-16870
+    https://jira.devtools.intel.com/browse/LINUXBKC3-610
 
 dmr-6.14-v3.1
 ---------------
