@@ -386,6 +386,7 @@ static const u32 msrs_to_save_pmu_base[] = {
 
 static u32 msrs_to_save_pmu_cntrs[3 * KVM_MAX_NR_FIXED_COUNTERS +
 				  6 * KVM_MAX_NR_GP_COUNTERS];
+static unsigned int num_msrs_to_save_pmu_cntrs;
 
 static u32 msrs_to_save[ARRAY_SIZE(msrs_to_save_base) +
 			ARRAY_SIZE(msrs_to_save_pmu_base) +
@@ -7994,29 +7995,36 @@ void kvm_probe_msr_to_save(u32 msr_index)
 		break;
 	}
 
-	if (WARN_ON(num_msrs_to_save >= (ARRAY_SIZE(msrs_to_save) - 1)))
+	if (WARN_ON(num_msrs_to_save >= ARRAY_SIZE(msrs_to_save)))
 		return;
 
 	msrs_to_save[num_msrs_to_save++] = msr_index;
 }
 
+static void kvm_add_pmu_cntrs_msr_entry(u32 msr)
+{
+	if (WARN_ON(num_msrs_to_save_pmu_cntrs >= ARRAY_SIZE(msrs_to_save_pmu_cntrs)))
+		return;
+
+	msrs_to_save_pmu_cntrs[num_msrs_to_save_pmu_cntrs++] = msr;
+}
+
 static void kvm_init_save_pmu_cntrs_msr_array(void)
 {
-	int idx = 0;
 	int i;
 
 	for (i = 0; i < KVM_MAX_NR_FIXED_COUNTERS; i++) {
-		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_FIXED_CTR0 + i;
-		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i);
-		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i);
+		kvm_add_pmu_cntrs_msr_entry(MSR_ARCH_PERFMON_FIXED_CTR0 + i);
+		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CTR, i));
+		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_FX0_CFG_C, i));
 	}
 	for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
-		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_PERFCTR0 + i;
-		msrs_to_save_pmu_cntrs[idx++] = MSR_IA32_PMC0 + i;
-		msrs_to_save_pmu_cntrs[idx++] = MSR_ARCH_PERFMON_EVENTSEL0 + i;
-		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i);
-		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i);
-		msrs_to_save_pmu_cntrs[idx++] = pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i);
+		kvm_add_pmu_cntrs_msr_entry(MSR_ARCH_PERFMON_PERFCTR0 + i);
+		kvm_add_pmu_cntrs_msr_entry(MSR_IA32_PMC0 + i);
+		kvm_add_pmu_cntrs_msr_entry(MSR_ARCH_PERFMON_EVENTSEL0 + i);
+		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i));
+		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i));
+		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i));
 	}
 }
 
@@ -8035,7 +8043,7 @@ static void kvm_init_msr_lists(void)
 		kvm_init_save_pmu_cntrs_msr_array();
 		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu_base); i++)
 			kvm_probe_msr_to_save(msrs_to_save_pmu_base[i]);
-		for (i = 0; i < ARRAY_SIZE(msrs_to_save_pmu_cntrs); i++)
+		for (i = 0; i < num_msrs_to_save_pmu_cntrs; i++)
 			kvm_probe_msr_to_save(msrs_to_save_pmu_cntrs[i]);
 		kvm_pmu_init_lbr_msr_to_save();
 	}
