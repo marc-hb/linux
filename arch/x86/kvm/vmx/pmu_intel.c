@@ -196,7 +196,7 @@ static bool intel_pmu_is_valid_lbr_msr(struct kvm_vcpu *vcpu, u32 index)
 
 static inline bool intel_pmu_is_valid_extra_msr(struct kvm_vcpu *vcpu, u32 msr)
 {
-	return (kvm_pmu_is_possible_extra_msr(msr) &&
+	return (kvm_pmu_is_extra_msr(msr) &&
 		kvm_mediated_pmu_enabled(vcpu) &&
 		cpuid_model_is_consistent(vcpu));
 }

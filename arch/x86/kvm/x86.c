@@ -374,18 +374,13 @@ static const u32 msrs_to_save_pmu_base[] = {
 	MSR_F15H_PERF_CTR0, MSR_F15H_PERF_CTR1, MSR_F15H_PERF_CTR2,
 	MSR_F15H_PERF_CTR3, MSR_F15H_PERF_CTR4, MSR_F15H_PERF_CTR5,
 
-	MSR_OFFCORE_RSP_0, MSR_OFFCORE_RSP_1,
-	MSR_PEBS_LD_LAT_THRESHOLD,
-	MSR_PEBS_FRONTEND,
-	MSR_SNOOP_RSP_0, MSR_SNOOP_RSP_1,
-
 	MSR_AMD64_PERF_CNTR_GLOBAL_CTL,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS,
 	MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR,
 };
 
 static u32 msrs_to_save_pmu_cntrs[3 * KVM_MAX_NR_FIXED_COUNTERS +
-				  6 * KVM_MAX_NR_GP_COUNTERS];
+				  6 * KVM_MAX_NR_GP_COUNTERS +  X86_MAX_NR_EXTRA_MSRS];
 static unsigned int num_msrs_to_save_pmu_cntrs;
 
 static u32 msrs_to_save[ARRAY_SIZE(msrs_to_save_base) +
@@ -7907,19 +7902,6 @@ void kvm_probe_msr_to_save(u32 msr_index)
 		    kvm_pmu_cap.fixed_cntr_mask64))
 			return;
 		break;
-	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
-	case MSR_PEBS_LD_LAT_THRESHOLD:
-	case MSR_PEBS_FRONTEND:
-	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
-		/*
-		 * We won't know if passthrough vPMU is enabled until vPMU
-		 * is initialized.  For now we put host supported MSRs in
-		 * msrs_to_save[], but KVM won't support them if passthrough
-		 * vPMU is not enabled.
-		 */
-		if (!kvm_pmu_is_possible_extra_msr(msr_index))
-			return;
-		break;
 	case MSR_IA32_PMC_V6_GP_MSR_STRAT ... MSR_IA32_PMC_V6_GP_MSR_END:
 		idx = get_v6_cntr_idx(msr_index, MSR_IA32_PMC_V6_GP0_CTR,
 				      KVM_MAX_NR_GP_COUNTERS - 1);
@@ -8026,6 +8008,9 @@ static void kvm_init_save_pmu_cntrs_msr_array(void)
 		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_A, i));
 		kvm_add_pmu_cntrs_msr_entry(pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CFG_C, i));
 	}
+
+	for (i = 0; i < kvm_pmu_cap.num_extra_msrs; i++)
+		kvm_add_pmu_cntrs_msr_entry(kvm_pmu_cap.extra_msrs[i]);
 }
 
 static void kvm_init_msr_lists(void)

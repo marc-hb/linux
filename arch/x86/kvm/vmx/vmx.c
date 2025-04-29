@@ -711,11 +711,6 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 	case MSR_ARCH_LBR_TO_0 ... MSR_ARCH_LBR_TO_0 + KVM_MAX_NR_ARCH_DEPTH - 1:
 	case MSR_ARCH_LBR_INFO_0 ... MSR_ARCH_LBR_INFO_0 + KVM_MAX_NR_ARCH_DEPTH - 1:
 		/* LBR MSRs. These are handled in vmx_update_intercept_for_lbr_msrs() */
-	case MSR_OFFCORE_RSP_0 ... MSR_OFFCORE_RSP_1:
-	case MSR_PEBS_LD_LAT_THRESHOLD:
-	case MSR_PEBS_FRONTEND:
-	case MSR_SNOOP_RSP_0 ... MSR_SNOOP_RSP_1:
-		/* model specific extra PMU MSRs */
 	case MSR_IA32_DS_AREA:
 	case MSR_PEBS_DATA_CFG:
 	case MSR_IA32_PEBS_ENABLE:
@@ -742,6 +737,10 @@ static int vmx_get_passthrough_msr_slot(u32 msr)
 		/* CET MSRs. These are handled in vmx_update_intercept_for_cet_msr() */
 		return -ENOENT;
 	default:
+		/* Model specific extra PMU MSRs */
+		if (kvm_pmu_is_extra_msr(msr))
+			return -ENOENT;
+
 		/* v6+ PMU MSRs. These are handled in intel_pmu_update_msr_intercepts() */
 		for (i = 0; i < KVM_MAX_NR_GP_COUNTERS; i++) {
 			if (msr == pmu_v6_msr(MSR_IA32_PMC_V6_GP0_CTR, i) ||
