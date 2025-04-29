@@ -3225,6 +3225,27 @@ unsigned long perf_arch_misc_flags(struct pt_regs *regs)
 	return flags;
 }
 
+static void perf_add_extra_msr(struct x86_pmu_capability *cap, struct extra_reg *er)
+{
+	int i;
+
+	if (!er->extra_msr_access)
+		return;
+
+	/* Check whether the extra MSR has already been added to the list. */
+	for (i = 0; i < cap->num_extra_msrs; i++)
+		if (cap->extra_msrs[i] == er->msr)
+			return;
+
+	if (cap->num_extra_msrs < X86_MAX_NR_EXTRA_MSRS) {
+		cap->extra_msrs[cap->num_extra_msrs++] = er->msr;
+		return;
+	}
+
+	WARN(1, "Unable to add extra msr %x, please increase X86_MAX_NR_EXTRA_MSRS",
+		er->msr);
+}
+
 void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 {
 	struct extra_reg *er;
@@ -3254,11 +3275,8 @@ void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
 	cap->config_mask	= x86_pmu.config_mask;
 	cap->arch_pebs		= x86_pmu.arch_pebs;
 
-	for (er = x86_pmu.extra_regs; er && er->msr; er++) {
-		if (er->extra_msr_access &&
-			(cap->num_extra_msrs < X86_MAX_NR_EXTRA_MSRS))
-			cap->extra_msrs[cap->num_extra_msrs++] = er->msr;
-	}
+	for (er = x86_pmu.extra_regs; er && er->msr; er++)
+		perf_add_extra_msr(cap, er);
 }
 EXPORT_SYMBOL_GPL(perf_get_x86_pmu_capability);
 
