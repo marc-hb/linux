@@ -46,11 +46,13 @@ dmr-6.14-v2.6
 ---------------
 11. fix: KVM kselftest monitor_mwait_test fail
     https://jira.devtools.intel.com/browse/LFE-16865
+    https://jira.devtools.intel.com/browse/LINUXBKC3-600
 
 dmr-6.14-v2.5
 ---------------
 10. Add new Linux OS kernel boot parameter iommu=ignore [ intel_iommu=ignore ]
     https://jira.devtools.intel.com/browse/LFE-16161
+    https://jira.devtools.intel.com/browse/LINUXBKC3-591
 
 dmr-6.14-v2.4
 ---------------
@@ -66,10 +68,13 @@ dmr-6.14-v2.2
 7.   update config options for QAT per QAT dev team.
 6.   cosmedec: change mc to imc for uncore.
      https://jira.devtools.intel.com/browse/LFE-154
+     https://jira.devtools.intel.com/browse/LINUXBKC3-594
+     https://jira.devtools.intel.com/browse/LINUXBKC3-571
 
 dmr-6.14-v2.1
 ---------------
 5.   update from 6.14-rc7 to 6.14
+     https://jira.devtools.intel.com/browse/LINUXBKC3-593
 
 dmr-6.14-v1.0
 ---------------
