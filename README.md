@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v3.5
+---------------
+16. fix: OS kexec reboot fail with a Simics triple fault
+    https://jira.devtools.intel.com/browse/LINUXBKC3-630
+
 dmr-6.14-v3.4
 ---------------
 15. fix: It fails to boot TD guest with fred=on on host, simics crash
