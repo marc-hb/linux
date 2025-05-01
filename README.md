@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v4.1
+---------------
+17. fix: [gen2 trunk branch] No method to identify which S3M mailbox proxy
+    corresponds to the Legacy CPU (for miniDPE use cases)
+    https://hsdes.intel.com/appstore/article/#/14023586324
+
 dmr-6.14-v3.5
 ---------------
 16. fix: OS kexec reboot fail with a Simics triple fault
