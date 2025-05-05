@@ -136,7 +136,7 @@ static bool services_supported(unsigned long mask)
 static bool wcy_services_supported(unsigned long mask)
 {
 	/* Symmetric crypto service must be set to enable for wireless algorithms */
-	if (mask == SVC_SYM)
+	if (mask == BIT(SVC_SYM))
 		return true;
 	else
 		return false;
