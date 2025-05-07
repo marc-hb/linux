@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v4.2
+---------------
+18. fix: [DMR-Simics][DMR-BKC][PMU] Boot up VM with "unchecked MSR access
+    error: WRMSR to 0x1a6" when mediate VPMU enabled
+    https://jira.devtools.intel.com/browse/LFE-16891
+
 dmr-6.14-v4.1
 ---------------
 17. fix: [gen2 trunk branch] No method to identify which S3M mailbox proxy
