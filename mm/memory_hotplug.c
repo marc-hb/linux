@@ -1708,6 +1708,7 @@ struct range __weak arch_get_mappable_range(void)
 
 struct range mhp_get_pluggable_range(bool need_mapping)
 {
+	/* KASLR redirects this build time constant to a much lower variable */
 	const u64 max_phys = DIRECT_MAP_PHYSMEM_END;
 	struct range mhp_range;
 

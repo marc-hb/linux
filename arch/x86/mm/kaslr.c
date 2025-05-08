@@ -156,6 +156,8 @@ void __init kernel_randomize_memory(void)
 		/*
 		 * KASLR trims the maximum possible size of the
 		 * direct-map. Update the direct_map_physmem_end boundary.
+		 * direct_map_physmem_end gets reduced a lot but not (wrongly)
+		 * randomized because page_offset_base was just adjusted through [0].base.
 		 * No rounding required as the region starts
 		 * PUD aligned and size is in units of TB.
 		 */
