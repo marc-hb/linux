@@ -8020,6 +8020,7 @@ static void kvm_init_msr_lists(void)
 	num_msrs_to_save = 0;
 	num_emulated_msrs = 0;
 	num_msr_based_features = 0;
+	num_msrs_to_save_pmu_cntrs = 0;
 
 	for (i = 0; i < ARRAY_SIZE(msrs_to_save_base); i++)
 		kvm_probe_msr_to_save(msrs_to_save_base[i]);
