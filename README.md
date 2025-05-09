@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v4.4
+---------------
+20. fix: [CWF-BKC][kselftest][FRED] x86/sigreturn_64 test failure and
+    segmentation fault in case of fred=on
+    https://jira.devtools.intel.com/browse/LFE-16928
+
 dmr-6.14-v4.3
 ---------------
 19. fix: [CWF][GNR][Intel-next] modprobe kvm_intel enable_mediated_pmu=Y will
