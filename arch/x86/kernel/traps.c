@@ -765,6 +765,10 @@ DEFINE_IDTENTRY_ERRORCODE(exc_stack_segment)
 			return;
 		}
 
+		if (cpu_feature_enabled(X86_FEATURE_FRED) &&
+		    fixup_exception(regs, X86_TRAP_SS, error_code, 0))
+			return;
+
 		hint = get_kernel_gp_address(regs, &gp_addr);
 		if (hint != GP_NO_HINT)
 			printk(GPFSTR ", %s 0x%lx", kernel_gp_hint_help[hint],
