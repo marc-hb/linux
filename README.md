@@ -18,6 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v4.3
+---------------
+19. fix: [CWF][GNR][Intel-next] modprobe kvm_intel enable_mediated_pmu=Y will
+    trigger Call trace
+    https://jira.devtools.intel.com/browse/LFE-17122
+    original ticket: https://jira.devtools.intel.com/browse/LFE-16891
+
 dmr-6.14-v4.2
 ---------------
 18. fix: [DMR-Simics][DMR-BKC][PMU] Boot up VM with "unchecked MSR access
