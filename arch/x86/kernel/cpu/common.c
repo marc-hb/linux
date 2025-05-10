@@ -1499,12 +1499,8 @@ static void __init cpu_parse_early_param(void)
 	char *argptr = arg, *opt;
 	int arglen, taint = 0;
 
-	if (!cmdline_find_option_bool(boot_command_line, "msr_imm")) {
+	if (!cmdline_find_option_bool(boot_command_line, "msr_imm"))
 		setup_clear_cpu_cap(X86_FEATURE_MSR_IMM);
-
-		if (!cmdline_find_option_bool(boot_command_line, "wrmsrns"))
-			setup_clear_cpu_cap(X86_FEATURE_WRMSRNS);
-	}
 
 #ifdef CONFIG_X86_32
 	if (cmdline_find_option_bool(boot_command_line, "no387"))
