@@ -153,6 +153,8 @@ static bool vsec_driver_present(int cap_id)
 		return IS_ENABLED(CONFIG_INTEL_TPMI);
 	case VSEC_CAP_DISCOVERY:
 		return IS_ENABLED(CONFIG_INTEL_PMT_DISCOVERY);
+	case VSEC_CAP_S3M:
+		return IS_ENABLED(CONFIG_INTEL_S3M_BRIDGE);
 	default:
 		return false;
 	}
@@ -407,6 +409,9 @@ static int get_cap_id(u32 header_id, unsigned long *cap_id)
 		break;
 	case VSEC_ID_DISCOVERY:
 		*cap_id = ilog2(VSEC_CAP_DISCOVERY);
+		break;
+	case VSEC_ID_S3M:
+		*cap_id = ilog2(VSEC_CAP_S3M);
 		break;
 	default:
 		return -EINVAL;
