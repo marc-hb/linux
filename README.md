@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v4.5
+---------------
+21. fix: [DMR-Simics][DMR-BKC]WRMSRNS is not exposed to guest
+    https://jira.devtools.intel.com/browse/LFE-16874
+
 dmr-6.14-v4.4
 ---------------
 20. fix: [CWF-BKC][kselftest][FRED] x86/sigreturn_64 test failure and
