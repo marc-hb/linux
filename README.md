@@ -18,6 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v4.6
+---------------
+21. fixup: missed a change for v4.1 [gen2 trunk branch] No method to identify
+    which S3M mailbox proxy corresponds to the Legacy CPU (for miniDPE use
+    cases)
+    https://hsdes.intel.com/appstore/article/#/14023586324
+
 dmr-6.14-v4.5
 ---------------
 21. fix: [DMR-Simics][DMR-BKC]WRMSRNS is not exposed to guest
