@@ -34,11 +34,13 @@ dmr-6.14-v4.6
     which S3M mailbox proxy corresponds to the Legacy CPU (for miniDPE use
     cases)
     https://hsdes.intel.com/appstore/article/#/14023586324
+    https://jira.devtools.intel.com/browse/LINUXBKC3-646
 
 dmr-6.14-v4.5
 ---------------
 21. fix: [DMR-Simics][DMR-BKC]WRMSRNS is not exposed to guest
     https://jira.devtools.intel.com/browse/LFE-16874
+    https://jira.devtools.intel.com/browse/LINUXBKC3-645
 
 dmr-6.14-v4.4
 ---------------
