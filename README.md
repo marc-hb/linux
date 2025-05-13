@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v4.7
+---------------
+21. fix: Invalid access to IO port in the TCO device for DMR
+    https://jira.devtools.intel.com/browse/LINUXBKC3-562
+
 dmr-6.14-v4.6
 ---------------
 21. fixup: missed a change for v4.1 [gen2 trunk branch] No method to identify
