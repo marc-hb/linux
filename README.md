@@ -18,14 +18,19 @@ Release History
 ===============
 
 
+dmr-6.14-v4.8
+---------------
+24. fix: [Cluster][CTRLS CWF_AP A0][1S] Node hang with Kernel panic - during
+    sandstone-rf-warm https://jira.devtools.intel.com/browse/LINUXBKC3-640
+
 dmr-6.14-v4.7
 ---------------
-21. fix: Invalid access to IO port in the TCO device for DMR
+23. fix: Invalid access to IO port in the TCO device for DMR
     https://jira.devtools.intel.com/browse/LINUXBKC3-562
 
 dmr-6.14-v4.6
 ---------------
-21. fixup: missed a change for v4.1 [gen2 trunk branch] No method to identify
+22. fixup: missed a change for v4.1 [gen2 trunk branch] No method to identify
     which S3M mailbox proxy corresponds to the Legacy CPU (for miniDPE use
     cases)
     https://hsdes.intel.com/appstore/article/#/14023586324
@@ -40,6 +45,7 @@ dmr-6.14-v4.4
 20. fix: [CWF-BKC][kselftest][FRED] x86/sigreturn_64 test failure and
     segmentation fault in case of fred=on
     https://jira.devtools.intel.com/browse/LFE-16928
+    https://jira.devtools.intel.com/browse/LINUXBKC3-639
 
 dmr-6.14-v4.3
 ---------------
@@ -47,18 +53,25 @@ dmr-6.14-v4.3
     trigger Call trace
     https://jira.devtools.intel.com/browse/LFE-17122
     original ticket: https://jira.devtools.intel.com/browse/LFE-16891
+    https://jira.devtools.intel.com/browse/LINUXBKC3-638
 
 dmr-6.14-v4.2
 ---------------
 18. fix: [DMR-Simics][DMR-BKC][PMU] Boot up VM with "unchecked MSR access
     error: WRMSR to 0x1a6" when mediate VPMU enabled
     https://jira.devtools.intel.com/browse/LFE-16891
+    [DMR-Simics][DMR-BKC][PMU] Boot up VM with "unchecked MSR access error:
+    WRMSR to 0x1a6" when mediate VPMU enabled
+    https://jira.devtools.intel.com/browse/LINUXBKC3-636
 
 dmr-6.14-v4.1
 ---------------
 17. fix: [gen2 trunk branch] No method to identify which S3M mailbox proxy
     corresponds to the Legacy CPU (for miniDPE use cases)
     https://hsdes.intel.com/appstore/article/#/14023586324
+    [gen2 trunk branch] No method to identify which S3M mailbox proxy
+    corresponds to the Legacy CPU (for miniDPE use cases)
+    https://jira.devtools.intel.com/browse/LINUXBKC3-632
 
 dmr-6.14-v3.5
 ---------------
