@@ -18,6 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v4.9
+---------------
+25. fix: Observed call trace during G3/S5/WR cycle  __warn+0x81/0x130 ?
+    ast_dp_set_enable+0xfc/0x150 [ast]
+    https://jira.devtools.intel.com/browse/LINUXBKC3-634
+    https://hsdes.intel.com/appstore/article/#/16027295052
+
 dmr-6.14-v4.8
 ---------------
 24. fix: [Cluster][CTRLS CWF_AP A0][1S] Node hang with Kernel panic - during
