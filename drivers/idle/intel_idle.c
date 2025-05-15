@@ -1241,6 +1241,7 @@ static struct cpuidle_state dmr_cstates[] __initdata = {
 		.desc = "MWAIT 0x24",
 		.flags = MWAIT2flg(0x24) | CPUIDLE_FLAG_TLB_FLUSHED |
 					   CPUIDLE_FLAG_INIT_XSTATE,
+					   CPUIDLE_FLAG_PARTIAL_HINT_MATCH,
 		.exit_latency = 50,
 		.target_residency = 80,
 		.enter = &intel_idle,
@@ -1250,6 +1251,7 @@ static struct cpuidle_state dmr_cstates[] __initdata = {
 		.desc = "MWAIT 0x23",
 		.flags = MWAIT2flg(0x23) | CPUIDLE_FLAG_TLB_FLUSHED |
 					   CPUIDLE_FLAG_INIT_XSTATE,
+					   CPUIDLE_FLAG_PARTIAL_HINT_MATCH,
 		.exit_latency = 70,
 		.target_residency = 200,
 		.enter = &intel_idle,
@@ -1259,6 +1261,7 @@ static struct cpuidle_state dmr_cstates[] __initdata = {
 		.desc = "MWAIT 0x20",
 		.flags = MWAIT2flg(0x20) | CPUIDLE_FLAG_TLB_FLUSHED |
 					   CPUIDLE_FLAG_INIT_XSTATE,
+					   CPUIDLE_FLAG_PARTIAL_HINT_MATCH,
 		.exit_latency = 110,
 		.target_residency = 300,
 		.enter = &intel_idle,
