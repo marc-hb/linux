@@ -750,6 +750,7 @@ DECLARE_IDTENTRY_SYSVEC(KVM_GUEST_PMI_VECTOR,	        sysvec_kvm_guest_pmi_handl
 # define fred_sysvec_kvm_posted_intr_ipi		NULL
 # define fred_sysvec_kvm_posted_intr_wakeup_ipi		NULL
 # define fred_sysvec_kvm_posted_intr_nested_ipi		NULL
+# define fred_sysvec_kvm_guest_pmi_handler		NULL
 #endif
 
 # ifdef CONFIG_X86_POSTED_MSI
