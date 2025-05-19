@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v5.1
+---------------
+26. fix: [DMR-Simics][DMR-BKC]AMX CPUID in guest is not correct
+    https://jira.devtools.intel.com/browse/LFE-16869
+
 dmr-6.14-v4.9
 ---------------
 25. fix: Observed call trace during G3/S5/WR cycle  __warn+0x81/0x130 ?
