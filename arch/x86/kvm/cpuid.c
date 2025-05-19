@@ -1093,24 +1093,16 @@ void kvm_set_cpu_caps(void)
 	);
 
 	kvm_cpu_cap_init(CPUID_7_1_ECX,
-		F(AMX_FP8),
-	);
-
-	kvm_cpu_cap_init(CPUID_7_1_ECX,
 		F(MSR_IMM),
 	);
 
 	kvm_cpu_cap_init(CPUID_7_1_EDX,
 		F(AVX_VNNI_INT8),
 		F(AVX_NE_CONVERT),
-		F(AMX_TRANSPOSE),
-		F(AMX_TF32),
 		F(AMX_COMPLEX),
-		F(AMX_AVX512),
 		F(AVX_VNNI_INT16),
 		F(PREFETCHITI),
 		F(AVX10),
-		F(AMX_MOVRS),
 		F(APX),
 	);
 
