@@ -8397,6 +8397,9 @@ static __init void vmx_set_cpu_caps(void)
 		kvm_cpu_cap_clear(X86_FEATURE_PDCM);
 	kvm_caps.supported_perf_cap = vmx_get_perf_capabilities();
 
+	if (enable_mediated_pmu)
+		kvm_cpu_cap_check_and_set(X86_FEATURE_ARCH_PERFMON_EXT);
+
 	if (!enable_mediated_pmu || !guest_can_use_arch_lbr()) {
 		kvm_cpu_cap_clear(X86_FEATURE_ARCH_LBR);
 		kvm_caps.supported_xss &= ~XFEATURE_MASK_LBR;

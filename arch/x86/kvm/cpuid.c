@@ -1078,7 +1078,6 @@ void kvm_set_cpu_caps(void)
 		F(AVX512_BF16),
 		F(LASS),
 		F(CMPCCXADD),
-		F(ARCH_PERFMON_EXT),
 		F(FZRM),
 		F(FSRS),
 		F(FSRC),
@@ -1741,7 +1740,7 @@ static inline int __do_cpuid_func(struct kvm_cpuid_array *array, u32 function)
 		union cpuid35_eax eax;
 		union cpuid35_ebx ebx;
 
-		if (!enable_pmu || !static_cpu_has(X86_FEATURE_ARCH_PERFMON_EXT)) {
+		if (!kvm_cpu_cap_has(X86_FEATURE_ARCH_PERFMON_EXT)) {
 			entry->eax = entry->ebx = entry->ecx = entry->edx = 0;
 			break;
 		}
