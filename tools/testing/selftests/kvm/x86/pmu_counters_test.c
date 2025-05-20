@@ -54,6 +54,15 @@ struct kvm_intel_pmu_event {
 };
 
 /*
+ * Flags for "Instruction Retired" and "Branch Instruction Retired" overcount
+ * quirks.
+ */
+#define INST_RETIRED_OVERCOUNT BIT(0)
+#define BR_RETIRED_OVERCOUNT   BIT(1)
+
+static uint8_t inst_overcount_flags;
+
+/*
  * Wrap the array to appease the compiler, as the macros used to construct each
  * kvm_x86_pmu_feature use syntax that's only valid in function scope, and the
  * compiler often thinks the feature definitions aren't compile-time constants.
@@ -64,11 +73,11 @@ static struct kvm_intel_pmu_event intel_event_to_feature(uint8_t idx)
 		[INTEL_ARCH_CPU_CYCLES_INDEX]		 = { X86_PMU_FEATURE_CPU_CYCLES, X86_PMU_FEATURE_CPU_CYCLES_FIXED },
 		[INTEL_ARCH_INSTRUCTIONS_RETIRED_INDEX]	 = { X86_PMU_FEATURE_INSNS_RETIRED, X86_PMU_FEATURE_INSNS_RETIRED_FIXED },
 		/*
-		 * Note, the fixed counter for reference cycles is NOT the same
-		 * as the general purpose architectural event.  The fixed counter
-		 * explicitly counts at the same frequency as the TSC, whereas
-		 * the GP event counts at a fixed, but uarch specific, frequency.
-		 * Bundle them here for simplicity.
+		 * Note, the fixed counter for reference cycles is NOT the same as the
+		 * general purpose architectural event.  The fixed counter explicitly
+		 * counts at the same frequency as the TSC, whereas the GP event counts
+		 * at a fixed, but uarch specific, frequency.  Bundle them here for
+		 * simplicity.
 		 */
 		[INTEL_ARCH_REFERENCE_CYCLES_INDEX]	 = { X86_PMU_FEATURE_REFERENCE_CYCLES, X86_PMU_FEATURE_REFERENCE_TSC_CYCLES_FIXED },
 		[INTEL_ARCH_LLC_REFERENCES_INDEX]	 = { X86_PMU_FEATURE_LLC_REFERENCES, X86_PMU_FEATURE_NULL },
@@ -260,6 +269,39 @@ static void __guest_test_arch_event(uint8_t idx, uint32_t pmc, uint32_t pmc_msr,
 		GUEST_TEST_EVENT(idx, pmc, pmc_msr, ctrl_msr, ctrl_msr_value, KVM_FEP);
 }
 
+static uint32_t gp_eventsel_msr(uint8_t idx)
+{
+	uint8_t pmu_version = this_cpu_property(X86_PROPERTY_PMU_VERSION);
+
+	if (pmu_version > 5)
+		return MSR_IA32_PMC_V6_GP0_CFG_A + idx * MSR_IA32_PMC_V6_STEP;
+	else
+		return MSR_P6_EVNTSEL0 + idx;
+}
+
+static uint32_t gp_cntr_msr(uint8_t idx)
+{
+	uint8_t pmu_version = this_cpu_property(X86_PROPERTY_PMU_VERSION);
+
+	if (pmu_version > 5)
+		return MSR_IA32_PMC_V6_GP0_CTR + idx * MSR_IA32_PMC_V6_STEP;
+	else if (this_cpu_has(X86_FEATURE_PDCM) &&
+	         rdmsr(MSR_IA32_PERF_CAPABILITIES) & PMU_CAP_FW_WRITES)
+		return MSR_IA32_PMC0 + idx;
+	else
+		return MSR_IA32_PERFCTR0 + idx;
+}
+
+static uint32_t fixed_cntr_msr(uint8_t idx)
+{
+	uint8_t pmu_version = this_cpu_property(X86_PROPERTY_PMU_VERSION);
+
+	if (pmu_version > 5)
+		return MSR_IA32_PMC_V6_FX0_CTR + idx * MSR_IA32_PMC_V6_STEP;
+	else
+		return MSR_CORE_PERF_FIXED_CTR0 + idx;
+}
+
 static void guest_test_arch_event(uint8_t idx)
 {
 	uint32_t nr_gp_counters = this_cpu_property(X86_PROPERTY_PMU_NR_GP_COUNTERS);
@@ -267,17 +309,10 @@ static void guest_test_arch_event(uint8_t idx)
 	/* PERF_GLOBAL_CTRL exists only for Architectural PMU Version 2+. */
 	bool guest_has_perf_global_ctrl = pmu_version >= 2;
 	struct kvm_x86_pmu_feature gp_event, fixed_event;
-	uint32_t base_pmc_msr;
 	unsigned int i;
 
 	/* The host side shouldn't invoke this without a guest PMU. */
 	GUEST_ASSERT(pmu_version);
-
-	if (this_cpu_has(X86_FEATURE_PDCM) &&
-	    rdmsr(MSR_IA32_PERF_CAPABILITIES) & PMU_CAP_FW_WRITES)
-		base_pmc_msr = MSR_IA32_PMC0;
-	else
-		base_pmc_msr = MSR_IA32_PERFCTR0;
 
 	gp_event = intel_event_to_feature(idx).gp_event;
 	GUEST_ASSERT_EQ(idx, gp_event.f.bit);
@@ -289,12 +324,12 @@ static void guest_test_arch_event(uint8_t idx)
 				    ARCH_PERFMON_EVENTSEL_ENABLE |
 				    intel_pmu_arch_events[idx];
 
-		wrmsr(MSR_P6_EVNTSEL0 + i, 0);
+		wrmsr(gp_eventsel_msr(i), 0);
 		if (guest_has_perf_global_ctrl)
 			wrmsr(MSR_CORE_PERF_GLOBAL_CTRL, BIT_ULL(i));
 
-		__guest_test_arch_event(idx, i, base_pmc_msr + i,
-					MSR_P6_EVNTSEL0 + i, eventsel);
+		__guest_test_arch_event(idx, i, gp_cntr_msr(i),
+					gp_eventsel_msr(i), eventsel);
 	}
 
 	if (!guest_has_perf_global_ctrl)
@@ -309,7 +344,7 @@ static void guest_test_arch_event(uint8_t idx)
 	wrmsr(MSR_CORE_PERF_FIXED_CTR_CTRL, FIXED_PMC_CTRL(i, FIXED_PMC_KERNEL));
 
 	__guest_test_arch_event(idx, i | INTEL_RDPMC_FIXED,
-				MSR_CORE_PERF_FIXED_CTR0 + i,
+				fixed_cntr_msr(i),
 				MSR_CORE_PERF_GLOBAL_CTRL,
 				FIXED_PMC_GLOBAL_CTRL_ENABLE(i));
 }
@@ -324,14 +359,14 @@ static void guest_test_arch_events(void)
 	GUEST_DONE();
 }
 
-static void setup_guest_pmu_cpuid(struct kvm_vcpu *vcpu, uint8_t pmu_version,
-				       uint8_t nr_fixed, uint32_t bitmap_fixed)
+static void setup_pmu_cpuid_properties(struct kvm_vcpu *vcpu, uint8_t pmu_version,
+				       unsigned long bitmap_fixed, unsigned long bitmap_gp)
 {
-	uint8_t contiguous_fixed = nr_fixed;
-	unsigned long bitmask_fixed = bitmap_fixed;
 	struct kvm_cpuid_entry2 *entry;
-
-	entry = vcpu_get_cpuid_entry(vcpu, 0xa);
+	uint8_t contiguous_fixed;
+	uint32_t bitmask_fixed = pmu_version < 5 ? 0 : bitmap_fixed;
+	uint8_t nr_gp = find_first_zero_bit(&bitmap_gp, sizeof(bitmap_gp));
+	int kvm_pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
 
 	/*
 	 * KVM checks if fixed counters number and bitmap is set correctly.
@@ -340,34 +375,55 @@ static void setup_guest_pmu_cpuid(struct kvm_vcpu *vcpu, uint8_t pmu_version,
 	 * - fixed counters number edx[0:4] should represent contiguous
 	 *   fixed counters starting from 0.
 	 */
-	if (pmu_version < 5) {
-		bitmask_fixed = 0;
-	} else {
-		contiguous_fixed = find_first_zero_bit(&bitmask_fixed, sizeof(bitmask_fixed));
-		TEST_ASSERT(contiguous_fixed < 32, "Invalid fixed counter bitmap");
-	}
+	contiguous_fixed = find_first_zero_bit(&bitmap_fixed, sizeof(bitmap_fixed));
+	TEST_ASSERT(contiguous_fixed < 32, "Invalid fixed counter bitmap");
 
+	entry = vcpu_get_cpuid_entry(vcpu, 0xa);
+
+	vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_VERSION, pmu_version);
+	vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_NR_GP_COUNTERS, nr_gp);
 	vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK, bitmask_fixed);
 	vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_NR_FIXED_COUNTERS, contiguous_fixed);
-	vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_VERSION, pmu_version);
+
+	if (kvm_pmu_version > 5) {
+		if (pmu_version < 6) {
+			entry = (struct kvm_cpuid_entry2 *)get_cpuid_entry(vcpu->cpuid, 0x23, 0);
+			/* Extended features(umask2, EQ, etc.) are only supported on v6+. */
+			vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_EXT_EXTENDED_FEATURES, 0);
+		}
+
+		entry = (struct kvm_cpuid_entry2 *)get_cpuid_entry(vcpu->cpuid, 0x23, 1);
+		TEST_ASSERT(entry, "Failed to find CPUID.0x23.0x1");
+		vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_EXT_GP_COUNTERS_BIT_MASK, bitmap_gp);
+		vcpu_update_cpuid_property(entry, X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK, bitmap_fixed);
+	}
 
 	vcpu_set_cpuid(vcpu);
 
+	TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_VERSION), pmu_version);
+	TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_NR_GP_COUNTERS), nr_gp);
 	TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK),
 		       bitmask_fixed);
 	TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_NR_FIXED_COUNTERS),
 		       contiguous_fixed);
-	TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_VERSION), pmu_version);
+	if (kvm_pmu_version > 5) {
+		TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_EXT_GP_COUNTERS_BIT_MASK),
+		       bitmap_gp);
+		TEST_ASSERT_EQ(kvm_cpuid_property(vcpu->cpuid, X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK),
+		       bitmap_fixed);
+	}
 }
 
 static void test_arch_events(uint8_t pmu_version, uint64_t perf_capabilities,
 			     uint8_t length, uint8_t unavailable_mask)
 {
+	int kvm_pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
 	struct kvm_vcpu *vcpu;
 	struct kvm_vm *vm;
+	uint8_t nr_gp;
 	uint8_t nr_fixed;
+	uint32_t bitmap_gp;
 	uint32_t bitmap_fixed;
-	int kvm_pmu_version;
 
 	/* Testing arch events requires a vPMU (there are no negative tests). */
 	if (!pmu_version)
@@ -376,15 +432,23 @@ static void test_arch_events(uint8_t pmu_version, uint64_t perf_capabilities,
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_arch_events,
 					 perf_capabilities);
 
-	nr_fixed = kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS);
-	kvm_pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
-	if (kvm_pmu_version < 5)
+	if (kvm_pmu_version < 5) {
+		nr_fixed = kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS);
 		bitmap_fixed = BIT(nr_fixed) - 1;
-	else
+	} else if (kvm_pmu_version == 5){
 		bitmap_fixed = kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK);
+	} else {
+		bitmap_fixed = kvm_cpu_property(X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK);
+	}
 
-	setup_guest_pmu_cpuid(vcpu, pmu_version, nr_fixed, bitmap_fixed);
+	if (kvm_pmu_version < 6) {
+		nr_gp = kvm_cpu_property(X86_PROPERTY_PMU_NR_GP_COUNTERS);
+		bitmap_gp = BIT(nr_gp) - 1;
+	} else {
+		bitmap_gp = kvm_cpu_property(X86_PROPERTY_PMU_EXT_GP_COUNTERS_BIT_MASK);
+	}
 
+	setup_pmu_cpuid_properties(vcpu, pmu_version, bitmap_fixed, bitmap_gp);
 	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH,
 				length);
 	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_EVENTS_MASK,
@@ -401,8 +465,8 @@ static void test_arch_events(uint8_t pmu_version, uint64_t perf_capabilities,
  * guarantee that currently undefined MSR indices won't be used for something
  * other than PMCs in the future.
  */
-#define MAX_NR_GP_COUNTERS	8
-#define MAX_NR_FIXED_COUNTERS	3
+#define MAX_NR_GP_COUNTERS	10
+#define MAX_NR_FIXED_COUNTERS	7
 
 #define GUEST_ASSERT_PMC_MSR_ACCESS(insn, msr, expect_gp, vector)		\
 __GUEST_ASSERT(expect_gp ? vector == GP_VECTOR : !vector,			\
@@ -434,8 +498,8 @@ static void guest_test_rdpmc(uint32_t rdpmc_idx, bool expect_success,
 		GUEST_ASSERT_PMC_VALUE(RDPMC, rdpmc_idx, val, expected_val);
 }
 
-static void guest_rd_wr_counters(uint32_t base_msr, uint8_t nr_possible_counters,
-				 uint8_t nr_counters, uint32_t or_mask)
+static void guest_rd_wr_counters(uint8_t nr_possible_counters, uint8_t nr_counters,
+				 uint32_t or_mask, bool is_fixed)
 {
 	uint8_t guest_pmu_version = guest_get_pmu_version();
 	const bool pmu_has_fast_mode = !guest_pmu_version;
@@ -447,12 +511,13 @@ static void guest_rd_wr_counters(uint32_t base_msr, uint8_t nr_possible_counters
 		 * width of the counters.
 		 */
 		const uint64_t test_val = 0xffff;
-		const uint32_t msr = base_msr + i;
+		const uint32_t msr = is_fixed ? fixed_cntr_msr(i) : gp_cntr_msr(i);
 
 		/*
-		 * Fixed counters are supported if the counter is less than the
-		 * number of enumerated contiguous counters *or* the counter is
-		 * explicitly enumerated in the supported counters mask.
+		 * Prefer to leverage GP and fixed counter bitmap to judge which
+		 * counters are supported if the counter bitmap is supported.
+		 * GP counter bitmap is supported if pmu version > 5.
+		 * fixed counter bitmap is supported if pmu version > 4.
 		 */
 		const bool expect_success = i < nr_counters || (or_mask & BIT(i));
 
@@ -483,7 +548,7 @@ static void guest_rd_wr_counters(uint32_t base_msr, uint8_t nr_possible_counters
 		 * semantics and additional capabilities.
 		 */
 		rdpmc_idx = i;
-		if (base_msr == MSR_CORE_PERF_FIXED_CTR0)
+		if (is_fixed)
 			rdpmc_idx |= INTEL_RDPMC_FIXED;
 
 		guest_test_rdpmc(rdpmc_idx, expect_success, expected_val);
@@ -506,7 +571,7 @@ static void guest_test_gp_counters(void)
 {
 	uint8_t pmu_version = guest_get_pmu_version();
 	uint8_t nr_gp_counters = 0;
-	uint32_t base_msr;
+	uint32_t gp_bitmap = 0;
 
 	if (pmu_version)
 		nr_gp_counters = this_cpu_property(X86_PROPERTY_PMU_NR_GP_COUNTERS);
@@ -522,36 +587,46 @@ static void guest_test_gp_counters(void)
 	if (pmu_version > 1) {
 		uint64_t global_ctrl = rdmsr(MSR_CORE_PERF_GLOBAL_CTRL);
 
-		if (nr_gp_counters)
-			GUEST_ASSERT_EQ(global_ctrl, GENMASK_ULL(nr_gp_counters - 1, 0));
-		else
-			GUEST_ASSERT_EQ(global_ctrl, 0);
+		if (pmu_version > 5) {
+			gp_bitmap = this_cpu_property(X86_PROPERTY_PMU_EXT_GP_COUNTERS_BIT_MASK);
+			GUEST_ASSERT_EQ(global_ctrl, gp_bitmap);
+		} else {
+			GUEST_ASSERT_EQ(global_ctrl, BIT_ULL(nr_gp_counters) - 1);
+		}
 	}
 
-	if (this_cpu_has(X86_FEATURE_PDCM) &&
-	    rdmsr(MSR_IA32_PERF_CAPABILITIES) & PMU_CAP_FW_WRITES)
-		base_msr = MSR_IA32_PMC0;
-	else
-		base_msr = MSR_IA32_PERFCTR0;
-
-	guest_rd_wr_counters(base_msr, MAX_NR_GP_COUNTERS, nr_gp_counters, 0);
+	guest_rd_wr_counters(MAX_NR_GP_COUNTERS, nr_gp_counters, gp_bitmap, false);
 	GUEST_DONE();
 }
 
 static void test_gp_counters(uint8_t pmu_version, uint64_t perf_capabilities,
-			     uint8_t nr_gp_counters)
+			     uint8_t nr_gp_counters, uint32_t supported_bitmask)
 {
+	int kvm_pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
 	struct kvm_vcpu *vcpu;
 	struct kvm_vm *vm;
+	uint8_t nr_fixed;
+	uint32_t bitmap_fixed;
+	uint32_t bitmap_gp;
 
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_gp_counters,
 					 perf_capabilities);
 
-	setup_guest_pmu_cpuid(vcpu, pmu_version,
-		kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS),
-		kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK));
-	vcpu_set_cpuid_property(vcpu, X86_PROPERTY_PMU_NR_GP_COUNTERS,
-				nr_gp_counters);
+	if (kvm_pmu_version < 5) {
+		nr_fixed = kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS);
+		bitmap_fixed = BIT(nr_fixed) - 1;
+	} else if (kvm_pmu_version == 5) {
+		bitmap_fixed = kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK);
+	} else {
+		bitmap_fixed = kvm_cpu_property(X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK);
+	}
+
+	if (pmu_version < 6)
+		bitmap_gp = BIT(nr_gp_counters) - 1;
+	else
+		bitmap_gp = supported_bitmask;
+
+	setup_pmu_cpuid_properties(vcpu, pmu_version, bitmap_fixed, bitmap_gp);
 
 	run_vcpu(vcpu);
 
@@ -575,8 +650,7 @@ static void guest_test_fixed_counters(void)
 	if (__guest_get_pmu_version() >= 5)
 		supported_bitmask = this_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK);
 
-	guest_rd_wr_counters(MSR_CORE_PERF_FIXED_CTR0, MAX_NR_FIXED_COUNTERS,
-			     nr_fixed_counters, supported_bitmask);
+	guest_rd_wr_counters(MAX_NR_FIXED_COUNTERS, nr_fixed_counters, supported_bitmask, true);
 
 	for (i = 0; i < MAX_NR_FIXED_COUNTERS; i++) {
 		uint8_t vector;
@@ -595,12 +669,12 @@ static void guest_test_fixed_counters(void)
 			continue;
 		}
 
-		wrmsr(MSR_CORE_PERF_FIXED_CTR0 + i, 0);
+		wrmsr(fixed_cntr_msr(i), 0);
 		wrmsr(MSR_CORE_PERF_FIXED_CTR_CTRL, FIXED_PMC_CTRL(i, FIXED_PMC_KERNEL));
 		wrmsr(MSR_CORE_PERF_GLOBAL_CTRL, FIXED_PMC_GLOBAL_CTRL_ENABLE(i));
 		__asm__ __volatile__("loop ." : "+c"((int){NUM_LOOPS}));
 		wrmsr(MSR_CORE_PERF_GLOBAL_CTRL, 0);
-		val = rdmsr(MSR_CORE_PERF_FIXED_CTR0 + i);
+		val = rdmsr(fixed_cntr_msr(i));
 
 		GUEST_ASSERT_NE(val, 0);
 	}
@@ -608,16 +682,31 @@ static void guest_test_fixed_counters(void)
 }
 
 static void test_fixed_counters(uint8_t pmu_version, uint64_t perf_capabilities,
-				uint8_t nr_fixed_counters,
-				uint32_t supported_bitmask)
+				uint8_t nr_fixed_counters, uint32_t supported_bitmask)
 {
+	int kvm_pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
 	struct kvm_vcpu *vcpu;
 	struct kvm_vm *vm;
+	uint8_t nr_gp;
+	uint32_t bitmap_gp;
+	uint32_t bitmap_fixed;
 
 	vm = pmu_vm_create_with_one_vcpu(&vcpu, guest_test_fixed_counters,
 					 perf_capabilities);
 
-	setup_guest_pmu_cpuid(vcpu, pmu_version, nr_fixed_counters, supported_bitmask);
+	if (pmu_version < 5)
+		bitmap_fixed = BIT(nr_fixed_counters) - 1;
+	else
+		bitmap_fixed = supported_bitmask;
+
+	if (kvm_pmu_version < 6) {
+		nr_gp = kvm_cpu_property(X86_PROPERTY_PMU_NR_GP_COUNTERS);
+		bitmap_gp = BIT(nr_gp) - 1;
+	} else {
+		bitmap_gp = supported_bitmask;
+	}
+
+	setup_pmu_cpuid_properties(vcpu, pmu_version, bitmap_fixed, bitmap_gp);
 
 	run_vcpu(vcpu);
 
@@ -626,10 +715,11 @@ static void test_fixed_counters(uint8_t pmu_version, uint64_t perf_capabilities,
 
 static void test_intel_counters(void)
 {
-	uint8_t nr_arch_events = this_cpu_property(X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH);
 	uint8_t nr_fixed_counters = kvm_cpu_property(X86_PROPERTY_PMU_NR_FIXED_COUNTERS);
 	uint8_t nr_gp_counters = kvm_cpu_property(X86_PROPERTY_PMU_NR_GP_COUNTERS);
 	uint8_t pmu_version = kvm_cpu_property(X86_PROPERTY_PMU_VERSION);
+	uint32_t fixed_bitmap = 0;
+	uint32_t gp_bitmap = 0;
 	unsigned int i;
 	uint8_t v, j;
 	uint32_t k;
@@ -652,14 +742,22 @@ static void test_intel_counters(void)
 	uint8_t max_pmu_version = kvm_is_mediated_pmu_enabled() ?
 				  pmu_version : max_t(typeof(pmu_version), pmu_version, 5);
 
+	if (pmu_version > 5) {
+		gp_bitmap = kvm_cpu_property(X86_PROPERTY_PMU_EXT_GP_COUNTERS_BIT_MASK);
+		fixed_bitmap = kvm_cpu_property(X86_PROPERTY_PMU_EXT_FIXED_COUNTERS_BIT_MASK);
+	} else if (pmu_version > 4) {
+		fixed_bitmap = kvm_cpu_property(X86_PROPERTY_PMU_FIXED_COUNTERS_BITMASK);
+	}
+
 	/*
 	 * Detect the existence of events that aren't supported by selftests.
 	 * This will (obviously) fail any time hardware adds support for a new
 	 * event, but it's worth paying that price to keep the test fresh.
 	 */
-	TEST_ASSERT(nr_arch_events <= NR_INTEL_ARCH_EVENTS,
+	TEST_ASSERT(this_cpu_property(X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH) <= NR_INTEL_ARCH_EVENTS,
 		    "New architectural event(s) detected; please update this test (length = %u, mask = %x)",
-		    nr_arch_events, this_cpu_property(X86_PROPERTY_PMU_EVENTS_MASK));
+		    this_cpu_property(X86_PROPERTY_PMU_EBX_BIT_VECTOR_LENGTH),
+		    this_cpu_property(X86_PROPERTY_PMU_EVENTS_MASK));
 
 	/*
 	 * Iterate over known arch events irrespective of KVM/hardware support
@@ -669,8 +767,7 @@ static void test_intel_counters(void)
 	 * count correctly, even if *enumeration* of the event is unsupported
 	 * by KVM and/or isn't exposed to the guest.
 	 */
-	nr_arch_events = max_t(typeof(nr_arch_events), nr_arch_events, NR_INTEL_ARCH_EVENTS);
-	for (i = 0; i < nr_arch_events; i++) {
+	for (i = 0; i < NR_INTEL_ARCH_EVENTS; i++) {
 		if (this_pmu_has(intel_event_to_feature(i).gp_event))
 			hardware_pmu_arch_events |= BIT(i);
 	}
@@ -689,31 +786,37 @@ static void test_intel_counters(void)
 			 * host length).  Explicitly test a mask of '0' and all
 			 * ones i.e. all events being available and unavailable.
 			 */
-			for (j = 0; j <= nr_arch_events + 1; j++) {
+			for (j = 0; j <= NR_INTEL_ARCH_EVENTS + 1; j++) {
 				test_arch_events(v, perf_caps[i], j, 0);
 				test_arch_events(v, perf_caps[i], j, 0xff);
 
-				for (k = 0; k < nr_arch_events; k++)
+				for (k = 0; k < NR_INTEL_ARCH_EVENTS; k++)
 					test_arch_events(v, perf_caps[i], j, BIT(k));
 			}
 
 			pr_info("Testing GP counters, PMU version %u, perf_caps = %lx\n",
 				v, perf_caps[i]);
-			for (j = 0; j <= nr_gp_counters; j++)
-				test_gp_counters(v, perf_caps[i], j);
+			if (v < 6) {
+				for (j = 0; j <= nr_gp_counters; j++)
+					test_gp_counters(v, perf_caps[i], j, 0);
+			} else {
+				for (k = 0; k <= gp_bitmap; k++) {
+					if (k & ~gp_bitmap)
+						continue;
+					test_gp_counters(v, perf_caps[i], 0, k);
+				}
+			}
 
 			pr_info("Testing fixed counters, PMU version %u, perf_caps = %lx\n",
 				v, perf_caps[i]);
-			for (j = 0; j <= nr_fixed_counters; j++) {
-				/*
-				 * pmu version less than 5 doesn't support fixed counter
-				 * bitmap, so only set fixed counter bitamp to 0.
-				 */
-				if (v < 5) {
+			if (v < 5) {
+				for (j = 0; j <= nr_fixed_counters; j++)
 					test_fixed_counters(v, perf_caps[i], j, 0);
-				} else {
-					for (k = 0; k <= (BIT(nr_fixed_counters) - 1); k++)
-						test_fixed_counters(v, perf_caps[i], j, k);
+			} else {
+				for (k = 0; k <= fixed_bitmap; k++) {
+					if (k & ~fixed_bitmap)
+						continue;
+					test_fixed_counters(v, perf_caps[i], 0, k);
 				}
 			}
 		}
