@@ -486,6 +486,8 @@
 /* Intel-defined CPU features, CPUID level 0x00000007:1 (ECX), word 23 */
 #define X86_FEATURE_MSR_IMM		(23*32+ 5) /* "msr_imm" MSR immediate form instructions */
 
+#define X86_FEATURE_SGX_EUPDATESVN	(21*32+11) /* Support for ENCLS[EUPDATESVN] instruction */
+
 /*
  * BUG word(s)
  */
