@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v5.2
+---------------
+27. fix: [CWF-BKC] ddt lass test case : CPU_XS_FUNC_LASS_VTIME_EMULATION fails
+    to complete with FRED enabled
+    https://jira.devtools.intel.com/browse/LFE-16932
+
 dmr-6.14-v5.1
 ---------------
 26. fix: [DMR-Simics][DMR-BKC]AMX CPUID in guest is not correct
