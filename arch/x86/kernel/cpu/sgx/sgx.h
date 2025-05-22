@@ -101,6 +101,9 @@ static inline int __init sgx_vepc_init(void)
 	return -ENODEV;
 }
 #endif
+ 
+int sgx_inc_usage_count(void);
+void sgx_dec_usage_count(void);
 
 void sgx_update_lepubkeyhash(struct sgx_sighash *sighash);
 
