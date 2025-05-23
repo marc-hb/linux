@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v5.3
+---------------
+27. fix: [CWF][CWF-BKC][kselftest][vPMU]pmu_counters_test failed
+    https://jira.devtools.intel.com/browse/LFE-16934
+
 dmr-6.14-v5.2
 ---------------
 27. fix: [CWF-BKC] ddt lass test case : CPU_XS_FUNC_LASS_VTIME_EMULATION fails
