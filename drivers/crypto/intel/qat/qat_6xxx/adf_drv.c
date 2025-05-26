@@ -82,6 +82,7 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	major_rev_id = FIELD_GET(ADF_GEN6_PCI_MAJOR_REVID_MASK, accel_pci_dev->revid);
 	if (major_rev_id > ADF_GEN6_PCI_MAJOR_REVID_A0) {
+		hw_data->fw_name = ADF_6XXX_B0_FW;
 		if (!(hw_data->fuses[ADF_FUSECTL1] & ICP_ACCEL_GEN6_MASK_WCP_WAT_SLICE))
 			wcy_mode = true;
 	}
@@ -221,6 +222,7 @@ module_pci_driver(adf_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Intel");
 MODULE_FIRMWARE(ADF_6XXX_FW);
+MODULE_FIRMWARE(ADF_6XXX_B0_FW);
 MODULE_FIRMWARE(ADF_6XXX_MMP);
 MODULE_DESCRIPTION("Intel(R) QuickAssist Technology");
 MODULE_SOFTDEP("pre: crypto-intel_qat");
