@@ -6,7 +6,6 @@
 #include "adf_common_drv.h"
 #include "adf_cfg.h"
 #include "adf_pfvf_pf_msg.h"
-#include "adf_uacce.h"
 
 #define ADF_VF2PF_RATELIMIT_INTERVAL	8
 #define ADF_VF2PF_RATELIMIT_BURST	130
@@ -170,9 +169,6 @@ static int adf_do_enable_sriov(struct adf_accel_dev *accel_dev)
 			return ret;
 	}
 
-	/* Disable uacce if enabled */
-	adf_uacce_disable(accel_dev);
-
 	ret = adf_add_sriov_configuration(accel_dev);
 	if (ret)
 		goto err_del_cfg;
@@ -269,10 +265,7 @@ void adf_disable_sriov(struct adf_accel_dev *accel_dev)
 	if (!test_bit(ADF_STATUS_RESTARTING, &accel_dev->status)) {
 		kfree(accel_dev->pf.vf_info);
 		accel_dev->pf.vf_info = NULL;
-		adf_cfg_del_key_value_param(accel_dev, ADF_GENERAL_SEC,
-					    ADF_SRIOV_ENABLED);
 	}
-
 }
 EXPORT_SYMBOL_GPL(adf_disable_sriov);
 
