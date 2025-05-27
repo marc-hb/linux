@@ -169,6 +169,9 @@ int adf_get_service_enabled(struct adf_accel_dev *accel_dev)
 	if (test_bit(SVC_DC, &mask))
 		return SVC_DC;
 
+	if (test_bit(SVC_DECOMP, &mask))
+		return SVC_DECOMP;
+
 	if (test_bit(SVC_DCC, &mask))
 		return SVC_DCC;
 
