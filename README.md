@@ -18,9 +18,17 @@ Release History
 ===============
 
 
+dmr-6.14-v5.4
+---------------
+29. fix: [DMR][BKC][AP][1S][PSS Fmod] : SST-TF turbo-freq-properties info shows
+    Invalid Bucket 
+    https://hsdes.intel.com/appstore/article/#/16026957235
+    [OKS CCB]SST - register updates in TPMI
+    https://hsdes.intel.com/appstore/article/#/22021049169
+
 dmr-6.14-v5.3
 ---------------
-27. fix: [CWF][CWF-BKC][kselftest][vPMU]pmu_counters_test failed
+28. fix: [CWF][CWF-BKC][kselftest][vPMU]pmu_counters_test failed
     https://jira.devtools.intel.com/browse/LFE-16934
 
 dmr-6.14-v5.2
