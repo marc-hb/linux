@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v5.5
+---------------
+30. fix: (Rare) deadlock caused by "drivers: core: synchronize really_probe()
+    and dev_uevent()"
+    https://jira.devtools.intel.com/browse/LINUXBKC3-675
+
 dmr-6.14-v5.4
 ---------------
 29. fix: [DMR][BKC][AP][1S][PSS Fmod] : SST-TF turbo-freq-properties info shows
