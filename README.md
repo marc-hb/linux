@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v5.6
+---------------
+31. fix: [DMR][SCIV][Boot / Reset] intel-spi driver probe failure with -22
+    https://jira.devtools.intel.com/browse/LINUXBKC3-670
+
 dmr-6.14-v5.5
 ---------------
 30. fix: (Rare) deadlock caused by "drivers: core: synchronize really_probe()
