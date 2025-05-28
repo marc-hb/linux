@@ -136,6 +136,7 @@
 #define FLCOMP_C0DEN_16M		0x05
 #define FLCOMP_C0DEN_32M		0x06
 #define FLCOMP_C0DEN_64M		0x07
+#define FLCOMP_C0DEN_128M		0x08
 
 #define INTEL_SPI_TIMEOUT		5000 /* ms */
 #define INTEL_SPI_FIFO_SZ		64
@@ -1352,7 +1353,12 @@ static int intel_spi_read_desc(struct intel_spi *ispi)
 	case FLCOMP_C0DEN_64M:
 		ispi->chip0_size = SZ_64M;
 		break;
+	case FLCOMP_C0DEN_128M:
+		ispi->chip0_size = SZ_128M;
+		break;
 	default:
+		dev_warn(ispi->dev, "unsupported C0DEN: %#x\n",
+			 flcomp & FLCOMP_C0DEN_MASK);
 		return -EINVAL;
 	}
 
