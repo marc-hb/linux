@@ -21,6 +21,8 @@ Release History
 dmr-6.14-v5.7
 ---------------
 32. update: QAT stack updated to version 0.90
+    Update: DMR 0.9.0 kernel driver (6.14 kernel), Firmware and qatlib
+    https://jira.devtools.intel.com/browse/LINUXBKC3-685
 
 dmr-6.14-v5.6
 ---------------
