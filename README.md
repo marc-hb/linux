@@ -18,7 +18,12 @@ Release History
 ===============
 
 
-dmr-6.14-v5.7
+dmr-6.14-v6.2
+---------------
+33. fix: [CWF-BKC] [DMR-BKC] Remove sanity check to userspace configured vPMU
+    version https://jira.devtools.intel.com/browse/LFE-17172
+
+dmr-6.14-v6.1
 ---------------
 32. update: QAT stack updated to version 0.90
     Update: DMR 0.9.0 kernel driver (6.14 kernel), Firmware and qatlib
