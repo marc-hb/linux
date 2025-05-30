@@ -18,6 +18,10 @@ Release History
 ===============
 
 
+dmr-6.14-v5.7
+---------------
+32. update: QAT stack updated to version 0.90
+
 dmr-6.14-v5.6
 ---------------
 31. fix: [DMR][SCIV][Boot / Reset] intel-spi driver probe failure with -22
