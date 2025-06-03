@@ -21,6 +21,7 @@ Release History
 dmr-6.14-v6.3
 ---------------
 34. feature: SGX seamless update
+    https://jira.devtools.intel.com/browse/LINUXBKC3-692
 
 dmr-6.14-v6.2
 ---------------
