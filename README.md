@@ -18,6 +18,10 @@ Release History
 ===============
 
 
+dmr-6.14-v6.3
+---------------
+34. feature: SGX seamless update
+
 dmr-6.14-v6.2
 ---------------
 33. fix: [CWF-BKC] [DMR-BKC] Remove sanity check to userspace configured vPMU
