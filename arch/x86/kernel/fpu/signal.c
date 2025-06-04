@@ -322,11 +322,7 @@ retry:
 static bool __fpu_restore_sig(void __user *buf, void __user *buf_fx,
 			      bool ia32_fxstate)
 {
-	struct task_struct *tsk = current;
-	struct fpu *fpu = x86_task_fpu(tsk);
-	struct user_i387_ia32_struct env;
 	bool success, fx_only = false;
-	union fpregs_state *fpregs;
 	u64 user_xfeatures = 0;
 
 	if (use_xsave()) {
@@ -345,6 +341,12 @@ static bool __fpu_restore_sig(void __user *buf, void __user *buf_fx,
 		/* Restore the FPU registers directly from user memory. */
 		return restore_fpregs_from_user(buf_fx, user_xfeatures, fx_only);
 	}
+
+#if defined CONFIG_X86_32 || defined CONFIG_IA32_EMULATION
+	struct task_struct *tsk = current;
+	struct fpu *fpu = x86_task_fpu(tsk);
+	struct user_i387_ia32_struct env;
+	union fpregs_state *fpregs;
 
 	/*
 	 * Copy the legacy state because the FP portion of the FX frame has
@@ -387,14 +389,8 @@ static bool __fpu_restore_sig(void __user *buf, void __user *buf_fx,
 				     sizeof(fpregs->fxsave)))
 			return false;
 
-		if (IS_ENABLED(CONFIG_X86_64)) {
-			/* Reject invalid MXCSR values. */
-			if (fpregs->fxsave.mxcsr & ~mxcsr_feature_mask)
-				return false;
-		} else {
-			/* Mask invalid bits out for historical reasons (broken hardware). */
-			fpregs->fxsave.mxcsr &= mxcsr_feature_mask;
-		}
+		/* Mask invalid bits out for historical reasons (broken hardware). */
+		fpregs->fxsave.mxcsr &= mxcsr_feature_mask;
 
 		/* Enforce XFEATURE_MASK_FPSSE when XSAVE is enabled */
 		if (use_xsave())
@@ -428,6 +424,8 @@ static bool __fpu_restore_sig(void __user *buf, void __user *buf_fx,
 		fpregs_mark_activate();
 
 	fpregs_unlock();
+#endif
+
 	return success;
 }
 
