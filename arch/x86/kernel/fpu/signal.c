@@ -20,6 +20,8 @@
 #include "legacy.h"
 #include "xstate.h"
 
+extern void breakit(void)  __compiletime_error("call_CVT_TO_FXSR");
+
 /*
  * Check for the presence of extended state information in the
  * user fpstate pointer in the sigcontext.
@@ -402,7 +404,7 @@ static bool __fpu_restore_sig(void __user *buf, void __user *buf_fx,
 	}
 
 	/* Fold the legacy FP storage */
-	convert_to_fxsr(&fpregs->fxsave, &env);
+	convert_to_fxsr(&fpregs->fxsave, &env); // does not exist in no-32bits mode.
 
 	fpregs_lock();
 	if (use_xsave()) {
