@@ -58,6 +58,7 @@ setfx:
 	return true;
 }
 
+#if defined CONFIG_X86_32 || defined CONFIG_IA32_EMULATION
 /*
  * Signal frame handlers.
  */
@@ -89,6 +90,7 @@ static inline bool save_fsave_header(struct task_struct *tsk, void __user *buf)
 
 	return true;
 }
+#endif
 
 /*
  * Prepare the SW reserved portion of the fxsave memory layout, indicating
@@ -225,9 +227,11 @@ retry:
 		return false;
 	}
 
+#if defined CONFIG_X86_32 || defined CONFIG_IA32_EMULATION
 	/* Save the fsave header for the 32-bit frames. */
 	if ((ia32_fxstate || !use_fxsr()) && !save_fsave_header(tsk, buf))
 		return false;
+#endif
 
 	if (use_fxsr() && !save_xstate_epilog(buf_fx, ia32_fxstate, fpstate))
 		return false;
