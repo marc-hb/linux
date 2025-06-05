@@ -18,6 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v6.4
+---------------
+35. fix: [CWF AP][BKC#05][Alpha][A0][1S][DPMO][Stability]: IAA self-test error
+    during G3/S5/WR cycle boot "alg: acomp: decompression failed on test 1 for
+    deflate-iaa: ret=19"
+    https://hsdes.intel.com/appstore/article-one/#/article/16027354628
+
 dmr-6.14-v6.3
 ---------------
 34. feature: SGX seamless update
