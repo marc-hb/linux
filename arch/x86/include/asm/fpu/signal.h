@@ -18,10 +18,12 @@
 # define user32_fxsr_struct	user_fxsr_struct
 #endif
 
+#if defined CONFIG_X86_32 || defined CONFIG_IA32_EMULATION
 extern void convert_from_fxsr(struct user_i387_ia32_struct *env,
 			      struct task_struct *tsk);
 extern void convert_to_fxsr(struct fxregs_state *fxsave,
 			    const struct user_i387_ia32_struct *env);
+#endif
 
 unsigned long
 fpu__alloc_mathframe(unsigned long sp, int ia32_frame,
