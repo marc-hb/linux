@@ -1647,9 +1647,13 @@ extern void intel_cpuc_finish(struct cpu_hw_events *cpuc);
 
 int intel_pmu_init(void);
 
-void init_pebs_buf_on_cpu(int cpu);
+void init_debug_store_on_cpu(int cpu);
 
-void fini_pebs_buf_on_cpu(int cpu);
+void fini_debug_store_on_cpu(int cpu);
+
+void init_arch_pebs_buf_on_cpu(int cpu);
+
+void fini_arch_pebs_buf_on_cpu(int cpu);
 
 void release_bts_pebs_buffers(void);
 

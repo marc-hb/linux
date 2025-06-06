@@ -671,6 +671,26 @@ struct pebs_record_skl {
 	u64 tsc;
 };
 
+void init_debug_store_on_cpu(int cpu)
+{
+	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+
+	if (!ds)
+		return;
+
+	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA,
+		     (u32)((u64)(unsigned long)ds),
+		     (u32)((u64)(unsigned long)ds >> 32));
+}
+
+void fini_debug_store_on_cpu(int cpu)
+{
+	if (!per_cpu(cpu_hw_events, cpu).ds)
+		return;
+
+	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
+}
+
 static DEFINE_PER_CPU(void *, insn_buffer);
 
 static void ds_update_cea(void *cea, void *addr, size_t size, pgprot_t prot)
@@ -860,7 +880,8 @@ void release_bts_pebs_buffers(void)
 		 * observe cpu_hw_events.ds and not program the DS_AREA when
 		 * they come up.
 		 */
-		fini_pebs_buf_on_cpu(cpu);
+		fini_debug_store_on_cpu(cpu);
+		fini_arch_pebs_buf_on_cpu(cpu);
 	}
 
 	for_each_possible_cpu(cpu) {
@@ -928,48 +949,42 @@ void reserve_bts_pebs_buffers(void)
 			 * Ignores wrmsr_on_cpu() errors for offline CPUs they
 			 * will get this call through intel_pmu_cpu_starting().
 			 */
-			init_pebs_buf_on_cpu(cpu);
+			init_debug_store_on_cpu(cpu);
+			init_arch_pebs_buf_on_cpu(cpu);
 		}
 	}
 }
 
-void init_pebs_buf_on_cpu(int cpu)
+void init_arch_pebs_buf_on_cpu(int cpu)
 {
 	struct cpu_hw_events *cpuc = per_cpu_ptr(&cpu_hw_events, cpu);
+	u64 arch_pebs_base;
 
-	if (x86_pmu.arch_pebs) {
-		u64 arch_pebs_base;
+	if (!x86_pmu.arch_pebs)
+		return;
 
-		if (!cpuc->pebs_vaddr)
-			return;
+	if (!cpuc->pebs_vaddr)
+		return;
 
 		/*
-		 * 4KB-aligned pointer of the output buffer
-		 * (__alloc_pages_node() return page aligned address)
-		 * Buffer Size = 4KB * 2^SIZE
-		 * contiguous physical buffer (__alloc_pages_node() with order)
-		 */
-		arch_pebs_base = virt_to_phys(cpuc->pebs_vaddr) | PEBS_BUFFER_SHIFT;
+	 * 4KB-aligned pointer of the output buffer
+	 * (__alloc_pages_node() return page aligned address)
+	 * Buffer Size = 4KB * 2^SIZE
+	 * contiguous physical buffer (__alloc_pages_node() with order)
+	 */
+	arch_pebs_base = virt_to_phys(cpuc->pebs_vaddr) | PEBS_BUFFER_SHIFT;
 
-		wrmsr_on_cpu(cpu, MSR_IA32_PEBS_BASE,
-			    (u32)arch_pebs_base,
-			    (u32)(arch_pebs_base >> 32));
-	} else if (cpuc->ds) {
-		/* legacy PEBS */
-		wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA,
-		     (u32)((u64)(unsigned long)cpuc->ds),
-		     (u32)((u64)(unsigned long)cpuc->ds >> 32));
-	}
+	wrmsr_on_cpu(cpu, MSR_IA32_PEBS_BASE,
+		    (u32)arch_pebs_base,
+		    (u32)(arch_pebs_base >> 32));
 }
 
-void fini_pebs_buf_on_cpu(int cpu)
+void fini_arch_pebs_buf_on_cpu(int cpu)
 {
-	struct cpu_hw_events *cpuc = per_cpu_ptr(&cpu_hw_events, cpu);
+	if (!x86_pmu.arch_pebs)
+		return;
 
-	if (x86_pmu.arch_pebs)
-		wrmsr_on_cpu(cpu, MSR_IA32_PEBS_BASE, 0, 0);
-	else if (cpuc->ds)
-		wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
+	wrmsr_on_cpu(cpu, MSR_IA32_PEBS_BASE, 0, 0);
 }
 
 /*
