@@ -199,6 +199,7 @@ static int kvm_check_cpuid(struct kvm_vcpu *vcpu)
 		union cpuid10_eax eax;
 		union cpuid10_edx edx;
 
+		eax.full = best->eax;
 		edx.full = best->edx;
 		if (eax.split.version_id >= 5) {
 			int mask_all = (1 << edx.split.num_counters_fixed) - 1;
