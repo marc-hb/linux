@@ -18,12 +18,22 @@ Release History
 ===============
 
 
+dmr-6.14-v6.5
+---------------
+36. fix: [CWF][Intel-next][PMU][KVM]Create VM failure when the mediated vpmu
+    enabled.
+    https://jira.devtools.intel.com/browse/LFE-17208
+    [CWF-BKC][Intel PT] Host CPU Soft Lock while running PT
+    PT_FUNC_BRANCH_TRACE_STORAGE case CWF-BKC-v6.14.1.3.2
+    https://jira.devtools.intel.com/browse/LFE-16925
+
 dmr-6.14-v6.4
 ---------------
 35. fix: [CWF AP][BKC#05][Alpha][A0][1S][DPMO][Stability]: IAA self-test error
     during G3/S5/WR cycle boot "alg: acomp: decompression failed on test 1 for
     deflate-iaa: ret=19"
     https://hsdes.intel.com/appstore/article-one/#/article/16027354628
+    https://jira.devtools.intel.com/browse/LINUXBKC3-702
 
 dmr-6.14-v6.3
 ---------------
