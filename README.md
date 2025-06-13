@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v7.1
+---------------
+37. fix: [CWF-BKC][TDX]Host call trace when boot TD guest with kvm_exit trace
+    enabled on host
+    https://jira.devtools.intel.com/browse/LFE-17236
+
 dmr-6.14-v6.5
 ---------------
 36. fix: [CWF][Intel-next][PMU][KVM]Create VM failure when the mediated vpmu
