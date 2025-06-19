@@ -250,15 +250,19 @@ void tboot_shutdown(u32 shutdown_type)
 	switch_to_tboot_pt();
 
 	/*
-	 * Toggle off CET, SMEP, SMAP, LASS while we call shutdown_entry in
-	 * tboot.  CET, if enabled, will trigger an invalid opcode here unless
+	 * Toggle off CET, SMEP, SMAP, FRED, LASS before calling shutdown_entry.
+	 * CET, if enabled, will trigger an invalid opcode here unless
 	 * tboot has been built with extra flags.  LASS is also pretty sure to
 	 * cause a GPF here because shutdown_entry, being mapped 1:1, is in
-	 * the lower half of the address space.  Don't use
-	 * cr4_clear_bits_irqsoff() because these bits are pinned after init.
+	 * the lower half of the address space.  FRED, if enabled, will make tboot
+	 * crash when exiting long mode which is the first thing it does.
+	 *
+	 * Don't use cr4_clear_bits_irqsoff() because these bits are pinned after
+	 * init.
 	 */
 	cr4 = cr4_read_shadow();
-	cr4 &= ~(X86_CR4_SMEP | X86_CR4_SMAP | X86_CR4_CET | X86_CR4_LASS);
+	cr4 &= ~(X86_CR4_SMEP | X86_CR4_SMAP | X86_CR4_CET | X86_CR4_FRED |
+			X86_CR4_LASS);
 	asm volatile("mov %0,%%cr4": "+r" (cr4) : : "memory");
 
 	shutdown = (void(*)(void))(unsigned long)tboot->shutdown_entry;
