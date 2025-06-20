@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v7.2
+---------------
+38. fix: [BHS][Avenue City][CWF-AP A0][1S][Security][CBnT]: System fails to
+    undergo shutdown/S5 State when booted to tboot OS with TXT enable
+    https://jira.devtools.intel.com/browse/LINUXBKC3-711
+
 dmr-6.14-v7.1
 ---------------
 37. fix: [CWF-BKC][TDX]Host call trace when boot TD guest with kvm_exit trace
