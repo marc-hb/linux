@@ -18,9 +18,15 @@ Release History
 ===============
 
 
+dmr-6.14-v7.4
+---------------
+40. fix: [DMR][AP][1S][PSS Fmod][Virtualization] VM Creation Failure Due to
+    Network Issue on 'virbr0'
+    https://jira.devtools.intel.com/browse/LINUXBKC3-713
+
 dmr-6.14-v7.3
 ---------------
-38. fix: tools SST-TF With DMR CentOS kernel version, 6.14.0-dmr.bkc.6.14.5.6.7
+39. fix: tools SST-TF With DMR CentOS kernel version, 6.14.0-dmr.bkc.6.14.5.6.7
     and SST Tool version, v1.22-pp-rev2, observing the below incorrect TRL
     buckets with SST TF info output. Bucket 3 and 4 should not be observed.
     https://hsdes.intel.com/appstore/article_legacy/#/14025330034
