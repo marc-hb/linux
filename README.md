@@ -18,6 +18,13 @@ Release History
 ===============
 
 
+dmr-6.14-v7.3
+---------------
+38. fix: tools SST-TF With DMR CentOS kernel version, 6.14.0-dmr.bkc.6.14.5.6.7
+    and SST Tool version, v1.22-pp-rev2, observing the below incorrect TRL
+    buckets with SST TF info output. Bucket 3 and 4 should not be observed.
+    https://hsdes.intel.com/appstore/article_legacy/#/14025330034
+
 dmr-6.14-v7.2
 ---------------
 38. fix: [BHS][Avenue City][CWF-AP A0][1S][Security][CBnT]: System fails to
