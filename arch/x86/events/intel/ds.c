@@ -685,8 +685,7 @@ void init_debug_store_on_cpu(int cpu)
 
 void fini_debug_store_on_cpu(int cpu)
 {
-	if (!per_cpu(cpu_hw_events, cpu).ds ||
-	    !this_cpu_has(X86_FEATURE_DS))
+	if (!this_cpu_has(X86_FEATURE_DS))
 		return;
 
 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
