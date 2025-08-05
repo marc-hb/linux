@@ -115,9 +115,63 @@ static struct adf_hw_device_class adf_6xxx_class = {
 
 static bool enable_asym = true;
 
-static bool services_supported(unsigned long mask)
+static bool ae_svc_supported(int svc, struct adf_accel_dev *accel_dev)
+{
+	u32 fusectl1 = GET_HW_DATA(accel_dev)->fuses[ADF_FUSECTL1];
+
+	switch (svc) {
+	case SVC_ASYM:
+		if (fusectl1 & ICP_ACCEL_GEN6_MASK_PKE_SLICE) {
+			dev_err(&GET_DEV(accel_dev), "ASYM service is not supported in hardware\n");
+			return false;
+		}
+		break;
+
+	case SVC_SYM:
+		if ((fusectl1 & ICP_ACCEL_GEN6_MASK_UCS_SLICE) &&
+		    (fusectl1 & ICP_ACCEL_GEN6_MASK_AUTH_SLICE)) {
+			dev_err(&GET_DEV(accel_dev), "SYM service is not supported in hardware\n");
+			return false;
+		}
+		break;
+
+	case SVC_DC:
+		if (fusectl1 & (ICP_ACCEL_GEN6_MASK_CPR_SLICE |
+				ICP_ACCEL_GEN6_MASK_DCPRZ_SLICE)) {
+			dev_err(&GET_DEV(accel_dev), "DC service is not supported in hardware\n");
+			return false;
+		}
+		break;
+
+	case SVC_DCC:
+		if (((fusectl1 & ICP_ACCEL_GEN6_MASK_UCS_SLICE) &&
+		     (fusectl1 & ICP_ACCEL_GEN6_MASK_AUTH_SLICE)) ||
+		     (fusectl1 & (ICP_ACCEL_GEN6_MASK_CPR_SLICE |
+				  ICP_ACCEL_GEN6_MASK_DCPRZ_SLICE))) {
+			dev_err(&GET_DEV(accel_dev), "DCC service is not supported in hardware\n");
+			return false;
+		}
+		break;
+
+	case SVC_DECOMP:
+		if (fusectl1 & ICP_ACCEL_GEN6_MASK_DCPRZ_SLICE) {
+			dev_err(&GET_DEV(accel_dev), "DECOMP service is not supported in hardware\n");
+			return false;
+		}
+		break;
+
+	default:
+		return false;
+	}
+	return true;
+}
+
+static bool services_supported(unsigned long mask, int svc, struct adf_accel_dev *accel_dev)
 {
 	int num_svc = hweight_long(mask);
+
+	if (!ae_svc_supported(svc, accel_dev))
+		return false;
 
 	if (mask >= BIT(SVC_BASE_COUNT))
 		return false;
@@ -133,7 +187,7 @@ static bool services_supported(unsigned long mask)
 	}
 }
 
-static bool wcy_services_supported(unsigned long mask)
+static bool wcy_services_supported(unsigned long mask, int svc, struct adf_accel_dev *accel_dev)
 {
 	/* Symmetric crypto service must be set to enable for wireless algorithms */
 	if (mask == BIT(SVC_SYM))

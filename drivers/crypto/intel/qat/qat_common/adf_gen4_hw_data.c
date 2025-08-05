@@ -258,7 +258,7 @@ static bool is_single_service(int service_id)
 	}
 }
 
-bool adf_gen4_services_supported(unsigned long mask)
+bool adf_gen4_services_supported(unsigned long mask, int svc, struct adf_accel_dev *accel_dev)
 {
 	unsigned long num_svc = hweight_long(mask);
 

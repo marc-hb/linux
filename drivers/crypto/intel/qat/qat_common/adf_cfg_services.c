@@ -72,10 +72,10 @@ static int adf_service_string_to_mask(struct adf_accel_dev *accel_dev, const cha
 
 		if (num_svc++ == MAX_NUM_CONCURR_SVC)
 			return -EINVAL;
+		if (hw_data->services_supported && !hw_data->services_supported(mask, id,
+										accel_dev))
+			return -EINVAL;
 	}
-
-	if (hw_data->services_supported && !hw_data->services_supported(mask))
-		return -EINVAL;
 
 	*out_mask = mask;
 

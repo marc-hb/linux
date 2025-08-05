@@ -185,22 +185,6 @@ static enum adf_cfg_service_type srv_to_cfg_svc_type(enum adf_base_services rl_s
 	}
 }
 
-static unsigned long rl_svc_to_adf_svc_bitmask(enum adf_base_services rl_svc)
-{
-	switch (rl_svc) {
-	case ADF_SVC_ASYM:
-		return BIT(SVC_ASYM);
-	case ADF_SVC_SYM:
-		return BIT(SVC_SYM);
-	case ADF_SVC_DC:
-		return BIT(SVC_DC);
-	case ADF_SVC_DECOMP:
-		return BIT(SVC_DECOMP);
-	default:
-		return 0;
-	}
-}
-
 /**
  * adf_rl_get_sla_arr_of_type() - Returns a pointer to SLA type specific array
  * @rl_data: pointer to ratelimiting data
@@ -1141,6 +1125,22 @@ u32 adf_rl_get_num_used_slas(struct adf_accel_dev *accel_dev,
 	return used_sla;
 }
 
+static unsigned long rl_svc_to_adf_svc_bitmask(enum adf_base_services rl_svc)
+{
+	switch (rl_svc) {
+		case ADF_SVC_ASYM:
+			return BIT(SVC_ASYM);
+		case ADF_SVC_SYM:
+			return BIT(SVC_SYM);
+		case ADF_SVC_DC:
+			return BIT(SVC_DC);
+		case ADF_SVC_DECOMP:
+			return BIT(SVC_DECOMP);
+		default:
+			return 0;
+	}
+}
+
 int adf_rl_init(struct adf_accel_dev *accel_dev)
 {
 	struct adf_hw_device_data *hw_data = GET_HW_DATA(accel_dev);
@@ -1153,7 +1153,7 @@ int adf_rl_init(struct adf_accel_dev *accel_dev)
 	if (hw_data->services_supported) {
 		for (rl_svc = 0; rl_svc < RL_ROOT_MAX; rl_svc++) {
 			svc_bitmask = rl_svc_to_adf_svc_bitmask(rl_svc);
-			if (hw_data->services_supported(svc_bitmask) &&
+			if (hw_data->services_supported(svc_bitmask, rl_svc, accel_dev) &&
 			    RL_VALIDATE_NON_ZERO(rl_hw_data->max_tp[rl_svc])) {
 				ret = -EOPNOTSUPP;
 				goto err_ret;
