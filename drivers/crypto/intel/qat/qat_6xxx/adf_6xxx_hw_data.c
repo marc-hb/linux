@@ -835,7 +835,8 @@ static u32 get_accel_cap(struct adf_accel_dev *accel_dev)
 			  ICP_ACCEL_CAPABILITIES_LZ4S_COMPRESSION |
 			  ICP_ACCEL_CAPABILITIES_CNV_INTEGRITY64;
 
-	if (fusectl1 & ICP_ACCEL_GEN6_MASK_CPR_SLICE) {
+	if ((fusectl1 & ICP_ACCEL_GEN6_MASK_CPR_SLICE) &&
+	    (fusectl1 & ICP_ACCEL_GEN6_MASK_DCPRZ_SLICE)) {
 		capabilities_dc &= ~ICP_ACCEL_CAPABILITIES_COMPRESSION;
 		capabilities_dc &= ~ICP_ACCEL_CAPABILITIES_LZ4_COMPRESSION;
 		capabilities_dc &= ~ICP_ACCEL_CAPABILITIES_LZ4S_COMPRESSION;
