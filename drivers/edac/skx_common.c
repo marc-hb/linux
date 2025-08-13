@@ -121,7 +121,7 @@ void skx_adxl_put(void)
 }
 EXPORT_SYMBOL_GPL(skx_adxl_put);
 
-static void skx_init_mc_mapping(struct skx_dev *d)
+void skx_init_mc_mapping(struct skx_dev *d)
 {
 	/*
 	 * By default, the BIOS presents all memory controllers within each
@@ -132,6 +132,7 @@ static void skx_init_mc_mapping(struct skx_dev *d)
 	for (int i = 0; i < NUM_IMC; i++)
 		d->mc_mapping[i] = i;
 }
+EXPORT_SYMBOL_GPL(skx_init_mc_mapping);
 
 void skx_set_mc_mapping(struct skx_dev *d, u8 pmc, u8 lmc)
 {

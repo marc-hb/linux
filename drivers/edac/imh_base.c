@@ -258,6 +258,8 @@ static int imh_get_all_mmio_base_h(struct res_config *cfg, struct list_head *eda
 		}
 
 		d->pkg = i;
+		skx_init_mc_mapping(d);
+		edac_dbg(2, "Pkg%d initialization of MC mapping is complete\n", i);
 		list_add_tail(&d->list, edac_list);
 	}
 
