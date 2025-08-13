@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v8.2
+---------------
+53. fix: DMR AP[IMH1] [IMH2] Seamless Second Capsule update getting failed
+    https://hsdes.intel.com/appstore/article-one/#/article/15017866887
+    https://jira.devtools.intel.com/browse/LINUXBKC3-718
+
 dmr-6.14-v8.1
 ---------------
 52. fix: [DMR][QAT][SRIOV] SRIOV content failing in PO CentOS + 6.14 Kernel
