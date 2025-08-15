@@ -478,6 +478,7 @@ static int uncore_probe(struct auxiliary_device *auxdev, const struct auxiliary_
 	bool uncore_sysfs_added = false;
 	int ret, i, pkg = 0;
 	int num_resources;
+	u8 cdie_range;
 
 	ret = tpmi_get_feature_status(auxdev, TPMI_ID_UNCORE, &read_blocked, &write_blocked);
 	if (ret)
@@ -637,7 +638,20 @@ static int uncore_probe(struct auxiliary_device *auxdev, const struct auxiliary_
 
 	auxiliary_set_drvdata(auxdev, tpmi_uncore);
 
-	if (topology_max_dies_per_package() > 1)
+	cdie_range = fls(plat_info->cdie_mask) - ffs(plat_info->cdie_mask) + 1;
+
+	/*
+	 * Skip creating root dies for partitioned systems:
+	 *      When there are dies enumerated part of CPUID leaf 0x1f,
+	 *              which is true for partitioned systems
+	 *      If there are no compute dies in the partition
+	 *      If somehow, one of the partition removed all compute dies
+	 *              this means all the compute dies in the package
+	 *              are in the current partition, so next partitions
+	 *              have no compute dies anymore.
+	 */
+	if (topology_max_dies_per_package() > 1 || !plat_info->cdie_mask ||
+		cdie_range == topology_max_dies_per_package())
 		return 0;
 
 	tpmi_uncore->root_cluster.root_domain = true;
