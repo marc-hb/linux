@@ -183,6 +183,7 @@ static __init int rmdd_enumerate(struct acpi_table_erdt_rmdd *rmdd)
 			enumerate_marc = true;
 			break;
 		default:
+			break;
 		}
 		rmdd_reg++;
 	}
