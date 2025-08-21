@@ -18,6 +18,12 @@ Release History
 ===============
 
 
+dmr-6.14-v7.3-PO1
+---------------
+41. fix:  [DMR][VP][PMSS][1S][Simics 2025ww30.5][X1] Second IMH uncore
+    information is not visible on CentOS with Simics X1 Config
+    https://hsdes.intel.com/appstore/article-one/#/article/22021471212
+
 dmr-6.14-v7.4
 ---------------
 40. fix: [DMR][AP][1S][PSS Fmod][Virtualization] VM Creation Failure Due to
