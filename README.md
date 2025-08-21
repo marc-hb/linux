@@ -18,7 +18,7 @@ Release History
 ===============
 
 
-dmr-6.14-v7.3-PO1
+dmr-6.14-v7.4-PO1
 ---------------
 41. fix:  [DMR][VP][PMSS][1S][Simics 2025ww30.5][X1] Second IMH uncore
     information is not visible on CentOS with Simics X1 Config
