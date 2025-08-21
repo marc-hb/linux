@@ -234,10 +234,22 @@ static enum ntb_topo spr_ppd_topo(struct intel_ntb_dev *ndev, u32 ppd)
 	return NTB_TOPO_NONE;
 }
 
+static enum ntb_topo gen6_ppd_topo(struct intel_ntb_dev *ndev, u32 ppd)
+{
+	switch (ppd & GEN6_PPD_TOPO_MASK) {
+	case GEN6_PPD_TOPO_B2B_USD:
+		return NTB_TOPO_B2B_USD;
+	case GEN6_PPD_TOPO_B2B_DSD:
+		return NTB_TOPO_B2B_DSD;
+	}
+
+	return NTB_TOPO_NONE;
+}
+
 int gen4_init_dev(struct intel_ntb_dev *ndev)
 {
 	struct pci_dev *pdev = ndev->ntb.pdev;
-	u32 ppd1/*, ppd0*/;
+	u32 ppd1;
 	u16 lnkctl;
 	int rc;
 
@@ -253,6 +265,8 @@ int gen4_init_dev(struct intel_ntb_dev *ndev)
 		ndev->ntb.topo = gen4_ppd_topo(ndev, ppd1);
 	else if (pdev_is_SPR(pdev) || pdev_is_gen5(pdev))
 		ndev->ntb.topo = spr_ppd_topo(ndev, ppd1);
+	else if (pdev_is_gen6(pdev))
+		ndev->ntb.topo = gen6_ppd_topo(ndev, ppd1);
 	dev_dbg(&pdev->dev, "ppd %#x topo %s\n", ppd1,
 		ntb_topo_string(ndev->ntb.topo));
 	if (ndev->ntb.topo == NTB_TOPO_NONE)
