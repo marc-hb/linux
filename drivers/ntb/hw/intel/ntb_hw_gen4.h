@@ -103,6 +103,9 @@
 #define NTB_LTR_IDLE_LATSCALE		0x0800  /* 1us scale */
 #define NTB_LTR_IDLE_REQMNT		0x8000  /* snoop req enable */
 
+#define GEN6_PPD0_OFFSET		0xf0d4
+#define GEN6_PPD1_OFFSET		0xfe18
+
 ssize_t ndev_ntb4_debugfs_read(struct file *filp, char __user *ubuf,
 				      size_t count, loff_t *offp);
 int gen4_init_dev(struct intel_ntb_dev *ndev);
