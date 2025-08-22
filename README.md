@@ -20,8 +20,9 @@ Release History
 
 dmr-6.14-v7.4-PO2
 ---------------
-42. feature: support the DMR PCI Non-Transparent Bridge
-(update TBD)
+42. feature: support the DMR PCI Non-Transparent Bridge [X1 A0 PO] CentOS NTB
+    driver needs update DID and the register offset for PPD0 and PPD1
+    https://hsdes.intel.com/appstore/article-one/#/article/14025793316
 
 dmr-6.14-v7.4-PO1
 ---------------
