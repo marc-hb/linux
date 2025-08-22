@@ -18,6 +18,11 @@ Release History
 ===============
 
 
+dmr-6.14-v7.4-PO2
+---------------
+42. feature: support the DMR PCI Non-Transparent Bridge
+(update TBD)
+
 dmr-6.14-v7.4-PO1
 ---------------
 41. fix:  [DMR][VP][PMSS][1S][Simics 2025ww30.5][X1] Second IMH uncore
