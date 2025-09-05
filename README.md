@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO3
+---------------
+43. fix: DSA/IAA PRS causes IOMMU Invalidation Queue Error due to bit 66 being
+    reserved (previously LPIG) in Page Group Response Descriptor
+    https://hsdes.intel.com/appstore/article-one/#/article/14025817510
 
 dmr-6.14-v7.4-PO2
 ---------------
