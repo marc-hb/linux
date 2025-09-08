@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO4
+---------------
+43. ntb: intel: Add Intel Gen6 NTB PPD1 register update
+    https://hsdes.intel.com/appstore/article-one/#/article/14025793316
+
 dmr-6.14-v7.4-PO3
 ---------------
 43. fix: DSA/IAA PRS causes IOMMU Invalidation Queue Error due to bit 66 being
