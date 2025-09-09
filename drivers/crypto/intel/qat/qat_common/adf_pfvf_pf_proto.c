@@ -126,9 +126,9 @@ static struct pfvf_message handle_blkmsg_req(struct adf_accel_vf_info *vf_info,
 	u8 resp_type = ADF_PF2VF_BLKMSG_RESP_TYPE_ERROR;
 	struct pfvf_message resp = { 0 };
 	u8 resp_data = 0;
-	u8 blk_type;
-	u8 blk_byte;
-	u8 byte_max;
+	u8 blk_type = 0;
+	u8 blk_byte = 0;
+	u8 byte_max = 0;
 
 	switch (req.type) {
 	case ADF_VF2PF_MSGTYPE_LARGE_BLOCK_REQ:
