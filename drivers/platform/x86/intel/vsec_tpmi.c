@@ -407,11 +407,11 @@ static int tpmi_mem_dump_show(struct seq_file *s, void *unused)
 {
 	size_t row_size = MEM_DUMP_COLUMN_COUNT * sizeof(u32);
 	struct intel_tpmi_pm_feature *pfs = s->private;
-	int count, ret = 0;
+	int count, ret = 0, i;
 	void __iomem *mem;
-	u32 size;
-	u64 off;
+	u64 off, *val;
 	u8 *buffer;
+	u32 size;
 
 	size = TPMI_GET_SINGLE_ENTRY_SIZE(pfs);
 	if (!size)
@@ -434,7 +434,10 @@ static int tpmi_mem_dump_show(struct seq_file *s, void *unused)
 			break;
 		}
 
-		memcpy_fromio(buffer, mem, size);
+		for (i = 0; i < size; i += sizeof(u64)) {
+			val = (u64 *)&buffer[i];
+			*val = readq(mem + i);
+		}
 
 		seq_hex_dump(s, " ", DUMP_PREFIX_OFFSET, row_size, sizeof(u32), buffer, size,
 			     false);
@@ -456,10 +459,11 @@ static ssize_t mem_write(struct file *file, const char __user *userbuf, size_t l
 {
 	struct seq_file *m = file->private_data;
 	struct intel_tpmi_pm_feature *pfs = m->private;
-	u32 addr, value, punit, size;
+	u32 addr, value, punit, size, addr_qword;
 	u32 num_elems, *array;
 	void __iomem *mem;
-	int ret;
+	u64 value_qword[2];
+	int ret, rem;
 
 	size = TPMI_GET_SINGLE_ENTRY_SIZE(pfs);
 	if (!size)
@@ -489,6 +493,11 @@ static ssize_t mem_write(struct file *file, const char __user *userbuf, size_t l
 		goto exit_write;
 	}
 
+
+	/* set the offset to a 64 bit offset */
+	rem = addr % sizeof(u64);
+	addr_qword = addr - rem;
+
 	mutex_lock(&tpmi_dev_lock);
 
 	mem = ioremap(pfs->vsec_offset + punit * size, size);
@@ -497,7 +506,13 @@ static ssize_t mem_write(struct file *file, const char __user *userbuf, size_t l
 		goto unlock_mem_write;
 	}
 
-	writel(value, mem + addr);
+	value_qword[0] = readq(mem + addr_qword);
+	value_qword[1] = readq(mem + addr_qword + 8);
+
+	memcpy((u8 *)value_qword + rem, &value, sizeof(value));
+
+	writeq(value_qword[0], mem + addr_qword);
+	writeq(value_qword[1], mem + addr_qword + sizeof(u64));
 
 	iounmap(mem);
 
