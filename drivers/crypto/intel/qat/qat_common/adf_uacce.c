@@ -53,14 +53,14 @@ struct adf_uacce_bank_queue {
 };
 
 struct adf_uacce_bank_data {
-	enum adf_services svc_type;
 	u32 ref_counter;
+	u32 svc_type;
 };
 
 struct adf_uacce_pasid_hnode {
-	enum adf_services last_provided_svc;
-	struct hlist_node hnode;
 	u32 assigned_banks_count;
+	struct hlist_node hnode;
+	u32 last_provided_svc;
 	u32 pasid;
 };
 
@@ -230,8 +230,7 @@ static int set_wq_mode(struct adf_accel_dev *accel_dev, u32 bank_number,
  *
  * Return: index of the next service to provide
  */
-static enum adf_services next_svc_to_get(u32 svc_bitmask,
-					 enum adf_services previous_svc)
+static u32 next_svc_to_get(u32 svc_bitmask, u32 previous_svc)
 {
 	u32 services_left;
 	u32 mask;
@@ -255,7 +254,8 @@ static enum adf_services next_svc_to_get(u32 svc_bitmask,
  * application requests a ring pair (bank). It does this by iterating over
  * a bitmask of available services and comparing it with the service that was
  * previously assigned. The order in which services are distributed corresponds
- * to the order they appear in `enum adf_services`.
+ * to the order they appear in enums `adf_base_services` and
+ * `adf_extended_services`.
  *
  * This function first determines the type of service to be provided next and
  * then iterates over all banks with that service enabled. Depending on the
@@ -278,13 +278,13 @@ static enum adf_services next_svc_to_get(u32 svc_bitmask,
  */
 static int queue_get_bank(struct adf_accel_dev *accel_dev, u32 pasid)
 {
-	enum adf_services last_provided_svc = SVC_BASE_COUNT;
 	u32 min_ref_counter = ADF_MAX_RP_UQ_REFERENCES;
 	struct adf_uacce_bank_data *bank_data;
 	struct adf_uacce_pasid_hnode *node;
 	struct adf_uacce_data *uacce_data;
-	enum adf_services svc_to_get;
+	u32 last_provided_svc = SVC_BASE_COUNT;
 	u32 bank_number = 0;
+	u32 svc_to_get;
 	u32 num_banks;
 	u32 i;
 
@@ -354,7 +354,7 @@ static int pasid_ht_add_bank(struct adf_accel_dev *accel_dev, u32 pasid,
 {
 	struct adf_uacce_pasid_hnode *node;
 	struct adf_uacce_data *uacce_data;
-	enum adf_services svc_type;
+	u32 svc_type;
 
 	uacce_data = &accel_dev->uacce_data;
 
@@ -431,8 +431,9 @@ static int bank_data_init(struct adf_accel_dev *accel_dev)
 {
 	u32 bundle_size = GET_HW_DATA(accel_dev)->num_banks_per_vf;
 	u32 num_banks = GET_MAX_BANKS(accel_dev);
-	enum adf_services svc_conv;
 	enum adf_cfg_service_type svc;
+	unsigned long svc_bitmask;
+	u32 svc_conv;
 	size_t size;
 	u32 i, j;
 
@@ -445,12 +446,17 @@ static int bank_data_init(struct adf_accel_dev *accel_dev)
 	if (!accel_dev->uacce_data.bank_data)
 		return -ENOMEM;
 
+	svc_bitmask = accel_dev->uacce_data.svc_bitmask;
+
 	for (i = 0; i < bundle_size; i++) {
 		svc = GET_SRV_TYPE(accel_dev, i);
 
 		switch (svc) {
 		case COMP:
-			svc_conv = SVC_DC;
+			if (test_bit(SVC_DCC, &svc_bitmask))
+				svc_conv = SVC_DCC;
+			else
+				svc_conv = SVC_DC;
 			break;
 		case SYM:
 			svc_conv = SVC_SYM;
@@ -464,7 +470,7 @@ static int bank_data_init(struct adf_accel_dev *accel_dev)
 		case UNUSED:
 			svc_conv = SVC_BASE_COUNT;
 			break;
-		default: // USED
+		default: /* USED, CRYPTO */
 			return -EINVAL;
 		}
 
@@ -795,15 +801,15 @@ static int adf_uacce_init(struct adf_accel_dev *accel_dev)
 		uacce_remove(uacce);
 	}
 
-	ret = bank_data_init(accel_dev);
-	if (ret)
-		goto err_shutdown;
-
 	ret = adf_get_service_mask(accel_dev, &svc_bitmask);
 	if (ret)
 		goto err_shutdown;
 
 	accel_dev->uacce_data.svc_bitmask = svc_bitmask;
+
+	ret = bank_data_init(accel_dev);
+	if (ret)
+		goto err_shutdown;
 
 	hash_init(accel_dev->uacce_data.pasid_ht);
 
