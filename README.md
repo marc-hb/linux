@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO5
+---------------
+43. fix: [DMR][IMH2][QAT] Failure observed while starting QAT services
+    https://hsdes.intel.com/appstore/article-one/#/article/15018147145
+
 dmr-6.14-v7.4-PO4
 ---------------
 43. ntb: intel: Add Intel Gen6 NTB PPD1 register update
