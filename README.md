@@ -17,6 +17,10 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO6
+---------------
+43. intel_idle: Enable all C6 flavours on DMR by default
+
 dmr-6.14-v7.4-PO5
 ---------------
 43. fix: [DMR][IMH2][QAT] Failure observed while starting QAT services
