@@ -17,9 +17,14 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO7
+---------------
+45. fix: [DMR-Simics][DMR-BKC] EDAC MC number is changed in CentOS 10
+    https://jira.devtools.intel.com/browse/LFE-17339
+
 dmr-6.14-v7.4-PO6
 ---------------
-43. intel_idle: Enable all C6 flavours on DMR by default
+44. intel_idle: Enable all C6 flavours on DMR by default
 
 dmr-6.14-v7.4-PO5
 ---------------
