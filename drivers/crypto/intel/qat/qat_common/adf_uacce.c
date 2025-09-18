@@ -334,8 +334,6 @@ static int queue_put_bank(struct adf_uacce_bank_queue *bank_queue)
 	u32 ref_counter;
 	int ret = 0;
 
-	bank_data = accel_dev->uacce_data.bank_data;
-
 	if (bank_queue->bank_number >= GET_MAX_BANKS(accel_dev))
 		return -EINVAL;
 
@@ -415,11 +413,12 @@ static int pasid_ht_free(struct adf_accel_dev *accel_dev)
 {
 	struct adf_uacce_pasid_hnode *node;
 	struct adf_uacce_data *uacce_data;
+	struct hlist_node *tmp;
 	int i;
 
 	uacce_data = &accel_dev->uacce_data;
 
-	hash_for_each(uacce_data->pasid_ht, i, node, hnode) {
+	hash_for_each_safe(uacce_data->pasid_ht, i, tmp, node, hnode) {
 		hash_del(&node->hnode);
 		kfree(node);
 	}
