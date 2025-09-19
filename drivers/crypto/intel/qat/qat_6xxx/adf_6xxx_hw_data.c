@@ -1138,6 +1138,7 @@ err:
 
 static int dev_config(struct adf_accel_dev *accel_dev)
 {
+	unsigned long mask;
 	int ret;
 
 	ret = adf_cfg_section_add(accel_dev, ADF_KERNEL_SEC);
@@ -1155,7 +1156,13 @@ static int dev_config(struct adf_accel_dev *accel_dev)
 
 	switch (adf_get_service_enabled(accel_dev)) {
 	case SVC_SYM_ASYM:
-		ret = adf_gen6_crypto_dev_config(accel_dev);
+		ret = adf_get_service_mask(accel_dev, &mask);
+		if (ret)
+			return ret;
+		if (hweight_long(mask) < ADF_THREE_SERVICES)
+			ret = adf_gen6_crypto_dev_config(accel_dev);
+		else
+			ret = adf_gen6_no_dev_config(accel_dev);
 		break;
 	case SVC_SYM:
 	    ret = sym_dev_config(accel_dev);
