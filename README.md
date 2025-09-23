@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO8
+---------------
+46. workaround PL1 and PL2 limits are low compared to the TDP
+    A HW fix is approved for this issue and this patch should later be reverted.
+    similar to https://hsdes.intel.com/appstore/article-one/#/article/14025816704
+
 dmr-6.14-v7.4-PO7
 ---------------
 45. fix: [DMR-Simics][DMR-BKC] EDAC MC number is changed in CentOS 10
