@@ -17,6 +17,14 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO9
+---------------
+47. fix: [DMR][PO] intel_idle driver init failure
+    https://jira.devtools.intel.com/browse/LFE-17575
+    fix: [OKS][DMR X1 A0][PO][RAS] Poison Load on DCU when not disabling
+    poison_control.en_poison_on_ca while loading CentOS kernel
+    https://hsdes.intel.com/appstore/article-one/#/14025910379
+
 dmr-6.14-v7.4-PO8
 ---------------
 46. workaround PL1 and PL2 limits are low compared to the TDP
