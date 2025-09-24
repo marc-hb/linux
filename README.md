@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO10
+---------------
+48. fix: [IOMMU] [DMR] System reboots while querying IOMMU registers with Poison
+    enabled
+    https://jira.devtools.intel.com/browse/LFE-17578
+
 dmr-6.14-v7.4-PO9
 ---------------
 47. fix: [DMR][PO] intel_idle driver init failure
