@@ -3346,7 +3346,9 @@ void intel_pmu_switch_pebs(bool enter)
 			}
 		} else if (x86_pmu.arch_pebs) {
 			/* restore host arch PEBS MSRs */
-			u64 pebs_base = virt_to_phys(cpuc->pebs_vaddr) | PEBS_BUFFER_SHIFT;
+			u64 pebs_base = !cpuc->pebs_vaddr ? 0 :
+				virt_to_phys(cpuc->pebs_vaddr) | PEBS_BUFFER_SHIFT;
+
 			wrmsrl(MSR_IA32_PEBS_BASE, pebs_base);
 			wrmsrl(MSR_IA32_PEBS_INDEX, cpuc->pebs_index);
 		}
