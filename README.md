@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO11
+---------------
+49. fix [DMR][PO][Mediated vPMU] Host unchecked MSR access error is reported
+    when create VM with mediated vPMU
+    https://jira.devtools.intel.com/browse/LFE-17587
+
 dmr-6.14-v7.4-PO10
 ---------------
 48. fix: [IOMMU] [DMR] System reboots while querying IOMMU registers with Poison
