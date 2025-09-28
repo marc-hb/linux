@@ -1755,9 +1755,7 @@ static void intel_load_guest_context(struct kvm_vcpu *vcpu)
 
 static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 {
-	union vmx_exit_reason exit_reason = vmx_get_exit_reason(vcpu);
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
-	u32 intr_info = vmx_get_intr_info(vcpu);
 	u64 pebs_overflow = pmu->global_status &
 			    (GLOBAL_STATUS_BUFFER_OVF |
 			     GLOBAL_STATUS_ARCH_PEBS_THRESHOLD);
@@ -1776,12 +1774,16 @@ static bool intel_pmu_context_switch_need_skip(struct kvm_vcpu *vcpu)
 	 * new PEBS overflow PMI. So it traps a deadlock and no PEBS records can
 	 * be captured eventually after the suspicious NMI happens.
 	 *
+	 * The issue can happen at any type of VM-Exit, even the VM-Exit triggered
+	 * by the guest PMI (KVM_GUEST_PMI_VECTOR). There could be a new guest PMI
+	 * armed after previous guest PMI is just triggered.
+	 *
 	 * To avoid this issue, don't switch guest/host PMU state if guest PEBS
-	 * overflow PMI has been armed but not delivered.
+	 * overflow PMI has been armed but not delivered. There is no an accurate
+	 * way to check if there is a pending PMI, just roughly check it with if
+	 * PEBS overflow bit is set.
 	 */
-	if (pebs_overflow &&
-	    !(exit_reason.basic == EXIT_REASON_EXTERNAL_INTERRUPT &&
-	      is_intr_type_n(intr_info, INTR_TYPE_EXT_INTR, KVM_GUEST_PMI_VECTOR)))
+	if (pebs_overflow)
 		return true;
 
 	return false;
