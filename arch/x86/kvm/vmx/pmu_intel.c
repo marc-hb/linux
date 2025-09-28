@@ -904,7 +904,7 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
          * Legacy LBR is only available in legacy vPMU and Arch LBR is only
          * available in mediated vPMU
          */
-	if ((perf_capabilities & PERF_CAP_LBR_FMT) &&
+	if ((perf_capabilities & PERF_CAP_LBR_FMT) && pmu->version &&
 		((guest_can_use_arch_lbr() && kvm_mediated_pmu_enabled(vcpu)) ||
 		(cpuid_model_is_consistent(vcpu) && !kvm_mediated_pmu_enabled(vcpu))))
 		memcpy(&lbr_desc->records, &vmx_lbr_caps, sizeof(vmx_lbr_caps));
@@ -946,20 +946,16 @@ static void __intel_pmu_refresh_lbr(struct kvm_vcpu *vcpu)
 		bitmap_set(pmu->all_valid_pmc_idx, INTEL_PMC_IDX_FIXED_VLBR, 1);
 }
 
-static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
+static void __intel_pmu_refresh_perfmon(struct kvm_vcpu *vcpu)
 {
 	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct kvm_cpuid_entry2 *entry;
 	struct kvm_cpuid_entry2 *entry23_0 = NULL;
 	struct kvm_cpuid_entry2 *entry23_1 = NULL;
 	struct kvm_cpuid_entry2 *entry23_3 = NULL;
-	struct kvm_cpuid_entry2 *entry23_4 = NULL;
-	struct kvm_cpuid_entry2 *entry23_5 = NULL;
 	union cpuid10_eax eax;
 	union cpuid10_edx edx;
 	u64 perf_capabilities;
-	u64 fixed_bits;
-	u64 gp_bits;
 	int i;
 
 	/* CPUID 0xa leaf */
@@ -982,12 +978,6 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 		if (eax.split.events_subleaf)
 			entry23_3 = kvm_find_cpuid_entry_index(vcpu, 0x23,
 						ARCH_PERFMON_ARCH_EVENTS_LEAF);
-		if (eax.split.pebs_caps_subleaf)
-			entry23_4 = kvm_find_cpuid_entry_index(vcpu, 0x23,
-						ARCH_PERFMON_PEBS_CAP_LEAF);
-		if (eax.split.pebs_cnts_subleaf)
-			entry23_5 = kvm_find_cpuid_entry_index(vcpu, 0x23,
-						ARCH_PERFMON_PEBS_COUNTER_LEAF);
 	}
 
 	pmu->version = eax.split.version_id;
@@ -1101,43 +1091,73 @@ static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
 	if (entry && (entry->ecx & GENMASK(19, 16)))
 		pmu->eventsel_rsvd &= ~ARCH_PERFMON_EVENTSEL_BR_CNTR;
 
-	__intel_pmu_refresh_lbr(vcpu);
-
-	fixed_bits = fixed_ctrs_bitmap(pmu);
-	gp_bits = gp_ctrs_bitmap(pmu);
-	perf_capabilities = vcpu_get_perf_capabilities(vcpu);
-
-	if (perf_capabilities & PERF_CAP_PEBS_FORMAT) {
-		if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
-			pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd;
-			pmu->eventsel_rsvd &= ~ICL_EVENTSEL_ADAPTIVE;
-
-			for_each_set_bit(i, (unsigned long*)&fixed_bits,
-					 KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
-				pmu->fixed_ctr_ctrl_rsvd &=
-					~intel_fixed_bits_by_idx(i, ICL_FIXED_0_ADAPTIVE);
-			}
-			pmu->pebs_data_cfg_rsvd = ~0xff00000full;
-		} else {
-			pmu->pebs_enable_rsvd = ~gp_bits;
-		}
-	}
-
 	pmu->perf_metrics = 0;
 	if (perf_capabilities & PERF_CAP_PERF_METRICS) {
 		pmu->global_ctrl_rsvd &= ~GLOBAL_CTRL_EN_PERF_METRICS;
 		pmu->global_status_rsvd &= ~GLOBAL_STATUS_PERF_METRICS_OVF;
 	}
+}
 
-	intel_update_msr_base(vcpu);
+static void __intel_pmu_refresh_pebs(struct kvm_vcpu *vcpu)
+{
+	u64 perf_capabilities = vcpu_get_perf_capabilities(vcpu);
+	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
+	struct kvm_cpuid_entry2 *entry23_0 = NULL;
+	struct kvm_cpuid_entry2 *entry23_4 = NULL;
+	struct kvm_cpuid_entry2 *entry23_5 = NULL;
+	u64 fixed_bits = fixed_ctrs_bitmap(pmu);
+	int i;
 
-	pmu->arch_pebs = kvm_pmu_cap.arch_pebs && entry23_4 && entry23_5;
+	if (!pmu->version || !(perf_capabilities & PERF_CAP_PEBS_FORMAT))
+		return;
+
+	if (perf_capabilities & PERF_CAP_PEBS_BASELINE) {
+		pmu->pebs_enable_rsvd = pmu->global_ctrl_rsvd |
+					GLOBAL_CTRL_EN_PERF_METRICS;
+		pmu->eventsel_rsvd &= ~ICL_EVENTSEL_ADAPTIVE;
+
+		for_each_set_bit(i, (unsigned long *)&fixed_bits,
+				 KVM_MAX_NR_INTEL_FIXED_COUTNERS) {
+			pmu->fixed_ctr_ctrl_rsvd &= ~intel_fixed_bits_by_idx(
+				i, ICL_FIXED_0_ADAPTIVE);
+		}
+		pmu->pebs_data_cfg_rsvd = ~0xff00000full;
+	} else {
+		pmu->pebs_enable_rsvd = ~gp_ctrs_bitmap(pmu);
+	}
+
+	entry23_0 = kvm_find_cpuid_entry_index(vcpu, 0x23, 0x0);
+	if (entry23_0) {
+		union cpuid35_eax eax;
+
+		eax.full = entry23_0->eax;
+		if (eax.split.pebs_caps_subleaf)
+			entry23_4 = kvm_find_cpuid_entry_index(
+				vcpu, 0x23, ARCH_PERFMON_PEBS_CAP_LEAF);
+		if (eax.split.pebs_cnts_subleaf)
+			entry23_5 = kvm_find_cpuid_entry_index(
+				vcpu, 0x23, ARCH_PERFMON_PEBS_COUNTER_LEAF);
+	}
+
+	pmu->arch_pebs = kvm_pmu_cap.arch_pebs && entry23_5 &&
+			 entry23_4 && entry23_4->ebx;
 	pmu->arch_pebs_base = 0;
 	pmu->arch_pebs_index = 0;
 	pmu->arch_pebs_index_rsvd = GENMASK_ULL(3, 0) | GENMASK_ULL(30, 27) |
 				    GENMASK_ULL(35, 33) | GENMASK_ULL(63, 59);
 	pmu->arch_pebs_cfg_c_rsvd = GENMASK_ULL(34, 32) | BIT_ULL(39) |
 				    GENMASK_ULL(48, 42);
+
+	if (pmu->arch_pebs)
+		pmu->global_status_rsvd &= ~GLOBAL_STATUS_ARCH_PEBS_THRESHOLD;
+}
+
+static void __intel_pmu_refresh(struct kvm_vcpu *vcpu)
+{
+	__intel_pmu_refresh_perfmon(vcpu);
+	__intel_pmu_refresh_lbr(vcpu);
+	__intel_pmu_refresh_pebs(vcpu);
+	intel_update_msr_base(vcpu);
 }
 
 static void intel_pmu_update_msr_intercepts(struct kvm_vcpu *vcpu)
