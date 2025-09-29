@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO12
+---------------
+50. fix [DMR][DMR-BKC] Guest MSR access error call trace while boot VM with PT
+    mode enabled
+    https://jira.devtools.intel.com/browse/LFE-17247
+
 dmr-6.14-v7.4-PO11
 ---------------
 49. fix [DMR][PO][Mediated vPMU] Host unchecked MSR access error is reported
