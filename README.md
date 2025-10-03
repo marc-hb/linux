@@ -17,6 +17,12 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v8.4
+---------------
+55. backport fix: [GNR][CWF][DMR][AP][VIS][1S /2S ][HSIO]: CXL cards are Showing
+    2GB loss when SNC is Disabled in BIOS (with numactl)
+    https://jira.devtools.intel.com/browse/LINUXBKC3-729
+
 dmr-6.14-v8.3
 ---------------
 54. fix: [DMR-BKC] RDT compile warnings on BKC kernel for DMR
