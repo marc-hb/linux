@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v8.3
+---------------
+54. fix: [DMR-BKC] RDT compile warnings on BKC kernel for DMR
+    https://jira.devtools.intel.com/browse/LFE-17475
+
 dmr-6.14-v8.2
 ---------------
 53. fix: DMR AP[IMH1] [IMH2] Seamless Second Capsule update getting failed
