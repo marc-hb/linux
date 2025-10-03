@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v8.1
+---------------
+52. fix: [DMR][QAT][SRIOV] SRIOV content failing in PO CentOS + 6.14 Kernel
+    https://hsdes.intel.com/appstore/article-one/#/article/14025481856
+
 dmr-6.14-v7.4-PO16
 ---------------
 54. fix: [DMR][PO] driver probe failures and WARNING during TPMI driver modules
