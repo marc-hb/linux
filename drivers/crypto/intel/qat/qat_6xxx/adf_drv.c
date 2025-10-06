@@ -80,7 +80,9 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	pci_read_config_dword(pdev, ADF_GEN6_FUSECTL0_OFFSET, &hw_data->fuses[ADF_FUSECTL0]);
 	pci_read_config_dword(pdev, ADF_GEN6_FUSECTL1_OFFSET, &hw_data->fuses[ADF_FUSECTL1]);
 
-	if (!(hw_data->fuses[ADF_FUSECTL1] & ICP_ACCEL_GEN6_MASK_WCP_WAT_SLICE))
+	major_rev_id = FIELD_GET(ADF_GEN6_PCI_MAJOR_REVID_MASK, accel_pci_dev->revid);
+	if (major_rev_id > ADF_GEN6_PCI_MAJOR_REVID_A0 &&
+	    (!(hw_data->fuses[ADF_FUSECTL1] & ICP_ACCEL_GEN6_MASK_WCP_WAT_SLICE)))
 		wcy_mode = true;
 
 	/* Enable PCI device */
@@ -95,7 +97,6 @@ static int adf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	accel_dev->hw_device = hw_data;
 	adf_init_hw_data_6xxx(accel_dev->hw_device, wcy_mode);
 
-	major_rev_id = FIELD_GET(ADF_GEN6_PCI_MAJOR_REVID_MASK, accel_pci_dev->revid);
 	if (major_rev_id > ADF_GEN6_PCI_MAJOR_REVID_A0)
 		hw_data->fw_name = ADF_6XXX_B0_FW;
 
