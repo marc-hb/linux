@@ -17,6 +17,10 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO14
+---------------
+52. fix: [dmr][qat] Fix setting wireless fuse for dmr b0 based on revision id.
+
 dmr-6.14-v7.4-PO13
 ---------------
 51. fix [DMR][PO]kvm kselftest: vmx_pmu_caps_test test fail with mediated vPMU
