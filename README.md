@@ -20,6 +20,9 @@ Release History
 dmr-6.14-v7.4-PO14
 ---------------
 52. fix: [dmr][qat] Fix setting wireless fuse for dmr b0 based on revision id.
+    [DMR AP-QAT5.1] [PO unfused part] - DMR BKC kernel driver fails to
+    initialize admin communication with firmware
+    https://hsdes.intel.com/appstore/article-one/#/article/16028798842
 
 dmr-6.14-v7.4-PO13
 ---------------
