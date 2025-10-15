@@ -472,6 +472,8 @@ static int qat_hal_init_esram(struct icp_qat_fw_loader_handle *handle)
 }
 
 #define SHRAM_INIT_CYCLES 2060
+#define THREE_MICRO_SECOND 3
+#define FOUR_MICRO_SECOND 4
 int qat_hal_clr_reset(struct icp_qat_fw_loader_handle *handle)
 {
 	unsigned int clk_csr = handle->chip_info->glb_clk_enable_csr;
@@ -485,6 +487,12 @@ int qat_hal_clr_reset(struct icp_qat_fw_loader_handle *handle)
 	/* write to the reset csr */
 	csr_val = GET_CAP_CSR(handle, reset_csr);
 	csr_val &= ~reset_mask;
+	/*
+	 * delay to allow SSM reset to complete before performing
+	 * firmware authentication
+	 */
+	if (handle->pci_dev->device == PCI_DEVICE_ID_INTEL_QAT_6XXX)
+		usleep_range(THREE_MICRO_SECOND, FOUR_MICRO_SECOND);
 	do {
 		SET_CAP_CSR(handle, reset_csr, csr_val);
 		if (!(times--))
