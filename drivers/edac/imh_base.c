@@ -143,8 +143,8 @@ static int __get_ddr_munits(struct res_config *cfg, struct skx_dev *d,
 	unsigned long size = cfg->ddr_chan_mmio_sz * cfg->ddr_chan_num;
 	unsigned long bitmap = get_imc_bitmap(cfg, d->pkg, north);
 	void __iomem *mbase;
+	int i, pmc;
 	u64 base;
-	int i;
 
 	for_each_set_bit(i, &bitmap, sizeof(bitmap) * 8) {
 		base  = north ? d->mmio_base_h_north : d->mmio_base_h_south;
@@ -163,6 +163,9 @@ static int __get_ddr_munits(struct res_config *cfg, struct skx_dev *d,
 		d->imc[lmc].lmc = lmc;
 		device_initialize(&d->imc[lmc].dev);
 		dev_set_name(&d->imc[lmc].dev, "0x%llx", base);
+
+		pmc = north ? i : 8 + i;
+		skx_set_mc_mapping(d, pmc, lmc);
 
 		lmc++;
 	}
