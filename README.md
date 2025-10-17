@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v7.4-PO15
+---------------
+53. fix: QAT firmware Authentication failure on A0 PO
+    https://hsdes.intel.com/appstore/article-one/#/article/14025803016
+
 dmr-6.14-v7.4-PO14
 ---------------
 52. fix: [dmr][qat] Fix setting wireless fuse for dmr b0 based on revision id.
