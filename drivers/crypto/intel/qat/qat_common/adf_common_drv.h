@@ -11,7 +11,7 @@
 
 #define ADF_MAJOR_VERSION	0
 #define ADF_MINOR_VERSION	9
-#define ADF_BUILD_VERSION	0
+#define ADF_BUILD_VERSION	3
 #define ADF_DRV_VERSION		__stringify(ADF_MAJOR_VERSION) "." \
 				__stringify(ADF_MINOR_VERSION) "." \
 				__stringify(ADF_BUILD_VERSION)
