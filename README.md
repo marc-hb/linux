@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v8.5
+---------------
+56. [DMR][PO][RAS] decoded mc logical idx is not correct during error injection
+    https://jira.devtools.intel.com/browse/LFE-17643
+
 dmr-6.14-v8.4
 ---------------
 55. backport fix: [GNR][CWF][DMR][AP][VIS][1S /2S ][HSIO]: CXL cards are Showing
