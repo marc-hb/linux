@@ -23,9 +23,6 @@
 #include "trace.h"
 #include "../iommu-pages.h"
 
-int sats_hpte_dis_read = 0;
-int sats_hpte_dis_write = 0;
-
 /*
  * HPT root table allocation:
  */
@@ -198,15 +195,6 @@ int intel_sats_map_hpt(struct hpt_table *hpt_table,
 	pte = get_hpt_entry(hpt_table, phys_pfn, level, true);
 	if (!pte)
 		return -ENOMEM;
-
-	if (sats_hpte_dis_read) {
-		printk_once("Disable read permission to trigger HPT faults(0xa5).\n");
-		prot &= ~DMA_PTE_READ;
-	}
-	if (sats_hpte_dis_write) {
-		printk_once("Disable write permission to trigger HPT faults(0xa4).\n");
-		prot &= ~DMA_PTE_WRITE;
-	}
 
 	spin_lock(&hpt_table->lock);
 	set_hpt_entry(hpt_table, pte, phys_pfn, level, prot);

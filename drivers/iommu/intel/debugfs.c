@@ -840,38 +840,6 @@ static const struct file_operations dmar_perf_latency_fops = {
 	.release	= single_release,
 };
 
-static int sats_hpte_dis_read_get(void *data, u64 *val)
-{
-	*val = *(u32 *)data;
-	return 0;
-}
-
-static int sats_hpte_dis_read_set(void *data, u64 val)
-{
-	*(u32 *)data = val;
-	return 0;
-}
-
-DEFINE_SIMPLE_ATTRIBUTE(sats_hpte_dis_read_fops,
-			sats_hpte_dis_read_get,
-			sats_hpte_dis_read_set, "%lld\n");
-
-static int sats_hpte_dis_write_get(void *data, u64 *val)
-{
-	*val = *(u32 *)data;
-	return 0;
-}
-
-static int sats_hpte_dis_write_set(void *data, u64 val)
-{
-	*(u32 *)data = val;
-	return 0;
-}
-
-DEFINE_SIMPLE_ATTRIBUTE(sats_hpte_dis_write_fops,
-			sats_hpte_dis_write_get,
-			sats_hpte_dis_write_set, "%lld\n");
-
 void __init intel_iommu_debugfs_init(void)
 {
 	intel_iommu_debug = debugfs_create_dir("intel", iommu_debugfs_dir);
@@ -891,11 +859,6 @@ void __init intel_iommu_debugfs_init(void)
 #endif
 	debugfs_create_file("dmar_perf_latency", 0644, intel_iommu_debug,
 			    NULL, &dmar_perf_latency_fops);
-
-	debugfs_create_file("sats_hpte_dis_read", 0660, intel_iommu_debug,
-			    &sats_hpte_dis_read, &sats_hpte_dis_read_fops);
-	debugfs_create_file("sats_hpte_dis_write", 0660, intel_iommu_debug,
-			    &sats_hpte_dis_write, &sats_hpte_dis_write_fops);
 }
 
 /*
