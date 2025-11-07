@@ -17,6 +17,10 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v9.1
+---------------
+57. [DMR]revert Secure ATS enabling as it has been ZBB'ed
+
 dmr-6.14-v8.5
 ---------------
 56. [DMR][PO][RAS] decoded mc logical idx is not correct during error injection
