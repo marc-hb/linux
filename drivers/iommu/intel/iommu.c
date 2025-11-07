@@ -30,7 +30,6 @@
 #include "../iommu-pages.h"
 #include "pasid.h"
 #include "perfmon.h"
-#include "sats.h"
 
 #define ROOT_SIZE		VTD_PAGE_SIZE
 #define CONTEXT_SIZE		VTD_PAGE_SIZE
@@ -1431,9 +1430,6 @@ static void domain_exit(struct dmar_domain *domain)
 
 		domain_unmap(domain, 0, DOMAIN_MAX_PFN(domain->gaw), &freelist);
 		iommu_put_pages_list(&freelist);
-		if (domain->hpt)
-			intel_sats_free_hpt_table(domain->hpt);
-
 	}
 
 	if (WARN_ON(!list_empty(&domain->devices)))
@@ -3341,17 +3337,6 @@ static struct dmar_domain *paging_domain_alloc(struct device *dev, bool first_st
 		kfree(domain);
 		return ERR_PTR(-ENOMEM);
 	}
-
-	/* Use HPT as long as it is supported */
-	if (ecap_hpts(iommu->ecap)) {
-		domain->hpt = intel_sats_alloc_hpt_table(domain);
-		if (!domain->hpt) {
-			iommu_free_page(domain->pgd);
-			kfree(domain);
-			return ERR_PTR(-ENOMEM);
-		}
-	}
-
 	domain_flush_cache(domain, domain->pgd, PAGE_SIZE);
 
 	return domain;
@@ -3452,9 +3437,6 @@ int paging_domain_compatible(struct iommu_domain *domain, struct device *dev)
 	    (!sm_supported(iommu) || !ecap_flts(iommu->ecap)))
 		return -EINVAL;
 
-	if (!!dmar_domain->hpt != !!ecap_hpts(iommu->ecap))
-		return -EINVAL;
-
 	/* check if this iommu agaw is sufficient for max mapped address */
 	addr_width = agaw_to_width(iommu->agaw);
 	if (addr_width > cap_mgaw(iommu->cap))
@@ -3525,7 +3507,6 @@ static int intel_iommu_map_pages(struct iommu_domain *domain,
 				 size_t pgsize, size_t pgcount,
 				 int prot, gfp_t gfp, size_t *mapped)
 {
-	struct dmar_domain *dmar_domain = to_dmar_domain(domain);
 	unsigned long pgshift = __ffs(pgsize);
 	size_t size = pgcount << pgshift;
 	int ret;
@@ -3537,25 +3518,8 @@ static int intel_iommu_map_pages(struct iommu_domain *domain,
 		return -EINVAL;
 
 	ret = intel_iommu_map(domain, iova, paddr, size, prot, gfp);
-	if (ret)
-		return ret;
-
-	if (mapped)
+	if (!ret && mapped)
 		*mapped = size;
-
-	if (dmar_domain->hpt) {
-		phys_addr_t perm_addr = paddr;
-		size_t i;
-
-		for(i = 0; i < pgcount; i++) {
-			ret = intel_sats_map_hpt(dmar_domain->hpt,
-						 perm_addr >> VTD_PAGE_SHIFT,
-						 pgsize, prot);
-			if (ret)
-				break;
-			perm_addr += pgsize;
-		}
-	}
 
 	return ret;
 }
@@ -3600,23 +3564,8 @@ static size_t intel_iommu_unmap_pages(struct iommu_domain *domain,
 				      size_t pgsize, size_t pgcount,
 				      struct iommu_iotlb_gather *gather)
 {
-	struct dmar_domain *dmar_domain = to_dmar_domain(domain);
 	unsigned long pgshift = __ffs(pgsize);
 	size_t size = pgcount << pgshift;
-
-	if (dmar_domain->hpt) {
-		unsigned long ioaddr = iova;
-		phys_addr_t paddr;
-		size_t i;
-
-		for(i = 0; i < pgcount; i++) {
-			paddr = iommu_iova_to_phys(domain, ioaddr);
-			intel_sats_unmap_hpt(dmar_domain->hpt,
-					     paddr >> VTD_PAGE_SHIFT,
-					     pgsize);
-			ioaddr = pgsize;
-		}
-	}
 
 	return intel_iommu_unmap(domain, iova, size, gather);
 }
