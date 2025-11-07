@@ -1053,11 +1053,8 @@ static int context_entry_set_pasid_table(struct context_entry *context,
 
 	if (info->ats_supported)
 		context_set_sm_dte(context);
-	if (info->pasid_supported) {
-		unsigned long value = CONTEXT_PASIDE;
-		value |= info->sats_supported ? CONTEXT_EPTR : 0;
-		context_set_pasid(context, value);
-	}
+	if (info->pasid_supported)
+		context_set_pasid(context);
 	if (info && info->sats_supported)
 		context_set_sm_hpte(context);
 

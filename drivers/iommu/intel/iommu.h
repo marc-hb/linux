@@ -61,7 +61,7 @@
 #define CONTEXT_TT_DEV_IOTLB	1
 #define CONTEXT_TT_PASS_THROUGH 2
 #define CONTEXT_PASIDE		BIT_ULL(3)
-#define CONTEXT_EPTR		BIT_ULL(6)
+
 /*
  * Intel IOMMU register specification per version 1.0 public spec.
  */
@@ -1023,10 +1023,12 @@ static inline void context_set_domain_id(struct context_entry *context,
 	context->hi |= (value & ((1 << 16) - 1)) << 8;
 }
 
-static inline void context_set_pasid(struct context_entry *context,
-				     unsigned long value)
+static inline void context_set_pasid(struct context_entry *context)
 {
-	context->lo |= value;
+	context->lo |= CONTEXT_PASIDE;
+
+	/* EPTR (bit 6): Translated requests with PASID are allowed. */
+	context->lo |= BIT_ULL(6);
 }
 
 static inline int context_domain_id(struct context_entry *c)
