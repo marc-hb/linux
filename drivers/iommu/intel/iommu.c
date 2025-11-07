@@ -214,9 +214,7 @@ static int intel_iommu_superpage = 1;
 static int iommu_identity_mapping;
 static int iommu_skip_te_disable;
 static int disable_igfx_iommu;
-static int intel_iommu_sats = 0;
 
-#define sats_supported(iommu)   (intel_iommu_sats && ecap_hpts(iommu->ecap))
 #define IDENTMAP_AZALIA		4
 
 const struct iommu_ops intel_iommu_ops;
@@ -278,9 +276,6 @@ static int __init intel_iommu_setup(char *str)
 		} else if (!strncmp(str, "tboot_noforce", 13)) {
 			pr_info("Intel-IOMMU: not forcing on after tboot. This could expose security risk for tboot\n");
 			intel_iommu_tboot_noforce = 1;
-		} else if (!strncmp(str, "sats_on", 7)) {
-			pr_info("Enable secure ATS support\n");
-			intel_iommu_sats = 1;
 		} else {
 			pr_notice("Unknown option - '%s'\n", str);
 		}
@@ -3349,14 +3344,13 @@ static struct dmar_domain *paging_domain_alloc(struct device *dev, bool first_st
 	}
 
 	/* Use HPT as long as it is supported */
-	if (info->sats_supported) {
+	if (ecap_hpts(iommu->ecap)) {
 		domain->hpt = intel_sats_alloc_hpt_table(domain);
 		if (!domain->hpt) {
 			iommu_free_page(domain->pgd);
 			kfree(domain);
 			return ERR_PTR(-ENOMEM);
 		}
-		pr_info("Allocate HPT for dmar domain: %p, and device: %s\n", domain, dev_name(dev));
 	}
 
 	domain_flush_cache(domain, domain->pgd, PAGE_SIZE);
@@ -3459,10 +3453,8 @@ int paging_domain_compatible(struct iommu_domain *domain, struct device *dev)
 	    (!sm_supported(iommu) || !ecap_flts(iommu->ecap)))
 		return -EINVAL;
 
-	if (!!dmar_domain->hpt != !!info->sats_supported) {
-		pr_err("SATS incompatible detected between dmar domain (%p) and device (%s)\n", dmar_domain, dev_name(dev));
+	if (!!dmar_domain->hpt != !!info->sats_supported)
 		return -EINVAL;
-	}
 
 	/* check if this iommu agaw is sufficient for max mapped address */
 	addr_width = agaw_to_width(iommu->agaw);
@@ -3789,10 +3781,8 @@ static struct iommu_device *intel_iommu_probe_device(struct device *dev)
 			if (info->ats_supported && ecap_prs(iommu->ecap) &&
 			    pci_pri_supported(pdev))
 				info->pri_supported = 1;
-			if (info->ats_supported && sats_supported(iommu)) {
+			if (info->ats_supported && ecap_hpts(iommu->ecap))
 				info->sats_supported = 1;
-				pr_info("device: %s supports SATS\n", dev_name(dev));
-			}
 		}
 	}
 
