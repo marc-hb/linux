@@ -785,7 +785,6 @@ struct device_domain_info {
 	u8 pri_supported:1;
 	u8 pri_enabled:1;
 	u8 ats_supported:1;
-	u8 sats_supported:1;
 	u8 ats_enabled:1;
 	u8 dtlb_extra_inval:1;	/* Quirk for devices need extra flush */
 	u8 ats_qdep;
@@ -1224,20 +1223,6 @@ static inline void qi_desc_dev_iotlb_pasid(u16 sid, u16 pfsid, u32 pasid,
 	}
 }
 
-/*
- * Set the HPTE(Host Permission Table Enable) field of a scalable mode
- * context entry.
- */
-static inline void context_set_sm_hpte(struct context_entry *context)
-{
-	context->lo |= BIT_ULL(5);
-}
-
-static inline bool context_get_sm_hpte(struct context_entry *context)
-{
-	return context->lo & BIT_ULL(5);
-}
-
 /* Convert value to context PASID directory size field coding. */
 #define context_pdts(pds)	(((pds) & 0x7) << 9)
 
@@ -1291,8 +1276,8 @@ void domain_remove_dev_pasid(struct iommu_domain *domain,
 
 int __domain_setup_first_level(struct intel_iommu *iommu,
 			       struct device *dev, ioasid_t pasid,
-			       u16 did, pgd_t *pgd, struct hpt_table *hpt,
-			       int flags, struct iommu_domain *old);
+			       u16 did, pgd_t *pgd, int flags,
+			       struct iommu_domain *old);
 
 int dmar_ir_support(void);
 

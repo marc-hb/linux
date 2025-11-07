@@ -1762,14 +1762,13 @@ static void domain_context_clear_one(struct device_domain_info *info, u8 bus, u8
 
 int __domain_setup_first_level(struct intel_iommu *iommu,
 			       struct device *dev, ioasid_t pasid,
-			       u16 did, pgd_t *pgd, struct hpt_table *hpt,
-			       int flags, struct iommu_domain *old)
+			       u16 did, pgd_t *pgd, int flags,
+			       struct iommu_domain *old)
 {
 	if (!old)
 		return intel_pasid_setup_first_level(iommu, dev, pgd,
-						     hpt, pasid, did, flags);
-	return intel_pasid_replace_first_level(iommu, dev, pgd, hpt,
-					       pasid, did,
+						     pasid, did, flags);
+	return intel_pasid_replace_first_level(iommu, dev, pgd, pasid, did,
 					       iommu_domain_did(old, iommu),
 					       flags);
 }
@@ -1818,7 +1817,7 @@ static int domain_setup_first_level(struct intel_iommu *iommu,
 
 	return __domain_setup_first_level(iommu, dev, pasid,
 					  domain_id_iommu(domain, iommu),
-					  (pgd_t *)pgd, domain->hpt, flags, old);
+					  (pgd_t *)pgd, flags, old);
 }
 
 static int dmar_domain_attach_device(struct dmar_domain *domain,
@@ -3453,7 +3452,7 @@ int paging_domain_compatible(struct iommu_domain *domain, struct device *dev)
 	    (!sm_supported(iommu) || !ecap_flts(iommu->ecap)))
 		return -EINVAL;
 
-	if (!!dmar_domain->hpt != !!info->sats_supported)
+	if (!!dmar_domain->hpt != !!ecap_hpts(iommu->ecap))
 		return -EINVAL;
 
 	/* check if this iommu agaw is sufficient for max mapped address */
@@ -3781,8 +3780,6 @@ static struct iommu_device *intel_iommu_probe_device(struct device *dev)
 			if (info->ats_supported && ecap_prs(iommu->ecap) &&
 			    pci_pri_supported(pdev))
 				info->pri_supported = 1;
-			if (info->ats_supported && ecap_hpts(iommu->ecap))
-				info->sats_supported = 1;
 		}
 	}
 
