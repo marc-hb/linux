@@ -17,6 +17,10 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v10.1
+---------------
+58. [DMR]QAT pre-alpha 093 release update
+
 dmr-6.14-v9.1
 ---------------
 57. [DMR]revert Secure ATS enabling as it has been ZBB'ed
