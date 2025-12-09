@@ -17,6 +17,14 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v10.3
+---------------
+60. fix: [DMR-AP-1S][VIS][PCIe][Gen6][Storage]: 4K random read performance
+    drops by 68% with "iommu=on"
+    https://hsdes.intel.com/appstore/article-one/#/15018750899
+    fix harvested from cwf-6.14-v12.3
+    https://jira.devtools.intel.com/browse/LINUXBKC3-732
+
 dmr-6.14-v10.2
 ---------------
 59. [DMR] Tpr support.  
