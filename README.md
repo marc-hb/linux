@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v10.4
+---------------
+61. fix: [BKC]  [DMR] wult: tdt method does not work
+    https://jira.devtools.intel.com/browse/LFE-17795
+
 dmr-6.14-v10.3
 ---------------
 60. fix: [DMR-AP-1S][VIS][PCIe][Gen6][Storage]: 4K random read performance
