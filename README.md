@@ -17,6 +17,11 @@ for exporting outside of Intel.
 Release History
 ===============
 
+dmr-6.14-v10.5
+---------------
+62. fix: additional pat to finish the fix in v10.4
+    restore the tracepoint to MSR write functions.
+
 dmr-6.14-v10.4
 ---------------
 61. fix: [BKC]  [DMR] wult: tdt method does not work
