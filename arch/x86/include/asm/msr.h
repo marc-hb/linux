@@ -732,22 +732,42 @@ static __always_inline int __wrmsr_safe(const u32 msr, const u64 val)
 
 static __always_inline void wrmsr(const u32 msr, const u32 low, const u32 high)
 {
-	return __wrmsr(msr, (u64)high << 32 | low);
+	u64 val = (u64)high << 32 | low;
+
+	__wrmsr(msr, val);
+
+	if (tracepoint_enabled(write_msr))
+		do_trace_write_msr(msr, val, 0);
 }
 
 static __always_inline void wrmsrl(const u32 msr, const u64 val)
 {
-	return __wrmsr(msr, val);
+	__wrmsr(msr, val);
+
+	if (tracepoint_enabled(write_msr))
+		do_trace_write_msr(msr, val, 0);
 }
 
 static __always_inline int wrmsr_safe(const u32 msr, const u32 low, const u32 high)
 {
-	return __wrmsr_safe(msr, (u64)high << 32 | low);
+	u64 val = (u64)high << 32 | low;
+	int err;
+
+	err = __wrmsr_safe(msr, val);
+	if (tracepoint_enabled(write_msr))
+		do_trace_write_msr(msr, val, err);
+
+	return err;
 }
 
 static __always_inline int wrmsrl_safe(const u32 msr, const u64 val)
 {
-	return __wrmsr_safe(msr, val);
+	int err = __wrmsr_safe(msr, val);
+
+	if (tracepoint_enabled(write_msr))
+		do_trace_write_msr(msr, val, err);
+
+	return err;
 }
 
 static __always_inline void native_wrmsr(const u32 msr, const u32 low, const u32 high)
